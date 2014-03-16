@@ -1,0 +1,5 @@
+client nodes send requests to several request servers.
+The request result is sent to HTHosts and stored there.
+HtHosts promote the changes to HTlisteners which build a mirror.
+Binary receiver receives random byte arrays with a checksum and promotes them back to client nodes
+Cyclically all HTHosts deliver their complete content and it is compared with the clients mirror.

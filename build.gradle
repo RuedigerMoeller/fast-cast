@@ -1,0 +1,51 @@
+
+apply plugin: 'java'
+version="2.03"
+
+jar.baseName='fastcast'
+
+def javafxLib = "jfxrt.jar"
+
+def getJavaFXPath(def javafxLib) {
+    def javaHome = System.env["JAVA_HOME"]
+    if (javaHome == null) {
+        throw new RuntimeException("JAVA_HOME environment variable must be set")
+    }
+    def javafxrt = "jre" + File.separator + "lib" + File.separator + javafxLib
+    return new File(javaHome, javafxrt).absolutePath
+}
+
+repositories {
+    mavenCentral()
+    mavenRepo urls: "https://oss.sonatype.org/content/repositories/releases/"
+}
+
+dependencies {
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.13'
+    compile group: 'org.javassist', name: 'javassist', version: '3.18.1-GA'
+    compile group: 'de.ruedigermoeller', name: 'fst', version: '1.34'
+    compile files(getJavaFXPath(javafxLib))
+}
+
+task bigtest(type: Jar) {
+    archiveName = 'bigtest.jar'
+    from sourceSets.test.output
+    include ('de/ruedigermoeller/fastcast/samples/**/*')
+    include ('de/ruedigermoeller/fastcast/bigtest/**/*')
+    include ('de/ruedigermoeller/fastcast/test/**/*')
+}
+
+task allJar(type: Jar, dependsOn:jar) {
+    archiveName = 'fastcast-'+version+"-onejar.jar"
+    from zipTree('../lib/javassist-3.18.1-GA.jar').matching { true }
+    from zipTree('../lib/fst-1.35.jar').matching { true }
+    from zipTree('./build/libs/fastcast-'+version+'.jar').matching { true }
+    from zipTree('../lib/snakeyaml-1.13.jar').matching { true }
+}
+
+task release(type: Jar, dependsOn:allJar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+    from 'pom.xml'
+}
+

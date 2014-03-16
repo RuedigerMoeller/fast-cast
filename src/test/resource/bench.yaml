@@ -1,0 +1,94 @@
+# name of cluster
+clusterName: bm
+
+interfaces:
+  if0: eth0
+
+###########################################################################################################
+# define technical transport topics
+# a transport is defined by a network adapter, a listening address and a port. google 'crosstalking' in case u run unix
+
+transports:
+
+- name: default
+  # address of network adapter,
+  ifacAdr: if0
+  mcastAdr: 230.9.9.10
+  port: 45556
+
+  dgramsize: 8000
+  # needs to be true in order to run several processes on one machine
+  loopBack: true
+
+  # in java we like large buffers to minimize packet loss due to GC jitter
+  receiveBufferSize: 25000000
+  sendBufferSize: 640000
+
+  #misc
+  trafficClass: 8
+  ttl: 2
+  transportType: MCAST_NIO_SOCKET
+
+###########################################################################################################
+# define separate address+port transport for heartbeats+stats as hi volume might delay heartbeats resulting
+# in false drops
+#
+- name: control
+  # address of network adapter,
+  ifacAdr: if0
+  mcastAdr: 230.9.9.11
+  port: 45557
+
+  dgramsize: 8000
+  loopBack: true
+
+  # in java we like large buffers to minimize packet loss due to GC :(
+  receiveBufferSize: 25000000
+  sendBufferSize: 640000
+
+  #misc
+  trafficClass: 8
+  ttl: 2
+  transportType: MCAST_NIO_SOCKET
+
+###########################################################################################################
+# ipc transport
+#
+- name: ipc
+  dgramsize: 32000
+  # size of shared mem buffer
+  receiveBufferSize: 225000000
+
+  #misc
+  transportType: MCAST_IPC
+  queueFile: /tmp/queue.bin
+
+
+########################################################################################
+# topics bind service classes to a transport+topic (~topic). think of a topic being a
+# separate independent communication  of a transport.
+# Each transport can be divided into MCastSocketTransportQueue.MAX_SCOPE separate topics.
+# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topic
+# other scopes of the same transport are not affected.
+topics:
+
+- name: bench                   #name of
+  transport: default           #name of transport defined above
+#  transport: ipc                #name of transport defined above
+  topic: 0                      #topic on the transport associated with this
+  serviceClass: de.ruedigermoeller.fastcast.test.ThroughputBench$BenchService
+
+  DGramRate: 10000
+  numPacketHistory: 1000
+  numPacketOffHeapHistory: 15000 # 3000*5 seconds
+  receiveBufferPackets: 1000
+
+  perSenderThread: true
+
+- name: membership
+  autoStart: true
+  transport: control
+  topic: 1
+  serviceClass: de.ruedigermoeller.fastcast.service.FCMembership
+
+
