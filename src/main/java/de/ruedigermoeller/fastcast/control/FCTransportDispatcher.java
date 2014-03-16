@@ -152,7 +152,7 @@ public class FCTransportDispatcher {
                     Object sendWakeupLock = packetSendBuffer.getSendWakeupLock();
                     nothingSentCount = 0;
                     synchronized (sendWakeupLock) {
-                        sendWakeupLock.wait(0,10);
+                        sendWakeupLock.wait(0,1000);
                     }
                 }
                 count++;
