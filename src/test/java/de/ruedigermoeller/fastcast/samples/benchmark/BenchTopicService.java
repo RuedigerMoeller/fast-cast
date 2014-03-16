@@ -18,7 +18,7 @@ import java.io.IOException;
  * To change this template use File | Settings | File Templates.
  */
 
-@PerSenderThread(true) // methods can be multithreaded !
+//@PerSenderThread(true) // methods can be multithreaded ! [being single threaded will be faster 99% of time]
 public class BenchTopicService extends FCTopicService {
 
     public static FCClusterConfig getClusterConfig() {
@@ -26,7 +26,7 @@ public class BenchTopicService extends FCTopicService {
         int portBase = 55555;
         FCClusterConfig conf = FCConfigBuilder.New()
                 .socketTransport("default_transport", "interface", "230.10.10.10", portBase)
-                  .topic("binbench", 0, 20000, 5) // binary + fastcall
+                  .topic("binbench", 0, 12000, 5) // binary + fastcall
                           //~ 14.000 = 1 GBit network saturation
                           //~ 20.000-30.000 = Local host on newer hardware (i7,3.x GhZ)
                   .setRequestRespOptions(20000,2000)
@@ -52,7 +52,7 @@ public class BenchTopicService extends FCTopicService {
 //        conf.defineInterface("interface", "bond0"); // localhost
         conf.defineInterface("interface", "127.0.0.1"); // localhost
 
-        conf.overrideBy("exbench.yaml");
+//        conf.overrideBy("exbench.yaml");
 
         try {
             // write out config to enable ClusterView

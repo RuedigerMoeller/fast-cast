@@ -205,7 +205,7 @@ public class FCProxyFactory {
                                 body+=" out.writeFDouble( $"+(j+1)+");";
                             } else
                             if ( parameterType.getName().equals(String.class.getName()) ) {
-                                body+=" out.writeStringUTFSpeed( $"+(j+1)+");";
+                                body+=" out.writeStringUTF( $"+(j+1)+");";
                             }
                         }
                         body+=" marshaller.finishFastCall( sender, out ); }";
@@ -309,7 +309,7 @@ public class FCProxyFactory {
                             body+=" out.readFDouble()";
                         } else
                         if ( parameterType.getName().equals(String.class.getName()) ) {
-                            body+=" out.readStringUTFSpeed()";
+                            body+=" out.readStringUTF()";
                         }
                         if ( j != parameterTypes.length-1 ) {
                             body+=",";

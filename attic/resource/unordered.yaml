@@ -1,0 +1,100 @@
+# name of cluster
+clusterName: bm
+
+# define technical transport topics
+# a transport is defined by a network adapter, a listening address and a port. google 'crosstalking' in case u run unix
+
+transports:
+
+- name: s0
+  # address of network adapter,
+  ifacAdr: 127.0.0.1
+  mcastAdr: 230.9.10.10
+  port: 45566
+
+  dgramsize: 8000
+  # needs to be true in order to run several processes on one machine
+  loopBack: true
+
+  # in java we like large buffers to minimize packet loss due to GC jitter
+  receiveBufferSize: 25000000
+  sendBufferSize: 640000
+
+  #misc
+  trafficClass: 8
+  ttl: 2
+
+- name: s1
+  # address of network adapter,
+  ifacAdr: 127.0.0.1
+  mcastAdr: 230.9.10.11
+  port: 45567
+
+  dgramsize: 8000
+  # needs to be true in order to run several processes on one machine
+  loopBack: true
+
+  # in java we like large buffers to minimize packet loss due to GC jitter
+  receiveBufferSize: 25000000
+  sendBufferSize: 640000
+
+  #misc
+  trafficClass: 8
+  ttl: 2
+
+- name: ip0
+  receiveBufferSize: 25000000
+  #misc
+  transportType: MCAST_IPC
+  queueFile: /tmp/market0.bin
+
+# for some reason on linux only one IPC transport is possible (file locking works different)
+- name: ip1
+  receiveBufferSize: 25000000
+  #misc
+  transportType: MCAST_IPC
+  queueFile: /tmp/market1.bin
+
+########################################################################################
+# topics bind service classes to a transport+topic (~topic). think of a topic being a
+# separate independent communication  of a transport.
+# Each transport can be divided into MCastSocketTransportQueue.MAX_SCOPE separate topics.
+# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topic
+# other scopes of the same transport are not affected.
+topics:
+
+- name: stream_0                #name of
+  flowControlClass: null        #turn off flow control
+
+  transport: s0                 #name of transport defined above
+  topic: 0                      #topic on the transport associated with this
+  serviceClass: de.ruedigermoeller.fastcast.test.UnorderedReceiver
+
+  maxOpenRespondedCalls:   500  # how many unanswered calls with results (request-response) can be unanswered at a time.
+                                # this is costly as callbackmaps are held. Only set high if needed.
+  responseMethodsTimeout: 1000
+
+  numPacketHistory: 15000      #combined size of send history buffer + send queue
+  maxSendPacketQueueSize: 500    #how many slots of packageHistory are used as send queue
+
+  receiveBufferPackets: 100    #number of received packets pre-buffered in case of a gap
+  sendPauseMicros: 30            #the smaller the faster, the larger buffers are required (send+receive), the more retransmissions will occur
+                                 #if retransmission get to high, throuput will worsen. Tune conservatively
+
+- name: stream_1                #name of
+  flowControlClass: null        #turn off flow control
+
+  transport: s1                #name of transport defined above
+  topic: 1                      #topic on the transport associated with this
+  serviceClass: de.ruedigermoeller.fastcast.test.UnorderedReceiver
+
+  maxOpenRespondedCalls:   500  # how many unanswered calls with results (request-response) can be unanswered at a time.
+                                # this is costly as callbackmaps are held. Only set high if needed.
+  responseMethodsTimeout: 1000
+
+  numPacketHistory: 15000      #combined size of send history buffer + send queue
+  maxSendPacketQueueSize: 500    #how many slots of packageHistory are used as send queue
+
+  receiveBufferPackets: 100      #number of received packets pre-buffered in case of a gap
+  sendPauseMicros: 30            #the smaller the faster, the larger buffers are required (send+receive), the more retransmissions will occur
+                                 #if retransmission get to high, throuput will worsen. Tune conservatively

@@ -1,0 +1,48 @@
+# name of cluster
+clusterName: test
+
+###########################################################################################################
+# define technical transport topics
+# a transport is defined by a network adapter, a listening address and a port. google 'crosstalking' in case u run unix
+
+transports:
+
+- name: default
+  # address of network adapter,
+  ifacAdr: 127.0.0.1
+  mcastAdr: 230.9.9.10
+  port: 45556
+
+  dgramsize: 1000
+  # needs to be true in order to run several processes on one machine
+  loopBack: true
+
+  # in java we like large buffers to minimize packet loss due to GC jitter
+  receiveBufferSize: 25000000
+  sendBufferSize: 640000
+
+  #misc
+  trafficClass: 16
+  ttl: 2
+  transportType: MCAST_NIO_SOCKET
+
+- name: lolat
+  dgramsize: 500
+  # size of shared mem buffer
+  receiveBufferSize: 25000000
+
+  #misc
+  transportType: MCAST_IPC
+  queueFile: /test/queue1.bin
+
+topics:
+
+- name: latency
+  transport: lolat
+  topic: 0
+  serviceClass: de.ruedigermoeller.fastcast.test.LatencyTest$LatencyService
+  sendPauseMicros: 0
+  maxSendPacketQueueSize: 0
+  decodeInTransportThread: true
+  optForLatency: true
+  useSpinlockInSendQueue: true

@@ -633,15 +633,18 @@ public class FastCast implements FSTObjectInput.ConditionalCallback, FCRemoting 
                         } else {
 //                            System.out.println("  omitted cbid "+fstObjectInput.readFLong());
                         }
-                    } else if (listenMethods && code == HEARTBEAT) {
+                    } else if (code == HEARTBEAT) {
 //                        System.out.println("heartbeat from "+sender);
-                        long now = System.currentTimeMillis();
-                        topic.registerHeartBeat(sender, now);
-                        if ( now-ct.lastSenderCleanUp > topic.getConf().getSenderTimeoutMillis() ) {
-                            List<String> timedOutSenders = topic.getTimedOutSenders(now, 30000);
-                            topic.removeSenders(timedOutSenders);
-                            topic.getChannelDispatcher().cleanup(timedOutSenders, topic.getTopic() );
-                            ct.lastSenderCleanUp = now;
+//                        if ( listenMethods ) 
+                        {
+                            long now = System.currentTimeMillis();
+                            topic.registerHeartBeat(sender, now);
+                            if ( now-ct.lastSenderCleanUp > topic.getConf().getSenderTimeoutMillis() ) {
+                                List<String> timedOutSenders = topic.getTimedOutSenders(now, 30000);
+                                topic.removeSenders(timedOutSenders);
+                                topic.getChannelDispatcher().cleanup(timedOutSenders, topic.getTopic() );
+                                ct.lastSenderCleanUp = now;
+                            }
                         }
                     } else {
                         if ( listenMethods )
