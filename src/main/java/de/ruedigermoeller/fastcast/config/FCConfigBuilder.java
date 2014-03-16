@@ -2,6 +2,7 @@ package de.ruedigermoeller.fastcast.config;
 
 import de.ruedigermoeller.fastcast.service.FCMembership;
 import de.ruedigermoeller.fastcast.transport.FCSocketConf;
+import de.ruedigermoeller.fastcast.util.FCLog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,6 +34,12 @@ public class FCConfigBuilder {
     String nodeName;
     ArrayList<FCSocketConf> trans = new ArrayList<>();
     ArrayList<FCTopicConf> topics = new ArrayList<>();
+    int loglevel = FCLog.INFO;
+
+    public FCConfigBuilder loglevel(int levelFCLog) {
+        loglevel = levelFCLog;
+        return this;
+    }
 
     public class TopicBuilder {
         String transName;
@@ -260,6 +267,7 @@ public class FCConfigBuilder {
             doubles.add(topicId);
         }
         conf.setTopics(tops);
+        conf.setLogLevel(loglevel);
         return conf;
     }
 

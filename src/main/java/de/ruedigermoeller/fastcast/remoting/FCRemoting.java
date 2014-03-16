@@ -62,17 +62,21 @@ public interface FCRemoting {
 
     /**
      * starts sending on the given topic
-     * @param topicName
+     * use this for ConfigBuilder based configs. Directly returns topic
+     * @param topic
+     * @param fcBinaryTopicServiceClass
+     * @param <T>
+     * @return
+     * @throws Exception
      */
-    FCRemoteServiceProxy startSending(String topicName);
-    FCRemoteServiceProxy startSending(String topic, Class<? extends FCTopicService> fcBinaryTopicServiceClass) throws Exception;
+    <T extends FCTopicService> T startSending(String topic, Class<T> fcBinaryTopicServiceClass) throws Exception;
     void stopReceiving(String topicName);
 
     /**
      * starts listening on the given topic
      * @param topicName
      */
-    void startReceiving(String topicName);
+    //void startReceiving(String topicName);
     void startReceiving(String topicName, FCBinaryMessageListener listener);
     void startReceiving(String topicName, FCTopicService listener);
 

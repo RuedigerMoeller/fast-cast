@@ -52,7 +52,7 @@ public class FCLog {
         get().warn(th);
     }
 
-    int logLevel = WARN;
+    int logLevel = INFO;
 
     public int getLogLevel() {
         return logLevel;

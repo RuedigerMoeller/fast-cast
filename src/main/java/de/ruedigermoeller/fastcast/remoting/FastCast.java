@@ -15,6 +15,7 @@ import de.ruedigermoeller.heapoff.structs.unsafeimpl.FSTStructFactory;
 import de.ruedigermoeller.serialization.FSTConfiguration;
 import de.ruedigermoeller.serialization.FSTObjectInput;
 import de.ruedigermoeller.serialization.FSTObjectOutput;
+import de.ruedigermoeller.serialization.util.FSTUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -207,8 +208,8 @@ public class FastCast implements FSTObjectInput.ConditionalCallback, FCRemoting 
         startReceiving(topicName);
     }
 
-    @Override
-    public void startReceiving(String topicName) {
+    // removed from public interface, confusion on how to init
+    void startReceiving(String topicName) {
         TopicEntry topic = getTopic(topicName);
         try {
             if ( topic.getService() == null ) {
@@ -216,7 +217,7 @@ public class FastCast implements FSTObjectInput.ConditionalCallback, FCRemoting 
             }
             initServiceClz(topic, topic.getServiceClazz());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw FSTUtil.rethrow(e);
         }
         if ( topic.hasRemoteResultCalls() && ! topic.getChannelDispatcher().hasSender(topic) ) {
             startSending(topicName);
@@ -241,17 +242,16 @@ public class FastCast implements FSTObjectInput.ConditionalCallback, FCRemoting 
         startReceiving(topicName);
     }
 
-    public FCRemoteServiceProxy startSending(String topic, Class<? extends FCTopicService> fcBinaryTopicServiceClass) throws Exception {
+    public <T extends FCTopicService> T startSending(String topic, Class<T> fcBinaryTopicServiceClass) throws Exception {
         TopicEntry te = getTopic(topic);
         // fixme: remove double values in conf and topicentry
         te.getConf().setServiceClass(fcBinaryTopicServiceClass.getName());
         installService(te);
         startSending(topic);
-        return te.getServiceProxy();
+        return (T) te.getServiceProxy();
     }
 
-    @Override
-    public FCRemoteServiceProxy startSending(String topicName) {
+    FCRemoteServiceProxy startSending(String topicName) {
         TopicEntry topic = getTopic(topicName);
         FCTransportDispatcher dispatcher = topic.getChannelDispatcher();
         dispatcher.installSender(topic);

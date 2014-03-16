@@ -11,7 +11,7 @@ import de.ruedigermoeller.heapoff.structs.Templated;
  */
 public class RetransPacket extends Packet {
 
-    // 21 entries
+    // 21 entries struct template
     @Templated protected RetransEntry[] retransEntries = {
         new RetransEntry(),
         null,null,null,null,null,

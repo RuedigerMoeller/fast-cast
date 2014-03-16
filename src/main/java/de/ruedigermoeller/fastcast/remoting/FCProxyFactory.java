@@ -161,7 +161,7 @@ public class FCProxyFactory {
                                     body+=" out.writeFByteArr( $"+(j+1)+");";
                                 } else
                                 if ( parameterType == CtClass.charType ) {
-                                    body+=" out.writeFCharArr( $"+(j+1)+");";
+                                    body+=" out.writeCCharArr( $"+(j+1)+");";
                                 } else
                                 if ( parameterType == CtClass.shortType ) {
                                     body+=" out.writeFShortArr( $"+(j+1)+");";
