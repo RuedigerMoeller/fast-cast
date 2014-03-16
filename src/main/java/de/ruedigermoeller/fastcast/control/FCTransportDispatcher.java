@@ -26,6 +26,8 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class FCTransportDispatcher {
 
+    public static final int IDLE_SPIN_LOCK_PARK_NANOS = 30*1000;
+    public static final int IDLE_SPIN_IDLE_COUNT = 1000*10;
     public static int MAX_NUM_TOPICS = 256;
     Transport trans;
 
@@ -149,11 +151,11 @@ public class FCTransportDispatcher {
                 } else {
                     nothingSentCount++;
                 }
-                if ( !packetSendBuffer.useSpinLock() && nothingSentCount > 1000 ) {
+                if ( !packetSendBuffer.useSpinLock() && nothingSentCount > IDLE_SPIN_IDLE_COUNT) {
                     Object sendWakeupLock = packetSendBuffer.getSendWakeupLock();
                     nothingSentCount = 0;
                     synchronized (sendWakeupLock) {
-                        sendWakeupLock.wait(0,1000*50);
+                        sendWakeupLock.wait(0, IDLE_SPIN_LOCK_PARK_NANOS);
                     }
                 } 
                 count++;
@@ -192,8 +194,8 @@ public class FCTransportDispatcher {
                     idleCount = 0;
                 } else {
                     idleCount++;
-                    if ( idleCount > 1000 ) {
-                        LockSupport.parkNanos(50*1000);
+                    if ( idleCount > IDLE_SPIN_IDLE_COUNT ) {
+                        LockSupport.parkNanos(IDLE_SPIN_LOCK_PARK_NANOS);
                     }
                 }
             } catch (IOException e) {
@@ -262,6 +264,7 @@ public class FCTransportDispatcher {
                     }
                 }
             }
+            return true;
         } 
         return false;
     }

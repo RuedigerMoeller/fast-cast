@@ -21,7 +21,7 @@ import java.io.IOException;
 //@PerSenderThread(true) // methods can be multithreaded ! [being single threaded will be faster 99% of time]
 public class BenchTopicService extends FCTopicService {
 
-    private static final boolean SOCKET = false;
+    private static final boolean SOCKET = true; 
 
     public static FCClusterConfig getClusterConfig() {
         FCClusterConfig conf = null;
@@ -31,7 +31,7 @@ public class BenchTopicService extends FCTopicService {
             int portBase = 55555;
             conf = FCConfigBuilder.New()
                     .socketTransport("default_transport", "interface", "230.10.10.10", portBase)
-                      .topic("binbench", 0, 12000, 5) // binary + fastcall
+                      .topic("binbench", 0, 12000, 5) 
                               //~ 14.000 = 1 GBit network saturation
                               //~ 20.000-30.000 = Local host on newer hardware (i7,3.x GhZ)
                       .setRequestRespOptions(20000,2000)
@@ -44,8 +44,8 @@ public class BenchTopicService extends FCTopicService {
         } else {
             // only one sharedmem transport per VM allowed on linux
             conf = FCConfigBuilder.New()
-                    .sharedMemTransport("default_transport",new File("/tmp/benchqueue.mem"),200,24000)
-                        .topic("binbench", 0, 25000, 2) // binary + fastcall
+                    .sharedMemTransport("default_transport",new File("/tmp/benchqueue.mem"),500,8000)
+                        .topic("binbench", 0, 20000, 5) 
                         .membership("stats",2)
                         .end()
                     .build();
