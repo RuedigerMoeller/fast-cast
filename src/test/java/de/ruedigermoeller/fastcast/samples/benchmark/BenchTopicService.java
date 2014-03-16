@@ -21,29 +21,35 @@ import java.io.IOException;
 //@PerSenderThread(true) // methods can be multithreaded ! [being single threaded will be faster 99% of time]
 public class BenchTopicService extends FCTopicService {
 
-    public static FCClusterConfig getClusterConfig() {
-        // configure a cluster programatically (for larger scale apps one should prefer config files)
-        int portBase = 55555;
-        FCClusterConfig conf = FCConfigBuilder.New()
-                .socketTransport("default_transport", "interface", "230.10.10.10", portBase)
-                  .topic("binbench", 0, 12000, 5) // binary + fastcall
-                          //~ 14.000 = 1 GBit network saturation
-                          //~ 20.000-30.000 = Local host on newer hardware (i7,3.x GhZ)
-                  .setRequestRespOptions(20000,2000)
-                  .end()
-                // run topic stats on different transport to reduce effect on benchmarking
-                .socketTransport("stats_transport", "interface", "230.10.10.11", portBase + 1)
-                  .membership("stats", 2)
-                  .end()
-                .build();
+    private static final boolean SOCKET = false;
 
-        // only one sharedmem transport per VM allowed on linux
-//        FCClusterConfig conf = FCConfigBuilder.New()
-//                .sharedMemTransport("default_transport",new File("/tmp/benchqueue.mem"),200,24000)
-//                    .topic("binbench", 0, 25000, 2) // binary + fastcall
-//                    .membership("stats",2)
-//                    .end()
-//                .build();
+    public static FCClusterConfig getClusterConfig() {
+        FCClusterConfig conf = null;
+        
+        if ( SOCKET ) {        
+            // configure a cluster programatically (for larger scale apps one should prefer config files)
+            int portBase = 55555;
+            conf = FCConfigBuilder.New()
+                    .socketTransport("default_transport", "interface", "230.10.10.10", portBase)
+                      .topic("binbench", 0, 12000, 5) // binary + fastcall
+                              //~ 14.000 = 1 GBit network saturation
+                              //~ 20.000-30.000 = Local host on newer hardware (i7,3.x GhZ)
+                      .setRequestRespOptions(20000,2000)
+                      .end()
+                    // run topic stats on different transport to reduce effect on benchmarking
+                    .socketTransport("stats_transport", "interface", "230.10.10.11", portBase + 1)
+                      .membership("stats", 2)
+                      .end()
+                    .build();
+        } else {
+            // only one sharedmem transport per VM allowed on linux
+            conf = FCConfigBuilder.New()
+                    .sharedMemTransport("default_transport",new File("/tmp/benchqueue.mem"),200,24000)
+                        .topic("binbench", 0, 25000, 2) // binary + fastcall
+                        .membership("stats",2)
+                        .end()
+                    .build();
+        }
 
 
         // unsupported by builder ..
@@ -58,7 +64,6 @@ public class BenchTopicService extends FCTopicService {
             // write out config to enable ClusterView
             new File("/tmp").mkdir(); // windoze ..
             conf.write("/tmp/bench.yaml");
-
         } catch (IOException e) {
             e.printStackTrace();
         }

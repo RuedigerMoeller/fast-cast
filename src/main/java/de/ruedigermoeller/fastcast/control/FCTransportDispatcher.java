@@ -15,6 +15,7 @@ import de.ruedigermoeller.heapoff.structs.structtypes.StructString;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.List;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created with IntelliJ IDEA.
@@ -152,9 +153,9 @@ public class FCTransportDispatcher {
                     Object sendWakeupLock = packetSendBuffer.getSendWakeupLock();
                     nothingSentCount = 0;
                     synchronized (sendWakeupLock) {
-                        sendWakeupLock.wait(0,1000);
+                        sendWakeupLock.wait(0,1000*50);
                     }
-                }
+                } 
                 count++;
                 if ( count % 100 == 0 ) {
                     long now = System.currentTimeMillis();
@@ -184,16 +185,24 @@ public class FCTransportDispatcher {
         byte[] receiveBuf = new byte[trans.getConf().getDgramsize()];
         DatagramPacket p = new DatagramPacket(receiveBuf,receiveBuf.length);
         receivedPacket = (Packet) alloc.newStruct(new Packet());
+        int idleCount = 0;
         while(true) {
             try {
-                receiveDatagram(p);
+                if (receiveDatagram(p)) {
+                    idleCount = 0;
+                } else {
+                    idleCount++;
+                    if ( idleCount > 1000 ) {
+                        LockSupport.parkNanos(50*1000);
+                    }
+                }
             } catch (IOException e) {
                 FCLog.log(e);
             }
         }
     }
 
-    private void receiveDatagram(DatagramPacket p) throws IOException {
+    private boolean receiveDatagram(DatagramPacket p) throws IOException {
         if ( trans.receive(p) ) {
             receivedPacket.baseOn(p.getData(), p.getOffset());
 
@@ -206,10 +215,10 @@ public class FCTransportDispatcher {
 
                 if ( topic > MAX_NUM_TOPICS || topic < 0 ) {
                     FCLog.get().warn("foreign traffic");
-                    return;
+                    return true;
                 }
                 if ( receiver[topic] == null && sender[topic] == null) {
-                    return;
+                    return true;
                 }
 
                 Class type = receivedPacket.getPointedClass();
@@ -217,7 +226,7 @@ public class FCTransportDispatcher {
                 if ( type == DataPacket.class )
                 {
                     if ( receiver[topic] == null )
-                        return;
+                        return true;
                     if (
                         ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
                         ( receivedPacketReceiver.equals(nodeId) )
@@ -228,7 +237,7 @@ public class FCTransportDispatcher {
                 } else if ( type == RetransPacket.class )
                 {
                     if ( sender[topic] == null )
-                        return;
+                        return true;
                     if ( receivedPacketReceiver.equals(nodeId) ) {
                         dispatchRetransmissionRequest(receivedPacket, topic);
                     }
@@ -253,7 +262,8 @@ public class FCTransportDispatcher {
                     }
                 }
             }
-        }
+        } 
+        return false;
     }
 
     private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
