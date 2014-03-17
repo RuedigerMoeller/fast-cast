@@ -1,10 +1,14 @@
 
 apply plugin: 'java'
-version="2.03"
+version="2.10"
+fstversion="1.5"
 
 jar.baseName='fastcast'
 
 def javafxLib = "jfxrt.jar"
+
+compileJava.options.debugOptions.debugLevel = "source,lines,vars"
+compileTestJava.options.debugOptions.debugLevel = "source,lines,vars"
 
 def getJavaFXPath(def javafxLib) {
     def javaHome = System.env["JAVA_HOME"]
@@ -23,7 +27,7 @@ repositories {
 dependencies {
     compile group: 'org.yaml', name: 'snakeyaml', version: '1.13'
     compile group: 'org.javassist', name: 'javassist', version: '3.18.1-GA'
-    compile group: 'de.ruedigermoeller', name: 'fst', version: '1.34'
+    compile group: 'de.ruedigermoeller', name: 'fst', version: fstversion
     compile files(getJavaFXPath(javafxLib))
 }
 
@@ -35,12 +39,18 @@ task bigtest(type: Jar) {
     include ('de/ruedigermoeller/fastcast/test/**/*')
 }
 
-task allJar(type: Jar, dependsOn:jar) {
+task copyToLib(type: Copy, dependsOn:jar) {
+    into "$buildDir/output/lib"
+    from configurations.runtime
+}
+build.dependsOn copyToLib
+
+task allJar(type: Jar, dependsOn:copyToLib) {
     archiveName = 'fastcast-'+version+"-onejar.jar"
-    from zipTree('../lib/javassist-3.18.1-GA.jar').matching { true }
-    from zipTree('../lib/fst-1.35.jar').matching { true }
-    from zipTree('./build/libs/fastcast-'+version+'.jar').matching { true }
-    from zipTree('../lib/snakeyaml-1.13.jar').matching { true }
+    from zipTree("$buildDir/output/lib/javassist-3.18.1-GA.jar").matching { true }
+    from zipTree("$buildDir/output/lib/fst-"+fstversion+'.jar').matching { true }
+    from zipTree("$buildDir/libs/fastcast-"+version+'.jar').matching { true }
+    from zipTree("$buildDir/output/lib/snakeyaml-1.13.jar").matching { true }
 }
 
 task release(type: Jar, dependsOn:allJar) {
