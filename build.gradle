@@ -1,12 +1,14 @@
 
 apply plugin: 'java'
-version="2.10"
-fstversion="1.5"
+version="2.11"
+fstversion="1.51"
 
 jar.baseName='fastcast'
 
 def javafxLib = "jfxrt.jar"
 
+targetCompatibility = 1.7
+sourceCompatibility = 1.7
 compileJava.options.debugOptions.debugLevel = "source,lines,vars"
 compileTestJava.options.debugOptions.debugLevel = "source,lines,vars"
 
@@ -20,6 +22,7 @@ def getJavaFXPath(def javafxLib) {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     mavenRepo urls: "https://oss.sonatype.org/content/repositories/releases/"
 }

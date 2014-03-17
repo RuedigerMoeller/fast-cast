@@ -30,10 +30,8 @@ public class ExampleTopicClient {
         remoting.joinCluster(conf, "Caller", null);
 
         // open topic for sending
-        remoting.startSending("rpc", ExampleTopicService.class );
-
         // get proxy object to call remote methods (=send messages to other nodes)
-        sendProxy = (ExampleTopicService) remoting.getRemoteService("rpc");
+        sendProxy = remoting.startSending("rpc", ExampleTopicService.class );
 
     }
 
