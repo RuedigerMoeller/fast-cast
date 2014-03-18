@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Fast-cast : topic based brokerless reliable UDP/SharedMem messaging" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Fast-cast</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/RuedigerMoeller/fast-cast">View on GitHub</a>
+
+          <h1 id="project_title">Fast-cast</h1>
+          <h2 id="project_tagline">topic based brokerless reliable UDP/SharedMem messaging</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/RuedigerMoeller/fast-cast/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/RuedigerMoeller/fast-cast/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="fast-cast" class="anchor" href="#fast-cast"><span class="octicon octicon-link"></span></a>fast-cast</h1>
+
+<p>High performance topic based reliable brokerless UDP messaging ("event-bus") backed by 1:N remote-method metaphor. Up to <strong>12 million</strong> remote calls per <strong>second</strong>. Buffers required to implement NAK protocol are kept offheap, so there is little impact on GC.
+(just moved from gcode, some docs still missing)</p>
+
+<p><strong>download</strong> non-maven release (fat jar):</p>
+
+<p><a href="https://github.com/RuedigerMoeller/fast-cast/releases">https://github.com/RuedigerMoeller/fast-cast/releases</a></p>
+
+<p><strong>maven:</strong></p>
+
+<div class="highlight highlight-xml"><pre><span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>de.ruedigermoeller<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>fast-cast<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;version&gt;</span>2.11<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></div>
+
+<p>Simple Sender/Receiver <strong>example</strong></p>
+
+<p><a href="https://github.com/RuedigerMoeller/fast-cast/tree/master/src/test/java/de/ruedigermoeller/fastcast/samples/topicservice">https://github.com/RuedigerMoeller/fast-cast/tree/master/src/test/java/de/ruedigermoeller/fastcast/samples/topicservice</a></p>
+
+<p><strong>Documentation:</strong></p>
+
+<p><a href="https://github.com/RuedigerMoeller/fast-cast/wiki/Documentation">https://github.com/RuedigerMoeller/fast-cast/wiki/Documentation</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Fast-cast maintained by <a href="https://github.com/RuedigerMoeller">RuedigerMoeller</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
