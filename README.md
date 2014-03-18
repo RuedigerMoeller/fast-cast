@@ -1,7 +1,7 @@
 fast-cast
 =========
 
-High performance topic based reliable brokerless UDP messaging ("event-bus") backed by 1:N remote-method metaphor. Up to 12 million remote calls per second.
+High performance topic based reliable brokerless UDP messaging ("event-bus") backed by 1:N remote-method metaphor. Up to **12 million** remote calls per **second**. Buffers required to implement NAK protocol are kept offheap, so there is little impact on GC.
 (just moved from gcode, some docs still missing)
 
 **download** non-maven release (fat jar):
