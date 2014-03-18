@@ -13,7 +13,7 @@ https://github.com/RuedigerMoeller/fast-cast/releases
 <dependency>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>2.03</version>
+    <version>2.11</version>
 </dependency>
 ```
 
