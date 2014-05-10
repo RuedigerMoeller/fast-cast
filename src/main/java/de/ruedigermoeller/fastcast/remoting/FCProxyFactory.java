@@ -218,8 +218,8 @@ public class FCProxyFactory {
                     }
                     cc.addMethod(method);
                 } else {
-                    if ( originalMethod.getAnnotation(RemoteHelper.class) == null ) {
-                        method.setBody("throw new RuntimeException(\"not a remote method, method must be public void method with Annotation 'RemoteMethod'\");");
+                    if ( originalMethod.getAnnotation(RemoteHelper.class) == null && !"toString".equals(originalMethod.getName()) ) {
+                        method.setBody("throw new RuntimeException(\"not a remote method, method must be public void method with Annotation 'RemoteMethod' \");");
                         cc.addMethod(method);
                     }
                     if ( remote != null ) {
