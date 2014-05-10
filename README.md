@@ -5,6 +5,9 @@ High performance topic based reliable brokerless UDP messaging ("event-bus") bac
 
 [Documentation (converted from gcode, so bad formatting ..)](https://github.com/RuedigerMoeller/fast-cast/wiki/Documentation)
 
+[Example application: KeyValue store broadcasting (multicasts) all changes](https://github.com/RuedigerMoeller/fastcast-sample)
+
+
 WebSite: http://ruedigermoeller.github.io/fast-cast
 
 ```xml
