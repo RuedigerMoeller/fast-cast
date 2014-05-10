@@ -7,8 +7,10 @@ High performance topic based reliable brokerless UDP messaging ("event-bus") bac
 
 WebSite: http://ruedigermoeller.github.io/fast-cast
 
+```xml
 <dependency>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
     <version>2.11</version>
 </dependency>
+```
