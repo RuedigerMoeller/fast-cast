@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>2.11</version>
+    <version>2.12</version>
     <description>a fast brokerless messaging library based on reliable UDP multicast networking</description>
     <url>https://code.google.com/p/fast-cast/</url>
     <licenses>
@@ -42,14 +42,8 @@
             <artifactId>fst</artifactId>
             <version>1.55</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>com.oracle</groupId>-->
-            <!--<artifactId>javafx</artifactId>-->
-            <!--<version>2.2</version>-->
-            <!--<systemPath>${java.home}/lib/jfxrt.jar</systemPath>-->
-            <!--<scope>system</scope>-->
-        <!--</dependency>-->
     </dependencies>
+
     <build>
         <plugins>
 
