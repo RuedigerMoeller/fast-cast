@@ -26,7 +26,7 @@ public interface FCRemotingListener {
 
     /**
      * called if no heartbeats on topic are received from a sender. This happens
-     * if sender is down or has massive GC pauses (>30000). This message can be pretty late
+     * if sender is down or has massive GC pauses (larger 30000). This message can be pretty late
      * (30 seconds).
      *
      * Use FCMembershipService in order to get near time notifications on new/leaving cluster members on a topic.

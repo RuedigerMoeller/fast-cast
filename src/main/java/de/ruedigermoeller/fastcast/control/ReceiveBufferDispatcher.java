@@ -56,7 +56,7 @@ public class ReceiveBufferDispatcher {
     }
 
     /**
-     * if a sender stops sending => remove from map to free memory
+     * if a sender stops sending, remove from map to free memory
      * @param s
      */
     public void cleanup(String s) {

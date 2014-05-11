@@ -56,7 +56,7 @@ public class FCConfigBuilder {
          * topics.
          *
          * @param topicname - name used to retrieve topic related stuff later on
-         * @param topicId - 0 <= unique id < FCDispatcher.MAX_NUM_TOPICS (256 currently)
+         * @param topicId - 0 .. FCDispatcher.MAX_NUM_TOPICS (256 currently)
          * @return
          */
         public TopicBuilder topic( String topicname, int topicId ) {
@@ -67,7 +67,7 @@ public class FCConfigBuilder {
          * add a topic
          *
          * @param topicname - name used to retrieve topic related stuff later on
-         * @param topicId - 0 <= unique id < FCDispatcher.MAX_NUM_TOPICS (256 currently)
+         * @param topicId - 0 .. FCDispatcher.MAX_NUM_TOPICS (256 currently)
          * @param maxDatagramsPerSecond - a DataGram has a default size of 8k, so a value of 1000 sets 8MByte rate limit
          *                              note that history size is by default 5*send rate
          * @return
@@ -81,7 +81,7 @@ public class FCConfigBuilder {
          * add a topic
          *
          * @param topicname - name used to retrieve topic related stuff later on
-         * @param topicId - 0 <= unique id < FCDispatcher.MAX_NUM_TOPICS (256 currently)
+         * @param topicId - 0 .. FCDispatcher.MAX_NUM_TOPICS (256 currently)
          * @param maxDatagramsPerSecond - a DataGram has a default size of 8k, so a value of 1000 sets 8MByte rate limit
          *                              note that off heap history size is set to maxGCPauseSeconds * send rate. This consume
          *                              a lot of memory in case you set up many topics with high throughput
@@ -192,7 +192,7 @@ public class FCConfigBuilder {
      * @param transportName
      * @param networkIface - network adapter ip as told by ipconfig (win) or ifconfig (linux). Under linux on can also use the
      *                     symbolic name given (e.g. 'lo', 'eth0', 'bond0'. Not that FCClusterConfig provides a method to introduce
-     *                     another level of indirection by adding 'name'=>interface ip symbolic interface names
+     *                     another level of indirection by adding 'name' to interface ip symbolic interface names
      * @param multicastIp
      * @param multicastPort
      */

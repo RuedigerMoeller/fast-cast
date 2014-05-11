@@ -12,22 +12,22 @@ import java.nio.channels.FileLock;
 
 /**
  * Copyright (c) 2012, Ruediger Moeller. All rights reserved.
- * <p/>
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * <p/>
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * <p/>
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
- * <p/>
+ *
  * Date: 25.05.13
  * Time: 19:19
  * To change this template use File | Settings | File Templates.
@@ -36,7 +36,7 @@ import java.nio.channels.FileLock;
 /**
  * a shared memory transport implementation using public API (no unsafe or dirty hacks). It uses memory mapped
  * files and filechannel.lock to synchronize concurrent access.
- * Latency (datagramsize < 1000, lowlat config) is 6-7 microseconds on i7/win8, ~12 micros on AMD opteron 2.2Ghz/CentOS.
+ * Latency (datagramsize lesser 1000, lowlat config) is 6-7 microseconds on i7/win8, ~12 micros on AMD opteron 2.2Ghz/CentOS.
  * Throughput is 30% higher compared to local host socket (as long decoding is not the limiting factor). Latency has less jitter
  * and is ~ twice as low compared to local host multicast socket.
  */

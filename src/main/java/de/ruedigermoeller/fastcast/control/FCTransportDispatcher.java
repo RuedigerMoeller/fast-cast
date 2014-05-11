@@ -99,7 +99,7 @@ public class FCTransportDispatcher {
     }
 
     /**
-     * installs & initializes sender thread anmd buffer, sets is to topicEntry given in argunment !!
+     * installs and initializes sender thread and buffer, sets is to topicEntry given in argument !!
      * @param topicEntry
      */
     public void installSender(final TopicEntry topicEntry) {
