@@ -1,7 +1,6 @@
 fast-cast
 =========
 
-Use mvn build, the gradle build is for private use and might not work.
 
 High performance topic based reliable brokerless UDP messaging ("event-bus") backed by 1:N remote-method metaphor. 
 
@@ -19,3 +18,5 @@ WebSite: http://ruedigermoeller.github.io/fast-cast
     <version>LATEST</version>
 </dependency>
 ```
+
+Use mvn build, the gradle build is for private use and might not work.
