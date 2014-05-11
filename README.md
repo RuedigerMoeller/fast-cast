@@ -14,6 +14,6 @@ WebSite: http://ruedigermoeller.github.io/fast-cast
 <dependency>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>2.11</version>
+    <version>LATEST</version>
 </dependency>
 ```
