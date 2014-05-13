@@ -11,11 +11,13 @@ import de.ruedigermoeller.heapoff.bytez.Bytez;
 import de.ruedigermoeller.heapoff.bytez.onheap.HeapBytez;
 import de.ruedigermoeller.heapoff.structs.FSTStructAllocator;
 import de.ruedigermoeller.heapoff.structs.structtypes.StructString;
+import de.ruedigermoeller.kontraktor.Actor;
+import de.ruedigermoeller.kontraktor.Actors;
+import de.ruedigermoeller.kontraktor.impl.DispatcherThread;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.List;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created with IntelliJ IDEA.
@@ -23,6 +25,10 @@ import java.util.concurrent.locks.LockSupport;
  * Date: 8/13/13
  * Time: 11:40 AM
  * To change this template use File | Settings | File Templates.
+ *
+ * listens and sends
+ *
+ *
  */
 public class FCTransportDispatcher {
 
@@ -37,7 +43,8 @@ public class FCTransportDispatcher {
     StructString clusterName;
     StructString nodeId;
 
-    Thread receiverThread, calbackCleaner;
+    Thread calbackCleaner;
+    TransportReceiveActor receiverActor;
     FSTStructAllocator alloc = new FSTStructAllocator(1);
 
     public FCTransportDispatcher(Transport trans, String clusterName, String nodeId) {
@@ -49,11 +56,9 @@ public class FCTransportDispatcher {
         receiver = new ReceiveBufferDispatcher[MAX_NUM_TOPICS];
         sender = new PacketSendBuffer[MAX_NUM_TOPICS];
 
-        receiverThread = new Thread("trans receiver "+trans.getConf().getName()) {
-            public void run() {
-                receiveLoop();
-            }
-        };
+        receiverActor = Actors.SpawnActor(TransportReceiveActor.class);
+        receiverActor.getDispatcher().setName("Receiver Actor");
+        receiverActor.init(trans, clusterName, nodeId, receiver, sender);
 
         calbackCleaner = new Thread("callback cleaner") {
             public void run() {
@@ -61,8 +66,141 @@ public class FCTransportDispatcher {
             }
 
         };
-        receiverThread.start();
         calbackCleaner.start();
+        receiverActor.receiveLoop();
+    }
+
+    public static class TransportReceiveActor extends Actor
+    {
+        // assumed constant
+        String clusterName;
+        String nodeId;
+
+        // shared !!
+        Transport trans;
+        ReceiveBufferDispatcher receiver[]; // fixme. can mutate (slow, uncritical)
+        PacketSendBuffer sender[];          // fixme. can mutate (slow, uncritical)
+
+        FSTStructAllocator alloc = new FSTStructAllocator(1);
+        Packet receivedPacket;
+        byte[] receiveBuf;
+        DatagramPacket packet;
+        int idleCount;
+
+        public void init( Transport transport, String clusterName, String nodeId, ReceiveBufferDispatcher receiver[], PacketSendBuffer sender[] ) {
+            this.trans = transport;
+            receiveBuf = new byte[trans.getConf().getDgramsize()];
+            packet = new DatagramPacket(receiveBuf,receiveBuf.length);
+            receivedPacket = alloc.newStruct(new Packet());
+            this.clusterName = clusterName;
+            this.nodeId = nodeId;
+            idleCount = 0;
+            this.receiver = receiver;
+            this.sender = sender;
+        }
+
+        public void receiveLoop()
+        {
+            try {
+                if (receiveDatagram(packet)) {
+                    idleCount = 0;
+                } else {
+                    idleCount++;
+                    //getDispatcher()
+                    DispatcherThread.yield(idleCount);
+                }
+            } catch (IOException e) {
+                FCLog.log(e);
+            }
+            self().receiveLoop();
+        }
+
+        @Override
+        protected TransportReceiveActor self() {
+            return super.self();
+        }
+
+        private boolean receiveDatagram(DatagramPacket p) throws IOException {
+            if ( trans.receive(p) ) {
+                receivedPacket.baseOn(p.getData(), p.getOffset());
+
+                boolean sameCluster = receivedPacket.getCluster().equals(clusterName);
+                boolean selfSent = receivedPacket.getSender().equals(nodeId);
+
+                if ( sameCluster && ! selfSent) {
+
+                    int topic = receivedPacket.getTopic();
+
+                    if ( topic > MAX_NUM_TOPICS || topic < 0 ) {
+                        FCLog.get().warn("foreign traffic");
+                        return true;
+                    }
+                    if ( receiver[topic] == null && sender[topic] == null) {
+                        return true;
+                    }
+
+                    Class type = receivedPacket.getPointedClass();
+                    StructString receivedPacketReceiver = receivedPacket.getReceiver();
+                    if ( type == DataPacket.class )
+                    {
+                        if ( receiver[topic] == null )
+                            return true;
+                        if (
+                                ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
+                                        ( receivedPacketReceiver.equals(nodeId) )
+                                )
+                        {
+                            dispatchDataPacket(receivedPacket, topic);
+                        }
+                    } else if ( type == RetransPacket.class )
+                    {
+                        if ( sender[topic] == null )
+                            return true;
+                        if ( receivedPacketReceiver.equals(nodeId) ) {
+                            dispatchRetransmissionRequest(receivedPacket, topic);
+                        }
+                    } else if (type == ControlPacket.class )
+                    {
+                        ControlPacket control = (ControlPacket) receivedPacket.cast();
+                        if ( control.getType() == ControlPacket.DROPPED &&
+                                receivedPacketReceiver.equals(nodeId) ) {
+                            ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
+                            if ( receiveBufferDispatcher != null ) {
+                                FCLog.get().warn(nodeId+" has been dropped by "+receivedPacket.getSender()+" on service "+receiveBufferDispatcher.getTopicEntry().getName());
+                                FCTopicService service = receiveBufferDispatcher.getTopicEntry().getService();
+                                if ( service != null ) {
+                                    service.droppedFromReceiving();
+                                }
+                                FCRemotingListener remotingListener = FastCast.getRemoting().getRemotingListener();
+                                if ( remotingListener != null ) {
+                                    remotingListener.droppedFromTopic(receiveBufferDispatcher.getTopicEntry().getTopic(),receiveBufferDispatcher.getTopicEntry().getName());
+                                }
+                                receiver[topic] = null;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private void dispatchRetransmissionRequest(Packet receivedPacket, int topic) throws IOException {
+            RetransPacket retransPacket = (RetransPacket) receivedPacket.cast().detach();
+            sender[topic].addRetransmissionRequest(retransPacket, trans);
+        }
+
+        private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
+            PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
+            DataPacket p = (DataPacket) receivedPacket.cast().detach();
+            RetransPacket retransPacket = buffer.receivePacket(p);
+            if ( retransPacket != null ) {
+                // packet is valid just in this thread
+                if ( PacketSendBuffer.RETRANSDEBUG )
+                    System.out.println("send retrans request " + retransPacket + " " + retransPacket.getClzId());
+                trans.send(new DatagramPacket(retransPacket.getBase().toBytes((int) retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
+            }
+        }
     }
 
     void cleanCBLoop() {
@@ -181,110 +319,7 @@ public class FCTransportDispatcher {
         return packetSendBuffer.putMessage(-1,heartbeat,0,1,true);
     }
 
-    Packet receivedPacket;
-    void receiveLoop()
-    {
-        byte[] receiveBuf = new byte[trans.getConf().getDgramsize()];
-        DatagramPacket p = new DatagramPacket(receiveBuf,receiveBuf.length);
-        receivedPacket = (Packet) alloc.newStruct(new Packet());
-        int idleCount = 0;
-        while(true) {
-            try {
-                if (receiveDatagram(p)) {
-                    idleCount = 0;
-                } else {
-                    idleCount++;
-                    if ( idleCount > IDLE_SPIN_IDLE_COUNT ) {
-                        LockSupport.parkNanos(IDLE_SPIN_LOCK_PARK_NANOS);
-                    }
-                }
-            } catch (IOException e) {
-                FCLog.log(e);
-            }
-        }
-    }
 
-    private boolean receiveDatagram(DatagramPacket p) throws IOException {
-        if ( trans.receive(p) ) {
-            receivedPacket.baseOn(p.getData(), p.getOffset());
-
-            boolean sameCluster = receivedPacket.getCluster().equals(clusterName);
-            boolean selfSent = receivedPacket.getSender().equals(nodeId);
-
-            if ( sameCluster && ! selfSent) {
-
-                int topic = receivedPacket.getTopic();
-
-                if ( topic > MAX_NUM_TOPICS || topic < 0 ) {
-                    FCLog.get().warn("foreign traffic");
-                    return true;
-                }
-                if ( receiver[topic] == null && sender[topic] == null) {
-                    return true;
-                }
-
-                Class type = receivedPacket.getPointedClass();
-                StructString receivedPacketReceiver = receivedPacket.getReceiver();
-                if ( type == DataPacket.class )
-                {
-                    if ( receiver[topic] == null )
-                        return true;
-                    if (
-                        ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
-                        ( receivedPacketReceiver.equals(nodeId) )
-                       )
-                    {
-                        dispatchDataPacket(receivedPacket, topic);
-                    }
-                } else if ( type == RetransPacket.class )
-                {
-                    if ( sender[topic] == null )
-                        return true;
-                    if ( receivedPacketReceiver.equals(nodeId) ) {
-                        dispatchRetransmissionRequest(receivedPacket, topic);
-                    }
-                } else if (type == ControlPacket.class )
-                {
-                    ControlPacket control = (ControlPacket) receivedPacket.cast();
-                    if ( control.getType() == ControlPacket.DROPPED &&
-                         receivedPacketReceiver.equals(nodeId) ) {
-                        ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
-                        if ( receiveBufferDispatcher != null ) {
-                            FCLog.get().warn(nodeId+" has been dropped by "+receivedPacket.getSender()+" on service "+receiveBufferDispatcher.getTopicEntry().getName());
-                            FCTopicService service = receiveBufferDispatcher.getTopicEntry().getService();
-                            if ( service != null ) {
-                                service.droppedFromReceiving();
-                            }
-                            FCRemotingListener remotingListener = FastCast.getRemoting().getRemotingListener();
-                            if ( remotingListener != null ) {
-                                remotingListener.droppedFromTopic(receiveBufferDispatcher.getTopicEntry().getTopic(),receiveBufferDispatcher.getTopicEntry().getName());
-                            }
-                            receiver[topic] = null;
-                        }
-                    }
-                }
-            }
-            return true;
-        } 
-        return false;
-    }
-
-    private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
-        PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
-        DataPacket p = (DataPacket) receivedPacket.cast().detach();
-        RetransPacket retransPacket = buffer.receivePacket(p);
-        if ( retransPacket != null ) {
-            // packet is valid just in this thread
-            if ( PacketSendBuffer.RETRANSDEBUG )
-                System.out.println("send retrans request " + retransPacket + " " + retransPacket.getClzId());
-            trans.send(new DatagramPacket(retransPacket.getBase().toBytes((int) retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
-        }
-    }
-
-    private void dispatchRetransmissionRequest(Packet receivedPacket, int topic) throws IOException {
-        RetransPacket retransPacket = (RetransPacket) receivedPacket.cast().detach();
-        sender[topic].addRetransmissionRequest(retransPacket, trans);
-    }
 
     public void startListening(TopicEntry topic) {
         installReceiver(topic, topic.getMsgReceiver() );
