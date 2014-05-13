@@ -1,8 +1,7 @@
 package de.ruedigermoeller.fastcast.control;
 
+import de.ruedigermoeller.fastcast.config.FCTopicConf;
 import de.ruedigermoeller.fastcast.packeting.TopicEntry;
-import de.ruedigermoeller.fastcast.remoting.FCRemotingListener;
-import de.ruedigermoeller.fastcast.remoting.FCTopicService;
 import de.ruedigermoeller.fastcast.remoting.FastCast;
 import de.ruedigermoeller.fastcast.transport.Transport;
 import de.ruedigermoeller.fastcast.packeting.*;
@@ -11,12 +10,9 @@ import de.ruedigermoeller.heapoff.bytez.Bytez;
 import de.ruedigermoeller.heapoff.bytez.onheap.HeapBytez;
 import de.ruedigermoeller.heapoff.structs.FSTStructAllocator;
 import de.ruedigermoeller.heapoff.structs.structtypes.StructString;
-import de.ruedigermoeller.kontraktor.Actor;
 import de.ruedigermoeller.kontraktor.Actors;
 import de.ruedigermoeller.kontraktor.impl.DispatcherThread;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
 import java.util.List;
 
 /**
@@ -47,18 +43,26 @@ public class FCTransportDispatcher {
     TransportReceiveActor receiverActor;
     FSTStructAllocator alloc = new FSTStructAllocator(1);
 
-    public FCTransportDispatcher(Transport trans, String clusterName, String nodeId) {
+    public FCTransportDispatcher(Transport trans, String clusterNameString, String nodeIdString) {
+
         this.trans = trans;
-        this.nodeId = (StructString) alloc.newStruct( new StructString(nodeId) );
-        this.clusterName = (StructString) alloc.newStruct( new StructString(clusterName) );
+        this.nodeId = (StructString) alloc.newStruct( new StructString(nodeIdString) );
+        this.clusterName = (StructString) alloc.newStruct( new StructString(clusterNameString) );
 
 
         receiver = new ReceiveBufferDispatcher[MAX_NUM_TOPICS];
         sender = new PacketSendBuffer[MAX_NUM_TOPICS];
 
         receiverActor = Actors.SpawnActor(TransportReceiveActor.class);
-        receiverActor.getDispatcher().setName("Receiver Actor");
-        receiverActor.init(trans, clusterName, nodeId, receiver, sender);
+        receiverActor.getDispatcher().setName("Receiver Actor "+trans.getConf().getName());
+        receiverActor.init(trans, this.clusterName, this.nodeId, receiver, sender);
+
+        Thread senderThread = new Thread("trans sender "+trans.getConf().getName()) {
+            public void run() {
+                sendLoop();
+            }
+        };
+        senderThread.start();
 
         calbackCleaner = new Thread("callback cleaner") {
             public void run() {
@@ -68,139 +72,6 @@ public class FCTransportDispatcher {
         };
         calbackCleaner.start();
         receiverActor.receiveLoop();
-    }
-
-    public static class TransportReceiveActor extends Actor
-    {
-        // assumed constant
-        String clusterName;
-        String nodeId;
-
-        // shared !!
-        Transport trans;
-        ReceiveBufferDispatcher receiver[]; // fixme. can mutate (slow, uncritical)
-        PacketSendBuffer sender[];          // fixme. can mutate (slow, uncritical)
-
-        FSTStructAllocator alloc = new FSTStructAllocator(1);
-        Packet receivedPacket;
-        byte[] receiveBuf;
-        DatagramPacket packet;
-        int idleCount;
-
-        public void init( Transport transport, String clusterName, String nodeId, ReceiveBufferDispatcher receiver[], PacketSendBuffer sender[] ) {
-            this.trans = transport;
-            receiveBuf = new byte[trans.getConf().getDgramsize()];
-            packet = new DatagramPacket(receiveBuf,receiveBuf.length);
-            receivedPacket = alloc.newStruct(new Packet());
-            this.clusterName = clusterName;
-            this.nodeId = nodeId;
-            idleCount = 0;
-            this.receiver = receiver;
-            this.sender = sender;
-        }
-
-        public void receiveLoop()
-        {
-            try {
-                if (receiveDatagram(packet)) {
-                    idleCount = 0;
-                } else {
-                    idleCount++;
-                    //getDispatcher()
-                    DispatcherThread.yield(idleCount);
-                }
-            } catch (IOException e) {
-                FCLog.log(e);
-            }
-            self().receiveLoop();
-        }
-
-        @Override
-        protected TransportReceiveActor self() {
-            return super.self();
-        }
-
-        private boolean receiveDatagram(DatagramPacket p) throws IOException {
-            if ( trans.receive(p) ) {
-                receivedPacket.baseOn(p.getData(), p.getOffset());
-
-                boolean sameCluster = receivedPacket.getCluster().equals(clusterName);
-                boolean selfSent = receivedPacket.getSender().equals(nodeId);
-
-                if ( sameCluster && ! selfSent) {
-
-                    int topic = receivedPacket.getTopic();
-
-                    if ( topic > MAX_NUM_TOPICS || topic < 0 ) {
-                        FCLog.get().warn("foreign traffic");
-                        return true;
-                    }
-                    if ( receiver[topic] == null && sender[topic] == null) {
-                        return true;
-                    }
-
-                    Class type = receivedPacket.getPointedClass();
-                    StructString receivedPacketReceiver = receivedPacket.getReceiver();
-                    if ( type == DataPacket.class )
-                    {
-                        if ( receiver[topic] == null )
-                            return true;
-                        if (
-                                ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
-                                        ( receivedPacketReceiver.equals(nodeId) )
-                                )
-                        {
-                            dispatchDataPacket(receivedPacket, topic);
-                        }
-                    } else if ( type == RetransPacket.class )
-                    {
-                        if ( sender[topic] == null )
-                            return true;
-                        if ( receivedPacketReceiver.equals(nodeId) ) {
-                            dispatchRetransmissionRequest(receivedPacket, topic);
-                        }
-                    } else if (type == ControlPacket.class )
-                    {
-                        ControlPacket control = (ControlPacket) receivedPacket.cast();
-                        if ( control.getType() == ControlPacket.DROPPED &&
-                                receivedPacketReceiver.equals(nodeId) ) {
-                            ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
-                            if ( receiveBufferDispatcher != null ) {
-                                FCLog.get().warn(nodeId+" has been dropped by "+receivedPacket.getSender()+" on service "+receiveBufferDispatcher.getTopicEntry().getName());
-                                FCTopicService service = receiveBufferDispatcher.getTopicEntry().getService();
-                                if ( service != null ) {
-                                    service.droppedFromReceiving();
-                                }
-                                FCRemotingListener remotingListener = FastCast.getRemoting().getRemotingListener();
-                                if ( remotingListener != null ) {
-                                    remotingListener.droppedFromTopic(receiveBufferDispatcher.getTopicEntry().getTopic(),receiveBufferDispatcher.getTopicEntry().getName());
-                                }
-                                receiver[topic] = null;
-                            }
-                        }
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        private void dispatchRetransmissionRequest(Packet receivedPacket, int topic) throws IOException {
-            RetransPacket retransPacket = (RetransPacket) receivedPacket.cast().detach();
-            sender[topic].addRetransmissionRequest(retransPacket, trans);
-        }
-
-        private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
-            PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
-            DataPacket p = (DataPacket) receivedPacket.cast().detach();
-            RetransPacket retransPacket = buffer.receivePacket(p);
-            if ( retransPacket != null ) {
-                // packet is valid just in this thread
-                if ( PacketSendBuffer.RETRANSDEBUG )
-                    System.out.println("send retrans request " + retransPacket + " " + retransPacket.getClzId());
-                trans.send(new DatagramPacket(retransPacket.getBase().toBytes((int) retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
-            }
-        }
     }
 
     void cleanCBLoop() {
@@ -251,12 +122,6 @@ public class FCTransportDispatcher {
         if ( topicEntry.getConf().getMaxSendPacketQueueSize() == 0 ) // no sender thread
         {
         } else {
-            Thread senderThread = new Thread("trans sender "+trans.getConf().getName()+" "+topicEntry.getName()) {
-                public void run() {
-                    sendLoop(topicEntry);
-                }
-            };
-            senderThread.start();
         }
     }
 
@@ -266,60 +131,61 @@ public class FCTransportDispatcher {
 
     Bytez heartbeat = new HeapBytez(new byte[]{FastCast.HEARTBEAT});
 
-    private void sendLoop(TopicEntry topic) {
-        while( trans == null || sender[topic.getTopic()] == null ) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                FCLog.log(e);
-            }
+    private boolean sendStep(int topic) {
+        if ( trans == null || sender[topic] == null ) {
+            return false;
         }
-        PacketSendBuffer packetSendBuffer = sender[topic.getTopic()];
+        boolean anyThingSent = false;
+        try {
+            PacketSendBuffer packetSendBuffer = sender[topic];
+            anyThingSent = packetSendBuffer.send(trans);
+        } catch (Exception e) {
+            FCLog.log(e);
+        }
+        return anyThingSent;
+    }
+
+    private void sendLoop() {
+        int idleCount = 0;
+        int iterationCount = 0;
         long lastStat = System.currentTimeMillis();
         long lastHB = System.currentTimeMillis();
-        int count = 0;
-        long flowControlInterval = topic.getConf().getFlowControlInterval();
-        long heartBeatInterval = topic.getConf().getHeartbeatInterval();
-        int nothingSentCount = 0;
-        while(true) {
-            try {
-                boolean anyThingSent = packetSendBuffer.send(trans);
-                if ( anyThingSent ) {
-                    nothingSentCount = 0;
-                } else {
-                    nothingSentCount++;
-                }
-                if ( !packetSendBuffer.useSpinLock() && nothingSentCount > IDLE_SPIN_IDLE_COUNT) {
-                    Object sendWakeupLock = packetSendBuffer.getSendWakeupLock();
-                    nothingSentCount = 0;
-                    synchronized (sendWakeupLock) {
-                        sendWakeupLock.wait(0, IDLE_SPIN_LOCK_PARK_NANOS);
-                    }
-                } 
-                count++;
-                if ( count % 100 == 0 ) {
-                    long now = System.currentTimeMillis();
-                    if ( now - lastStat > flowControlInterval ) {
-                        packetSendBuffer.doFlowControl();
-                        lastStat = now;
-                    }
-                    if ( now - lastHB > heartBeatInterval ) {
-                        boolean succ = putHeartbeat(packetSendBuffer);
-                        if ( succ )
-                            lastHB = now;
-                    }
-                }
-            } catch (Exception e) {
-                FCLog.log(e);
+        while( true ) {
+            int count = 0;
+            for (int i = 0; i < sender.length; i++) {
+                if (sendStep(i))
+                    count++;
             }
+            if (count == 0) {
+                idleCount++;
+            } else {
+                idleCount = 0;
+            }
+            iterationCount++;
+            if ( count % 100 == 0 ) {
+                long now = System.currentTimeMillis();
+                for (int i = 0; i < sender.length; i++) {
+                    PacketSendBuffer packetSendBuffer = sender[i];
+                    if ( packetSendBuffer != null ) {
+                        if (now - lastStat > FCTopicConf.flowControlInterval) {
+                            packetSendBuffer.doFlowControl();
+                            lastStat = now;
+                        }
+                        if (now - lastHB > FCTopicConf.heartbeatInterval) {
+                            boolean succ = putHeartbeat(packetSendBuffer);
+                            if (succ)
+                                lastHB = now;
+                        }
+                    }
+                }
+            }
+            DispatcherThread.yield(idleCount);
         }
     }
 
     public boolean putHeartbeat(PacketSendBuffer packetSendBuffer) {
         return packetSendBuffer.putMessage(-1,heartbeat,0,1,true);
     }
-
-
 
     public void startListening(TopicEntry topic) {
         installReceiver(topic, topic.getMsgReceiver() );

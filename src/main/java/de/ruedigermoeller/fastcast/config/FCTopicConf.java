@@ -11,6 +11,10 @@ import de.ruedigermoeller.fastcast.util.FCLog;
  */
 public class FCTopicConf {
 
+    // fixme: find a better place
+    public static long heartbeatInterval = 200;    // sent per topic, ms. detects senderTimeoutMillis
+    public static long flowControlInterval = 1000; // time window(ms) flow control uses to determine send rate + stats reset rate
+
     String name;
     String transport = "default";
     int topic;
@@ -56,9 +60,6 @@ public class FCTopicConf {
     // if the sender starts sending again, a resync will be done as if the sender has
     // joined the cluster as a new node
     long senderTimeoutMillis = 10000;
-    long heartbeatInterval = 200;    // sent per topic, ms. detects senderTimeoutMillis
-
-    long flowControlInterval = 1000; // time window(ms) flow control uses to determine send rate + stats reset rate
 
     long maxDelayRetransMS = 1; // send retrans
     long maxDelayNextRetransMS = 5;
@@ -254,22 +255,6 @@ public class FCTopicConf {
 
     public void setSenderTimeoutMillis(long senderTimeoutMillis) {
         this.senderTimeoutMillis = senderTimeoutMillis;
-    }
-
-    public long getHeartbeatInterval() {
-        return heartbeatInterval;
-    }
-
-    public void setHeartbeatInterval(long heartbeatInterval) {
-        this.heartbeatInterval = heartbeatInterval;
-    }
-
-    public long getFlowControlInterval() {
-        return flowControlInterval;
-    }
-
-    public void setFlowControlInterval(long flowControlInterval) {
-        this.flowControlInterval = flowControlInterval;
     }
 
     /**

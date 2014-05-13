@@ -34,7 +34,7 @@ public class ThroughputBench {
 
     void initCluster() {
         FCClusterConfig config = FCConfigBuilder.New()
-                .socketTransport("socket", "127.0.0.1", "230.10.10.10", 37777)
+                .socketTransport("socket", "127.0.0.1", "230.10.10.11", 37778)
                   .topic("bench", 1, 8000)
                 .end()
                 .loglevel( FCLog.INFO)
