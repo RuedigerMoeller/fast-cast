@@ -56,10 +56,10 @@ transports:
   queueFile: /tmp/market1.bin
 
 ########################################################################################
-# topics bind service classes to a transport+topic (~topic). think of a topic being a
+# topics bind service classes to a transport+topicId (~topicId). think of a topicId being a
 # separate independent communication  of a transport.
 # Each transport can be divided into MCastSocketTransportQueue.MAX_SCOPE separate topics.
-# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topic
+# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topicId
 # other scopes of the same transport are not affected.
 topics:
 
@@ -67,8 +67,8 @@ topics:
   flowControlClass: null        #turn off flow control
 
   transport: s0                 #name of transport defined above
-  topic: 0                      #topic on the transport associated with this
-  serviceClass: de.ruedigermoeller.fastcast.test.UnorderedReceiver
+  topicId: 0                      #topicId on the transport associated with this
+  serviceClass: de.nustaq.fastcast.test.UnorderedReceiver
 
   maxOpenRespondedCalls:   500  # how many unanswered calls with results (request-response) can be unanswered at a time.
                                 # this is costly as callbackmaps are held. Only set high if needed.
@@ -85,8 +85,8 @@ topics:
   flowControlClass: null        #turn off flow control
 
   transport: s1                #name of transport defined above
-  topic: 1                      #topic on the transport associated with this
-  serviceClass: de.ruedigermoeller.fastcast.test.UnorderedReceiver
+  topicId: 1                      #topicId on the transport associated with this
+  serviceClass: de.nustaq.fastcast.test.UnorderedReceiver
 
   maxOpenRespondedCalls:   500  # how many unanswered calls with results (request-response) can be unanswered at a time.
                                 # this is costly as callbackmaps are held. Only set high if needed.

@@ -65,18 +65,18 @@ transports:
 
 
 ########################################################################################
-# topics bind service classes to a transport+topic (~topic). think of a topic being a
+# topics bind service classes to a transport+topicId (~topicId). think of a topicId being a
 # separate independent communication  of a transport.
 # Each transport can be divided into MCastSocketTransportQueue.MAX_SCOPE separate topics.
-# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topic
+# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topicId
 # other scopes of the same transport are not affected.
 topics:
 
 - name: bench                   #name of
   transport: default           #name of transport defined above
 #  transport: ipc                #name of transport defined above
-  topic: 0                      #topic on the transport associated with this
-  serviceClass: de.ruedigermoeller.fastcast.test.ThroughputBench$BenchService
+  topicId: 0                      #topicId on the transport associated with this
+  serviceClass: de.nustaq.fastcast.test.ThroughputBench$BenchService
 
   DGramRate: 10000
   numPacketHistory: 1000
@@ -88,7 +88,7 @@ topics:
 - name: membership
   autoStart: true
   transport: control
-  topic: 1
-  serviceClass: de.ruedigermoeller.fastcast.service.FCMembership
+  topicId: 1
+  serviceClass: FCMembership
 
 

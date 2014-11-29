@@ -10,8 +10,8 @@ package de.ruedigermoeller.fastcast.bigtest;
 
 import de.ruedigermoeller.fastcast.bigtest.services.HTHost;
 import de.ruedigermoeller.fastcast.bigtest.services.HTListener;
-import de.ruedigermoeller.fastcast.remoting.FCRemoting;
-import de.ruedigermoeller.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.remoting.FCRemoting;
+import org.nustaq.fastcast.remoting.FastCast;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +28,7 @@ public class DataMutatingClient implements HTListener.DataListener {
     }
 
     public void start() {
-        FCRemoting rem = FastCast.getRemoting();
+        FCRemoting rem = FastCast.getFastCast();
         try {
             rem.joinCluster("shared/bigtest.yaml", "MClient", null);
         } catch (IOException e) {

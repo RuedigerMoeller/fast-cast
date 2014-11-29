@@ -1,8 +1,8 @@
 package de.ruedigermoeller.fastcast.bigtest;
 
 import de.ruedigermoeller.fastcast.bigtest.services.HTListener;
-import de.ruedigermoeller.fastcast.remoting.FCRemoting;
-import de.ruedigermoeller.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.remoting.FCRemoting;
+import org.nustaq.fastcast.remoting.FastCast;
 
 import java.io.IOException;
 
@@ -20,7 +20,7 @@ public class PureHTListener implements HTListener.DataListener {
     }
 
     public void start() {
-        FCRemoting rem = FastCast.getRemoting();
+        FCRemoting rem = FastCast.getFastCast();
         try {
             rem.joinCluster("shared/bigtest.yaml", "Listen", null);
         } catch (IOException e) {

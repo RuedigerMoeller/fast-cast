@@ -1,6 +1,6 @@
 package de.ruedigermoeller.fastcast.bigtest.services;
 
-import de.ruedigermoeller.fastcast.remoting.FCTopicService;
+import org.nustaq.fastcast.remoting.FCTopicService;
 
 /**
  * Created with IntelliJ IDEA.

@@ -3,10 +3,10 @@ package de.ruedigermoeller.fastcast.bigtest;
 import de.ruedigermoeller.fastcast.bigtest.services.HTHost;
 import de.ruedigermoeller.fastcast.bigtest.services.HTListener;
 import de.ruedigermoeller.fastcast.bigtest.services.RequestServer;
-import de.ruedigermoeller.fastcast.remoting.FCFutureResultHandler;
-import de.ruedigermoeller.fastcast.remoting.FCRemoting;
-import de.ruedigermoeller.fastcast.remoting.FastCast;
-import de.ruedigermoeller.fastcast.service.FCMembership;
+import org.nustaq.fastcast.remoting.FCFutureResultHandler;
+import org.nustaq.fastcast.remoting.FCRemoting;
+import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.service.FCMembership;
 
 import java.io.IOException;
 
@@ -34,7 +34,7 @@ public class ClusterClientNode {
     }
 
     public void start() {
-        FCRemoting rem = FastCast.getRemoting();
+        FCRemoting rem = FastCast.getFastCast();
         try {
             rem.joinCluster("shared/bigtest.yaml", "Client", null);
         } catch (IOException e) {
@@ -74,7 +74,7 @@ public class ClusterClientNode {
                             System.out.println(obj + " mirror size " + localHTListener.getMirror().size());
                             requestCount = responseCount = 0;
                             tim = now;
-                            FCMembership ship = (FCMembership) FastCast.getRemoting().getService("membership");
+                            FCMembership ship = (FCMembership) FastCast.getFastCast().getService("membership");
                             System.out.println(ship.dumpToString());
                         }
                     }

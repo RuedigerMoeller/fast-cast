@@ -31,8 +31,8 @@ topics:
 
 - name: structbench
   transport: default           #name of transport defined above
-  topic: 0                     #topic on the transport associated with this
-  serviceClass: de.ruedigermoeller.fastcast.test.StructBench
+  topicId: 0                     #topicId on the transport associated with this
+  serviceClass: de.nustaq.fastcast.test.StructBench
 
   numPacketOffHeapHistory: 30000
   sendPauseMicros: 140
@@ -43,7 +43,7 @@ topics:
 - name: membership
   autoStart: true
   transport: control
-  topic: 1
-  serviceClass: de.ruedigermoeller.fastcast.service.FCMembership
+  topicId: 1
+  serviceClass: FCMembership
 
 

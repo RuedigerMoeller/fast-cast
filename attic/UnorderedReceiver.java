@@ -1,6 +1,6 @@
 package de.ruedigermoeller.fastcast.test;
 
-import de.ruedigermoeller.fastcast.remoting.*;
+import org.nustaq.fastcast.remoting.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -55,7 +55,7 @@ public class UnorderedReceiver extends FCTopicService {
     }
 
     public static void main( String arg[] ) throws IOException {
-        FCRemoting fc = FastCast.getRemoting();
+        FCRemoting fc = FastCast.getFastCast();
         fc.joinCluster("test/unordered.yaml", "Bench", null);
         fc.startReceiving("stream_0");
         fc.startReceiving("stream_1");

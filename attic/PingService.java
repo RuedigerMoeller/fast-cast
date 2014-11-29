@@ -1,9 +1,9 @@
 package de.ruedigermoeller.fastcast.test;
 
-import de.ruedigermoeller.fastcast.remoting.FCRemoting;
-import de.ruedigermoeller.fastcast.remoting.FCTopicService;
-import de.ruedigermoeller.fastcast.remoting.FastCast;
-import de.ruedigermoeller.fastcast.remoting.RemoteMethod;
+import org.nustaq.fastcast.remoting.FCRemoting;
+import org.nustaq.fastcast.remoting.FCTopicService;
+import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.remoting.RemoteMethod;
 
 import java.io.IOException;
 
@@ -40,7 +40,7 @@ public class PingService extends FCTopicService {
     }
 
     public static void main( String arg[] ) throws IOException {
-        FCRemoting fc = FastCast.getRemoting();
+        FCRemoting fc = FastCast.getFastCast();
         fc.joinCluster("test/pingpong.yaml", "Ping", null);
 
         fc.startReceiving("ping");

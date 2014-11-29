@@ -1,6 +1,6 @@
 package de.ruedigermoeller.fastcast.test;
 
-import de.ruedigermoeller.fastcast.remoting.*;
+import org.nustaq.fastcast.remoting.*;
 
 import java.io.IOException;
 
@@ -75,7 +75,7 @@ public class LatencyTest {
     }
 
     public static void main(String arg[]) throws IOException, InterruptedException {
-        FCRemoting fc = FastCast.getRemoting();
+        FCRemoting fc = FastCast.getFastCast();
         fc.joinCluster("test/latency.yaml", "LatTest", null);
         fc.startSending("latency");
         fc.startReceiving("latency");

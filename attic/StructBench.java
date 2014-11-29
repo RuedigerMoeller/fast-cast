@@ -1,10 +1,9 @@
 package de.ruedigermoeller.fastcast.test;
 
-import de.ruedigermoeller.fastcast.packeting.TopicStats;
-import de.ruedigermoeller.fastcast.remoting.*;
-import de.ruedigermoeller.fastcast.util.FCUtils;
+import org.nustaq.fastcast.packeting.TopicStats;
+import org.nustaq.fastcast.remoting.*;
+import org.nustaq.fastcast.util.FCUtils;
 import de.ruedigermoeller.heapoff.bytez.Bytez;
-import de.ruedigermoeller.heapoff.bytez.onheap.HeapBytez;
 import de.ruedigermoeller.heapoff.structs.FSTStruct;
 import de.ruedigermoeller.heapoff.structs.FSTStructAllocator;
 import de.ruedigermoeller.heapoff.structs.structtypes.StructString;
@@ -152,7 +151,7 @@ public class StructBench extends FCTopicService {
         // NEVER FORGET WHEN REMOTING STRUCTS
         // NEVER FORGET WHEN REMOTING STRUCTS
 
-        FCRemoting fc = FastCast.getRemoting();
+        FCRemoting fc = FastCast.getFastCast();
         fc.joinCluster("structbench.yaml", "Bench", null);
         if ( arg.length == 1 ) // => sender
         {

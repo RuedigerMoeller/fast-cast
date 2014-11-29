@@ -61,10 +61,10 @@ transports:
 
 
 ########################################################################################
-# topics bind service classes to a transport+topic (~topic). think of a topic being a
+# topics bind service classes to a transport+topicId (~topicId). think of a topicId being a
 # separate independent communication  of a transport.
 # Each transport can be divided into MCastSocketTransportQueue.MAX_SCOPE separate topics.
-# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topic
+# Separation has the benefit, that in case of retransmission (oversaturation/delays) on one topicId
 # other scopes of the same transport are not affected.
 topics:
 
@@ -72,8 +72,8 @@ topics:
   #transport: default           #name of transport defined above
   transport: ipc                #name of transport defined above
 
-  topic: 0                      #topic on the transport associated with this
-  serviceClass: de.ruedigermoeller.fastcast.test.PingService
+  topicId: 0                      #topicId on the transport associated with this
+  serviceClass: de.nustaq.fastcast.test.PingService
 
   numPacketHistory: 20000      #combined size of send history buffer + send queue
   maxSendPacketQueueSize: 1      #how many slots of packageHistory are used as send queue
@@ -86,8 +86,8 @@ topics:
   #transport: default           #name of transport defined above
   transport: ipc                #name of transport defined above
 
-  topic: 1                      #topic on the transport associated with this
-  serviceClass: de.ruedigermoeller.fastcast.test.PongService
+  topicId: 1                      #topicId on the transport associated with this
+  serviceClass: de.nustaq.fastcast.test.PongService
 
   numPacketHistory: 20000      #combined size of send history buffer + send queue
   maxSendPacketQueueSize: 1      #how many slots of packageHistory are used as send queue

@@ -1,9 +1,9 @@
 package de.ruedigermoeller.fastcast.gui;
 
-import de.ruedigermoeller.fastcast.config.FCClusterConfig;
-import de.ruedigermoeller.fastcast.config.FCTopicConf;
-import de.ruedigermoeller.fastcast.remoting.FastCast;
-import de.ruedigermoeller.fastcast.service.FCMembership;
+import org.nustaq.fastcast.config.FCClusterConfig;
+import org.nustaq.fastcast.config.FCSubscriberConf;
+import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.service.FCMembership;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -146,11 +146,11 @@ public class ClusterViewApp extends Application implements FCMembership.MemberSh
             System.exit(0);
         }
         try {
-            FCTopicConf toJoin = null;
+            FCSubscriberConf toJoin = null;
             FCClusterConfig fcClusterConfig = FCClusterConfig.read(yamlFinam);
-            FCTopicConf[] topics = (FCTopicConf[]) fcClusterConfig.getTopics();
+            FCSubscriberConf[] topics = (FCSubscriberConf[]) fcClusterConfig.getTopics();
             for (int i = 0; i < topics.length; i++) {
-                FCTopicConf topic = topics[i];
+                FCSubscriberConf topic = topics[i];
                 if ( topic.getServiceClass() != null && topic.getServiceClass().equals(FCMembership.class.getName()) ) {
                     toJoin = topic;
                     break;
@@ -160,13 +160,13 @@ public class ClusterViewApp extends Application implements FCMembership.MemberSh
                 System.out.println("no FCMembership Service found");
                 System.exit(0);
             }
-            FastCast.getRemoting().joinCluster(yamlFinam, "gui", null);
+            FastCast.getFastCast().joinCluster(yamlFinam, "gui", null);
             if (!toJoin.isAutoStart()) {
-                FastCast.getRemoting().start(toJoin.getName());
+                FastCast.getFastCast().start(toJoin.getName());
             }
-            localMembership = (FCMembership) FastCast.getRemoting().getService(toJoin.getName());
+            localMembership = (FCMembership) FastCast.getFastCast().getService(toJoin.getName());
             localMembership.setDoLogClusterMessages(true);
-            remoteMembership = (FCMembership) FastCast.getRemoting().getRemoteService(toJoin.getName());
+            remoteMembership = (FCMembership) FastCast.getFastCast().getRemoteService(toJoin.getName());
             localMembership.setListener(this);
         } catch (IOException e) {
             e.printStackTrace();

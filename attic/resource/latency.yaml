@@ -39,8 +39,8 @@ topics:
 
 - name: latency
   transport: lolat
-  topic: 0
-  serviceClass: de.ruedigermoeller.fastcast.test.LatencyTest$LatencyService
+  topicId: 0
+  serviceClass: de.nustaq.fastcast.test.LatencyTest$LatencyService
   sendPauseMicros: 0
   maxSendPacketQueueSize: 0
   decodeInTransportThread: true

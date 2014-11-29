@@ -30,16 +30,16 @@ repositories {
 dependencies {
     compile group: 'org.yaml', name: 'snakeyaml', version: '1.13'
     compile group: 'org.javassist', name: 'javassist', version: '3.18.1-GA'
-    compile group: 'de.ruedigermoeller', name: 'fst', version: fstversion
+    compile group: 'de.nustaq', name: 'fst', version: fstversion
     compile files(getJavaFXPath(javafxLib))
 }
 
 task bigtest(type: Jar) {
     archiveName = 'bigtest.jar'
     from sourceSets.test.output
-    include ('de/ruedigermoeller/fastcast/samples/**/*')
-    include ('de/ruedigermoeller/fastcast/bigtest/**/*')
-    include ('de/ruedigermoeller/fastcast/test/**/*')
+    include ('de/nustaq/fastcast/samples/**/*')
+    include ('de/nustaq/fastcast/bigtest/**/*')
+    include ('de/nustaq/fastcast/test/**/*')
 }
 
 task copyToLib(type: Copy, dependsOn:jar) {

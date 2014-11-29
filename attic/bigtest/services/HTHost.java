@@ -1,10 +1,10 @@
 package de.ruedigermoeller.fastcast.bigtest.services;
 
-import de.ruedigermoeller.fastcast.remoting.FCFutureResultHandler;
-import de.ruedigermoeller.fastcast.remoting.FCTopicService;
-import de.ruedigermoeller.fastcast.remoting.RemoteMethod;
-import de.ruedigermoeller.fastcast.service.FCMembership;
-import de.ruedigermoeller.fastcast.util.FCUtils;
+import org.nustaq.fastcast.remoting.FCFutureResultHandler;
+import org.nustaq.fastcast.remoting.FCTopicService;
+import org.nustaq.fastcast.remoting.RemoteMethod;
+import org.nustaq.fastcast.service.FCMembership;
+import org.nustaq.fastcast.util.FCUtils;
 
 import java.util.Iterator;
 import java.util.Map;

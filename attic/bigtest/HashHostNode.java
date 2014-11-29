@@ -1,7 +1,7 @@
 package de.ruedigermoeller.fastcast.bigtest;
 
-import de.ruedigermoeller.fastcast.remoting.FCRemoting;
-import de.ruedigermoeller.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.remoting.FCRemoting;
+import org.nustaq.fastcast.remoting.FastCast;
 
 import java.io.IOException;
 
@@ -15,7 +15,7 @@ import java.io.IOException;
 public class HashHostNode {
 
     public static void main( String arg[] ) throws IOException {
-        FCRemoting rem = FastCast.getRemoting();
+        FCRemoting rem = FastCast.getFastCast();
         rem.joinCluster("shared/bigtest.yaml", "HTHost", null);
         rem.startSending("htlisten");
         rem.start("hthost");

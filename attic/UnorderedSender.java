@@ -1,6 +1,8 @@
 package de.ruedigermoeller.fastcast.test;
 
-import de.ruedigermoeller.fastcast.remoting.*;
+import org.nustaq.fastcast.remoting.FCRemoting;
+import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.remoting.Unordered;
 
 import java.io.IOException;
 
@@ -22,7 +24,7 @@ public class UnorderedSender {
     public UnorderedSender(int stream) {
         try {
             if ( fc == null ) {
-                fc = FastCast.getRemoting();
+                fc = FastCast.getFastCast();
                 fc.joinCluster("test/unordered.yaml", "Bench", null);
             }
             String topic = "stream_" + stream;

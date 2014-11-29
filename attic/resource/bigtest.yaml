@@ -50,8 +50,8 @@ topics:
 
 - name: hthost
   transport: datawrite
-  topic: 1
-  serviceClass: de.ruedigermoeller.fastcast.bigtest.services.HTHost
+  topicId: 1
+  serviceClass: de.nustaq.fastcast.bigtest.services.HTHost
   DGramRate: 1000
   numPacketHistory: 1000
   numPacketOffHeapHistory: 30000
@@ -61,8 +61,8 @@ topics:
 
 - name: htlisten
   transport: datalisten
-  topic: 2
-  serviceClass: de.ruedigermoeller.fastcast.bigtest.services.HTListener
+  topicId: 2
+  serviceClass: de.nustaq.fastcast.bigtest.services.HTListener
   sendPauseMicros: 1400
   numPacketHistory: 1000
   numPacketOffHeapHistory: 30000
@@ -72,8 +72,8 @@ topics:
 
 - name: rqserver
   transport: reqresp
-  topic: 3
-  serviceClass: de.ruedigermoeller.fastcast.bigtest.services.RequestServer
+  topicId: 3
+  serviceClass: de.nustaq.fastcast.bigtest.services.RequestServer
   sendPauseMicros: 1000
   numPacketHistory: 1000
   numPacketOffHeapHistory: 30000
@@ -83,15 +83,15 @@ topics:
 
 - name: binary
   transport: reqresp
-  topic: 4
-  serviceClass: de.ruedigermoeller.fastcast.bigtest.services.BinaryReceiver
+  topicId: 4
+  serviceClass: de.nustaq.fastcast.bigtest.services.BinaryReceiver
   sendPauseMicros: 400
 
 - name: membership
   autoStart: true
   transport: default
-  topic: 5
-  serviceClass: de.ruedigermoeller.fastcast.service.FCMembership
+  topicId: 5
+  serviceClass: FCMembership
   numPacketHistory: 100
   numPacketOffHeapHistory: 1000
   receiveBufferPackets: 50
