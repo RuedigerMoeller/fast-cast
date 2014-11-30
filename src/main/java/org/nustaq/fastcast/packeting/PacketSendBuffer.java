@@ -308,7 +308,7 @@ public class PacketSendBuffer implements FCPublisher {
             currentPacketBytePointer.setByte((byte) tag);
             currentPacketBytePointer.next(off);
         }
-        currentPacketBytePointer.setBytes(b, offset, len);
+        currentPacketBytePointer.setBytes(b, offset, len); // fixme memcpy optimization missing
         currentPacketBytePointer.next(len);
         currentAvail= currentAvail-(len+off+DataPacket.HEADERLEN);
     }
