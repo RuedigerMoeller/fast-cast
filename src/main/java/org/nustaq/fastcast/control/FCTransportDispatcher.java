@@ -25,9 +25,9 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class FCTransportDispatcher {
 
-    public static final int IDLE_SPIN_LOCK_PARK_NANOS = 30*1000;
     public static final int IDLE_SPIN_IDLE_COUNT = 1000*1000;
-    public static int MAX_NUM_TOPICS = 256;
+    private static final int IDLE_SLEEP_MICRO_SECONDS = 1000;
+    public static int MAX_NUM_TOPICS = 4;
     Transport trans;
 
     ReceiveBufferDispatcher receiver[];
@@ -36,7 +36,7 @@ public class FCTransportDispatcher {
     StructString clusterName;
     StructString nodeId;
 
-    Thread receiverThread;
+    Thread receiverThread, senderThread;
     FSTStructAllocator alloc = new FSTStructAllocator(1);
 
     public FCTransportDispatcher(Transport trans, String clusterName, String nodeId) {
@@ -54,6 +54,12 @@ public class FCTransportDispatcher {
             }
         };
         receiverThread.start();
+//        senderThread = new Thread("trans sender "+trans.getConf().getName()) {
+//            public void run() {
+//                sendLoop();
+//            }
+//        };
+//        senderThread.start();
     }
 
     public void installReceiver(TopicEntry chan, FCSubscriber msgListener) {
@@ -89,54 +95,54 @@ public class FCTransportDispatcher {
 
     Bytez heartbeat = new HeapBytez(new byte[]{FastCast.HEARTBEAT});
 
-//    private void sendLoop(TopicEntry topic) {
-//        while( trans == null || sender[topic.getTopicId()] == null ) {
-//            try {
-//                Thread.sleep(200);
-//            } catch (InterruptedException e) {
-//                FCLog.log(e);
+    public void sendLoop() {
+        int nothingSentCount = 0;
+        int count = 0;
+        long lastStat = System.currentTimeMillis(); // FIXME: needed per topic
+        long lastHB = System.currentTimeMillis();
+        while ( true ) {
+            boolean anyThingSent = false;
+            for (int i = 0; i < sender.length; i++) {
+                PacketSendBuffer packetSendBuffer = sender[i];
+                if ( packetSendBuffer != null ) {
+//                    while ( ! packetSendBuffer.offerLock.compareAndSet(false,true) ) {
+//
+//                    }
+                    try {
+//                        TopicEntry topic = packetSendBuffer.getTopicEntry();
+//                        long flowControlInterval = topic.getPublisherConf().getFlowControlInterval();
+//                        long heartBeatInterval = topic.getPublisherConf().getHeartbeatInterval();
+                        anyThingSent |= packetSendBuffer.sendPendingPackets();
+                        count++;
+//                        if ( count % 100 == 0 ) {
+//                            long now = System.currentTimeMillis();
+//                            if ( now - lastStat > flowControlInterval ) {
+//                                packetSendBuffer.doFlowControl();
+//                                lastStat = now;
+//                            }
+//                            if ( now - lastHB > heartBeatInterval ) {
+//                                boolean succ = putHeartbeat(packetSendBuffer);
+//                                if ( succ )
+//                                    lastHB = now;
+//                            }
+//                        }
+                    } catch (Exception e) {
+                        FCLog.log(e);
+                    } finally {
+//                        packetSendBuffer.offerLock.set(false);
+                    }
+                }
+            }
+            if ( anyThingSent ) {
+                nothingSentCount = 0;
+            } else {
+                nothingSentCount++;
+            }
+//            if ( nothingSentCount > IDLE_SPIN_IDLE_COUNT) {
+//                LockSupport.parkNanos(1000*IDLE_SLEEP_MICRO_SECONDS);
 //            }
-//        }
-//        PacketSendBuffer packetSendBuffer = sender[topic.getTopicId()];
-//        long lastStat = System.currentTimeMillis();
-//        long lastHB = System.currentTimeMillis();
-//        int count = 0;
-//        long flowControlInterval = topic.getReceiverConf().getFlowControlInterval();
-//        long heartBeatInterval = topic.getReceiverConf().getHeartbeatInterval();
-//        int nothingSentCount = 0;
-//        while(true) {
-//            try {
-//                boolean anyThingSent = packetSendBuffer.send(trans);
-//                if ( anyThingSent ) {
-//                    nothingSentCount = 0;
-//                } else {
-//                    nothingSentCount++;
-//                }
-//                if ( !packetSendBuffer.useSpinLock() && nothingSentCount > IDLE_SPIN_IDLE_COUNT) {
-//                    Object sendWakeupLock = packetSendBuffer.getSendWakeupLock();
-//                    nothingSentCount = 0;
-//                    synchronized (sendWakeupLock) {
-//                        sendWakeupLock.wait(0, IDLE_SPIN_LOCK_PARK_NANOS);
-//                    }
-//                }
-//                count++;
-//                if ( count % 100 == 0 ) {
-//                    long now = System.currentTimeMillis();
-//                    if ( now - lastStat > flowControlInterval ) {
-//                        packetSendBuffer.doFlowControl();
-//                        lastStat = now;
-//                    }
-//                    if ( now - lastHB > heartBeatInterval ) {
-//                        boolean succ = putHeartbeat(packetSendBuffer);
-//                        if ( succ )
-//                            lastHB = now;
-//                    }
-//                }
-//            } catch (Exception e) {
-//                FCLog.log(e);
-//            }
-//        }
-//    }
+        }
+    }
 
     public boolean putHeartbeat(PacketSendBuffer packetSendBuffer) {
         return packetSendBuffer.putMessage(-1,heartbeat,0,1,true);
@@ -156,7 +162,7 @@ public class FCTransportDispatcher {
                 } else {
                     idleCount++;
                     if ( idleCount > IDLE_SPIN_IDLE_COUNT ) {
-                        LockSupport.parkNanos(IDLE_SPIN_LOCK_PARK_NANOS);
+                        LockSupport.parkNanos(1000*IDLE_SLEEP_MICRO_SECONDS);
                     }
                 }
             } catch (IOException e) {
@@ -235,7 +241,7 @@ public class FCTransportDispatcher {
             // packet is valid just in this thread
             if ( PacketSendBuffer.RETRANSDEBUG )
                 System.out.println("send retrans request " + retransPacket + " " + retransPacket.getClzId());
-            trans.send(new DatagramPacket(retransPacket.getBase().toBytes((int) retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
+            trans.send(new DatagramPacket(retransPacket.getBase().toBytes(retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
         }
     }
 

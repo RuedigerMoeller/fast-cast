@@ -15,9 +15,8 @@ import org.nustaq.offheap.structs.structtypes.StructArray;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created with IntelliJ IDEA.
@@ -157,20 +156,19 @@ public class PacketSendBuffer implements FCPublisher {
     public boolean putMessage(int tag, ByteSource b, long offset, int len, boolean tryPut) {
         if (DEBUG_LAT)
             System.out.println("pm "+System.currentTimeMillis());
-        return putMessageST(tag, b, offset, len, tryPut);
-    }
-
-    public boolean putMessageST(int tag, ByteSource b, long offset, int len, boolean tryPut) {
 //        if ( rec != null )
 //            getVolatile(currentSequence.get()).getReceiver().setString(rec);
         putMessageRecursive(tag, b, offset, len);
+        return true;
+    }
+
+    protected void fireAndSend() {
         fire();
         try {
             sendPackets(nextSendMsg.get(), currentSequence.get(), false, 0);
         } catch (IOException e) {
             FCLog.log(e);
         }
-        return true;
     }
 
     boolean hasSendPressure() {
@@ -256,7 +254,8 @@ public class PacketSendBuffer implements FCPublisher {
         newPack.setSeqNo(newSeq);
         currentAvail = payMaxLen-TAG_BUFF; // safe to always put a tag
         newPack.setSent(System.currentTimeMillis());
-        currentSequence.incrementAndGet();
+
+        currentSequence.incrementAndGet(); // publish packet
     }
 
     /**
@@ -264,8 +263,8 @@ public class PacketSendBuffer implements FCPublisher {
      *
      * @throws IOException
      */
-    public boolean send() throws IOException {
-        boolean anythingSent = false;
+    public boolean sendPendingPackets() throws IOException {
+        boolean anythingSent;
         // send retransmission
         if ( retransRequests.size() > 0 ) {
             anythingSent = true;
@@ -275,7 +274,7 @@ public class PacketSendBuffer implements FCPublisher {
             mergeRetransmissions(curRetrans);
             // FIXME: reuse retrans requests
         } else {
-            return false;
+            anythingSent = false;
         }
 
         long sendStart;
@@ -429,30 +428,32 @@ public class PacketSendBuffer implements FCPublisher {
     }
 
     public void doFlowControl() {
-        if ( control == null ) {
-            // BUG, receiverService should not do flowcontrol !
-//            control = topicEntry.getService();
-        }
-        int tmp = sendPauseMicros;
-        if ( control != null ) {
-            control.adjustSendPause(sendPauseMicros, stats);
-            sendPauseMicros = Math.max(tmp, topicEntry.getPublisherConf().getSendPauseMicros());
-            sendPauseMicros = Math.min(sendPauseMicros, 2 * topicEntry.getPublisherConf().getSendPauseMicros());
-        }
-        stats.setLastSendPause(sendPauseMicros);
+//        if ( control == null ) {
+//            // BUG, receiverService should not do flowcontrol !
+////            control = topicEntry.getService();
+//        }
+//        int tmp = sendPauseMicros;
+//        if ( control != null ) {
+//            control.adjustSendPause(sendPauseMicros, stats);
+//            sendPauseMicros = Math.max(tmp, topicEntry.getPublisherConf().getSendPauseMicros());
+//            sendPauseMicros = Math.min(sendPauseMicros, 2 * topicEntry.getPublisherConf().getSendPauseMicros());
+//        }
+//        stats.setLastSendPause(sendPauseMicros);
         stats.reset();
     }
 
     @Override
     public boolean offer(ByteSource msg, long start, int len) {
+        boolean res = putMessage(-1,msg,start,len, true);
+        fire();
         try {
-            if ( send() ) {
-                return false;
+            if ( sendPendingPackets() ) {
+//                return false;
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return putMessage(-1,msg,start,len, true);
+        return res;
     }
 
     @Override

@@ -39,7 +39,7 @@ public class FCSocketConf {
     String name;
 
     int dgramsize = 1300;
-    private String ifacAdr = "eth0";
+    private String ifacAdr = "lo";
     String mcastAdr = "229.9.9.9";
     int port = 45555;
     int trafficClass = 0x08;
