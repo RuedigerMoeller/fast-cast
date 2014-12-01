@@ -1,6 +1,7 @@
 package org.nustaq.fastcast.remoting;
 
 import org.nustaq.fastcast.config.FCPublisherConf;
+import org.nustaq.fastcast.config.FCSocketConf;
 import org.nustaq.fastcast.config.FCSubscriberConf;
 import org.nustaq.fastcast.control.FCTransportDispatcher;
 import org.nustaq.fastcast.util.FCLog;
@@ -215,7 +216,7 @@ public class FastCast {
     public FCPublisher publish( FCPublisherConf pubConf ) {
         TopicEntry topicEntry = topics.get(pubConf.getTopicId());
         if ( topicEntry == null )
-            topicEntry = new TopicEntry(null,pubConf);
+            topicEntry = new TopicEntry(null,null);
         if ( topicEntry.getPublisherConf() != null ) {
             throw new RuntimeException("already a sender registered at "+pubConf.getTopicId());
         }

@@ -21,7 +21,7 @@ public class FCSubscriberConf {
     // in case of gaps, buffer that many received packets (=datagram in fastcast context).
     // KEPT PER SENDER PER TOPIC !. So value of 10 with 10 senders on 2 topics = 20000 = 160MB with 8kb packets
     // increase for high volume receivers causing retransmissions (the larger, the fewer retransmissions will be there)
-    int receiveBufferPackets = 1000;
+    int receiveBufferPackets = 20000;
 
     ///////////////////////////////////////////////////////////////////////////////
     //

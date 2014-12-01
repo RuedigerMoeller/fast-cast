@@ -26,7 +26,7 @@ import java.util.concurrent.locks.LockSupport;
 public class FCTransportDispatcher {
 
     public static final int IDLE_SPIN_LOCK_PARK_NANOS = 30*1000;
-    public static final int IDLE_SPIN_IDLE_COUNT = 1000*10;
+    public static final int IDLE_SPIN_IDLE_COUNT = 1000*1000;
     public static int MAX_NUM_TOPICS = 256;
     Transport trans;
 
@@ -81,7 +81,7 @@ public class FCTransportDispatcher {
             return sender[topicEntry.getTopicId()];
         }
         topicEntry.setTrans(trans);
-        PacketSendBuffer packetSendBuffer = new PacketSendBuffer(trans.getConf().getDgramsize(), clusterName.toString(), nodeId.toString(), topicEntry);
+        PacketSendBuffer packetSendBuffer = new PacketSendBuffer(trans, clusterName.toString(), nodeId.toString(), topicEntry);
         sender[topicEntry.getTopicId()] = packetSendBuffer;
         topicEntry.setSender(packetSendBuffer);
         return packetSendBuffer;

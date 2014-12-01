@@ -33,19 +33,11 @@ public class TopicEntry {
     ConcurrentHashMap<String,Long> senderHeartbeat = new ConcurrentHashMap<String, Long>();
 
 
-    // loopback calls
-    ExecutorService methodExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread res = new Thread(r);
-            res.setName("Loopback calls");
-            return res;
-        }
-    });
     boolean isUnordered = false;
     boolean isUnreliable = false;
     volatile boolean listenCalls = false; // if false => only listen to call results if any
     private FCSubscriber subscriber;
+    int topicId = -1;
 
     public TopicEntry(FCSubscriberConf receiverConf, FCPublisherConf publisherConf) {
         this.receiverConf = receiverConf;
@@ -100,10 +92,6 @@ public class TopicEntry {
         stats = new TopicStats(trans.getConf().getDgramsize());
     }
 
-    public ExecutorService getMethodExecutor() {
-        return methodExecutor;
-    }
-
     public void setReceiverConf(FCSubscriberConf receiverConf) {
         this.receiverConf = receiverConf;
     }
@@ -145,7 +133,14 @@ public class TopicEntry {
     }
 
     public int getTopicId() {
-        return receiverConf.getTopicId();
+        if ( topicId < 0 ) {
+            if ( receiverConf != null ) {
+                topicId = receiverConf.getTopicId();
+            } else if ( publisherConf != null ) {
+                topicId = publisherConf.getTopicId();
+            }
+        }
+        return topicId;
     }
 
     public TopicStats getStats() {

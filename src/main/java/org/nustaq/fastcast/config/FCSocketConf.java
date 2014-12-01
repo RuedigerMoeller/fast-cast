@@ -1,12 +1,6 @@
-package org.nustaq.fastcast.transport;
+package org.nustaq.fastcast.config;
 
 import org.nustaq.fastcast.util.FCLog;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
-import org.yaml.snakeyaml.nodes.Node;
-import org.yaml.snakeyaml.representer.Representer;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -44,7 +38,7 @@ public class FCSocketConf {
 
     String name;
 
-    int dgramsize = 8000;
+    int dgramsize = 1300;
     private String ifacAdr = "eth0";
     String mcastAdr = "229.9.9.9";
     int port = 45555;
@@ -52,7 +46,7 @@ public class FCSocketConf {
     boolean loopBack = true;
     int ttl = 2;
     int receiveBufferSize = 30000000; // used as file size for shmem
-    int sendBufferSize = 640000;
+    int sendBufferSize = 8000000;
     String transportType = MCAST_NIO_SOCKET;
     String queueFile; // for shared mem, identifies file path of mmapped file for this transport
 
@@ -168,66 +162,6 @@ public class FCSocketConf {
 
     public void setSendBufferSize(int sendBufferSize) {
         this.sendBufferSize = sendBufferSize;
-    }
-
-
-    public static void write(String finam,FCSocketConf data) throws IOException {
-        DumperOptions opt = new DumperOptions();
-        opt.setPrettyFlow(true);
-        Representer representer = new Representer();
-//        representer.addClassTag(FCSocketConf.class, new Tag("!topic"));
-//        representer.addClassTag(FCSocketConf.class, new Tag("!socket"));
-        Yaml yaml = new Yaml(representer,opt);
-        FileWriter wri = new FileWriter(finam);
-        wri.write(yaml.dumpAsMap(data));
-        wri.close();
-//        System.out.println(yaml.dumpAsMap(data));
-    }
-
-    public static FCSocketConf read(InputStream in) throws IOException {
-        Yaml yaml = new Yaml(new Constructor(){
-            @Override
-            protected Class<?> getClassForNode(Node node) {
-                String name = node.getTag().getValue();
-                if ( "!topic".equals(name)) {
-                    return FCSocketConf.class;
-                }
-                if ( "!socket".equals(name) ) {
-                    return FCSocketConf.class;
-                }
-                return super.getClassForNode(node);
-            }
-        });
-        FCSocketConf conf = (FCSocketConf) yaml.loadAs(in, FCSocketConf.class);
-        in.close();
-        return conf;
-    }
-
-    public static FCSocketConf read(String finam) throws IOException {
-        Yaml yaml = new Yaml(new Constructor(){
-            @Override
-            protected Class<?> getClassForNode(Node node) {
-                String name = node.getTag().getValue();
-                if ( "!topic".equals(name)) {
-                    return FCSocketConf.class;
-                }
-                if ( "!socket".equals(name) ) {
-                    return FCSocketConf.class;
-                }
-                return super.getClassForNode(node);
-            }
-        });
-        FileReader reader = new FileReader(finam);
-        FCSocketConf conf = (FCSocketConf) yaml.loadAs(reader, FCSocketConf.class);
-        reader.close();
-        return conf;
-    }
-
-    public static void main( String arg[] ) throws IOException {
-        FCSocketConf conf = new FCSocketConf();
-        write("/tmp/fcconf.yaml",conf);
-        FCSocketConf read = read("/tmp/fcconf.yaml");
-        System.out.println("pok "+read);
     }
 
     public String getQueueFile() {

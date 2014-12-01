@@ -1,5 +1,6 @@
 package org.nustaq.fastcast.transport;
 
+import org.nustaq.fastcast.config.FCSocketConf;
 import org.nustaq.fastcast.util.FCLog;
 
 import java.io.IOException;

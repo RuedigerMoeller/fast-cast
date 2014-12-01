@@ -1,5 +1,6 @@
 package org.nustaq.fastcast.transport;
 
+import org.nustaq.fastcast.config.FCSocketConf;
 import org.nustaq.fastcast.util.FCLog;
 
 import java.io.*;
@@ -50,9 +51,9 @@ public class FCMulticastChannelTransport implements Transport {
 
     public void join() throws IOException {
         if ( address == null ) {
-            address = InetAddress.getByName(conf.mcastAdr);
+            address = InetAddress.getByName(conf.getMcastAdr());
         }
-        socketAddress = new InetSocketAddress(address,conf.port);
+        socketAddress = new InetSocketAddress(address,conf.getPort());
         if ( iface == null && conf.getIfacAdr() != null) {
             iface =NetworkInterface.getByInetAddress(Inet4Address.getByName(conf.getIfacAdr() ));
             if ( iface == null ) {
@@ -66,7 +67,7 @@ public class FCMulticastChannelTransport implements Transport {
         sendSocket = ceateSocket();
 
         MembershipKey key = receiveSocket.join(address, iface);
-        FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.port+" dgramsize:"+getConf().getDgramsize());
+        FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.getPort()+" dgramsize:"+getConf().getDgramsize());
 
     }
 
@@ -74,12 +75,12 @@ public class FCMulticastChannelTransport implements Transport {
         DatagramChannel channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
                 .setOption(StandardSocketOptions.IP_MULTICAST_IF, iface)
-                .setOption(StandardSocketOptions.SO_RCVBUF, conf.receiveBufferSize)
-                .setOption(StandardSocketOptions.IP_TOS, conf.trafficClass)
-                .setOption(StandardSocketOptions.IP_MULTICAST_LOOP, conf.loopBack)
-                .setOption(StandardSocketOptions.IP_MULTICAST_TTL, conf.ttl)
-                .bind(new InetSocketAddress(conf.port));
-        channel.configureBlocking(true);
+                .setOption(StandardSocketOptions.SO_RCVBUF, conf.getReceiveBufferSize())
+                .setOption(StandardSocketOptions.IP_TOS, conf.getTrafficClass())
+                .setOption(StandardSocketOptions.IP_MULTICAST_LOOP, conf.isLoopBack())
+                .setOption(StandardSocketOptions.IP_MULTICAST_TTL, conf.getTtl())
+                .bind(new InetSocketAddress(conf.getPort()));
+        channel.configureBlocking(false);
         return channel;
     }
 

@@ -1,5 +1,6 @@
 package org.nustaq.fastcast.transport;
 
+import org.nustaq.fastcast.config.FCSocketConf;
 import org.nustaq.fastcast.util.FCLog;
 
 import java.io.*;
@@ -26,7 +27,7 @@ public class FCMulticastSocketTransport implements Transport {
 
     public void join() throws IOException {
         if ( address == null ) {
-            address = new InetSocketAddress(InetAddress.getByName(conf.mcastAdr),conf.port);
+            address = new InetSocketAddress(InetAddress.getByName(conf.getMcastAdr()),conf.getPort());
         }
         if ( iface == null && conf.getIfacAdr()  != null) {
             iface = NetworkInterface.getByName(conf.getIfacAdr() );
@@ -37,18 +38,18 @@ public class FCMulticastSocketTransport implements Transport {
                 FCLog.log("Could not find a network interface named '" + conf.getIfacAdr() + "'");
             }
         }
-        socket = new MulticastSocket(conf.port);
+        socket = new MulticastSocket(conf.getPort());
         if ( iface != null ) {
             socket.setNetworkInterface(iface);
         }
-        socket.setReceiveBufferSize(conf.receiveBufferSize);
-        socket.setSendBufferSize(conf.sendBufferSize);
-        socket.setTrafficClass(conf.trafficClass);
-        socket.setLoopbackMode(!conf.loopBack);
-        socket.setTimeToLive(conf.ttl);
-        socket.joinGroup(InetAddress.getByName(conf.mcastAdr));
+        socket.setReceiveBufferSize(conf.getReceiveBufferSize());
+        socket.setSendBufferSize(conf.getSendBufferSize());
+        socket.setTrafficClass(conf.getTrafficClass());
+        socket.setLoopbackMode(!conf.isLoopBack());
+        socket.setTimeToLive(conf.getTtl());
+        socket.joinGroup(InetAddress.getByName(conf.getMcastAdr()));
 
-        FCLog.log("Connecting to interface " + conf.getIfacAdr() + " on address " + conf.mcastAdr + " " + conf.port);
+        FCLog.log("Connecting to interface " + conf.getIfacAdr() + " on address " + conf.getMcastAdr() + " " + conf.getPort());
     }
 
     @Override

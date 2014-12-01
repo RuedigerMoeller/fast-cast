@@ -8,7 +8,7 @@ import org.nustaq.offheap.bytez.Bytez;
  */
 public interface FCSubscriber {
 
-    public void messageReceived(String sender, long sequence, Bytez b, int off, int len);
+    public void messageReceived(String sender, long sequence, Bytez b, long off, int len);
 
     /**
      * called in case the receiver was too slow in processing messages

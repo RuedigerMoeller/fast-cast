@@ -18,8 +18,7 @@ public class FCPublisherConf {
     ///////////////////////////////////////////////////////////////////////////////
 
     // overall send history
-    int numPacketHistory = 5000;
-    // part of on heap history used for send queue (after that send might start blocking). Beware, increasing this will increase latency
+    int numPacketHistory = 150000;
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -31,15 +30,19 @@ public class FCPublisherConf {
     // This is the major rate limiting throttle influencing throughput and overload control
     // if too low => lots of retransmission
     // if too high => no throughput
-    int sendPauseMicros = -1;
+    int sendPauseMicros = 200;
 
     // when a sender does not send on a topicId for this time, drop it and free memory.
     // if the sender starts sending again, a resync will be done as if the sender has
     // joined the cluster as a new node
-    long senderTimeoutMillis = 10000;
     long heartbeatInterval = 200;    // sent per topicId, ms. detects senderTimeoutMillis
 
     long flowControlInterval = 1000; // time window(ms) flow control uses to determine send rate + stats reset rate
+
+    public FCPublisherConf(String transport, int topicId ) {
+        this.topicId = topicId;
+        this.transport = transport;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -92,7 +95,7 @@ public class FCPublisherConf {
     }
 
     public int getSendPauseMicros() {
-        return sendPauseMicros == -1 ? 300:sendPauseMicros;
+        return sendPauseMicros;
     }
 
 //    public void setSendPauseMicros(int sendPauseMicros) {
@@ -101,14 +104,6 @@ public class FCPublisherConf {
 //        }
 //        this.sendPauseMicros = sendPauseMicros;
 //    }
-
-    public long getSenderTimeoutMillis() {
-        return senderTimeoutMillis;
-    }
-
-    public void setSenderTimeoutMillis(long senderTimeoutMillis) {
-        this.senderTimeoutMillis = senderTimeoutMillis;
-    }
 
     public long getHeartbeatInterval() {
         return heartbeatInterval;
