@@ -2,12 +2,9 @@ package org.nustaq.fastcast.control;
 
 import org.nustaq.fastcast.packeting.TopicEntry;
 import org.nustaq.fastcast.remoting.FCSubscriber;
-import org.nustaq.fastcast.remoting.FastCast;
 import org.nustaq.fastcast.transport.Transport;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.fastcast.packeting.*;
-import org.nustaq.offheap.bytez.Bytez;
-import org.nustaq.offheap.bytez.onheap.HeapBytez;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
@@ -27,16 +24,17 @@ public class FCTransportDispatcher {
 
     public static final int IDLE_SPIN_IDLE_COUNT = 1000*1000;
     private static final int IDLE_SLEEP_MICRO_SECONDS = 1000;
-    public static int MAX_NUM_TOPICS = 4;
+    public static int MAX_NUM_TOPICS = 256;
     Transport trans;
 
     ReceiveBufferDispatcher receiver[];
     PacketSendBuffer sender[];
+    long lastMsg[]; // marks last flush on a topic to enable batch delay
 
     StructString clusterName;
     StructString nodeId;
 
-    Thread receiverThread, senderThread;
+    Thread receiverThread, houseKeeping;
     FSTStructAllocator alloc = new FSTStructAllocator(1);
 
     public FCTransportDispatcher(Transport trans, String clusterName, String nodeId) {
@@ -47,6 +45,7 @@ public class FCTransportDispatcher {
 
         receiver = new ReceiveBufferDispatcher[MAX_NUM_TOPICS];
         sender = new PacketSendBuffer[MAX_NUM_TOPICS];
+        lastMsg = new long[MAX_NUM_TOPICS];
 
         receiverThread = new Thread("trans receiver "+trans.getConf().getName()) {
             public void run() {
@@ -54,12 +53,12 @@ public class FCTransportDispatcher {
             }
         };
         receiverThread.start();
-//        senderThread = new Thread("trans sender "+trans.getConf().getName()) {
-//            public void run() {
-//                sendLoop();
-//            }
-//        };
-//        senderThread.start();
+        houseKeeping = new Thread("trans houseKeeping"+trans.getConf().getName()) {
+            public void run() {
+                houseKeepingLoop();
+            }
+        };
+        houseKeeping.start();
     }
 
     public void installReceiver(TopicEntry chan, FCSubscriber msgListener) {
@@ -93,59 +92,45 @@ public class FCTransportDispatcher {
         return packetSendBuffer;
     }
 
-    Bytez heartbeat = new HeapBytez(new byte[]{FastCast.HEARTBEAT});
 
-    public void sendLoop() {
-        int nothingSentCount = 0;
-        int count = 0;
-        long lastStat = System.currentTimeMillis(); // FIXME: needed per topic
-        long lastHB = System.currentTimeMillis();
+    public void houseKeepingLoop() {
         while ( true ) {
-            boolean anyThingSent = false;
-            for (int i = 0; i < sender.length; i++) {
-                PacketSendBuffer packetSendBuffer = sender[i];
-                if ( packetSendBuffer != null ) {
-//                    while ( ! packetSendBuffer.offerLock.compareAndSet(false,true) ) {
-//
-//                    }
-                    try {
-//                        TopicEntry topic = packetSendBuffer.getTopicEntry();
-//                        long flowControlInterval = topic.getPublisherConf().getFlowControlInterval();
-//                        long heartBeatInterval = topic.getPublisherConf().getHeartbeatInterval();
-                        anyThingSent |= packetSendBuffer.sendPendingPackets();
-                        count++;
-//                        if ( count % 100 == 0 ) {
-//                            long now = System.currentTimeMillis();
-//                            if ( now - lastStat > flowControlInterval ) {
-//                                packetSendBuffer.doFlowControl();
-//                                lastStat = now;
-//                            }
-//                            if ( now - lastHB > heartBeatInterval ) {
-//                                boolean succ = putHeartbeat(packetSendBuffer);
-//                                if ( succ )
-//                                    lastHB = now;
-//                            }
-//                        }
-                    } catch (Exception e) {
-                        FCLog.log(e);
-                    } finally {
-//                        packetSendBuffer.offerLock.set(false);
+            try {
+                long now = System.currentTimeMillis();
+                for (int i = 0; i < receiver.length; i++) {
+                    ReceiveBufferDispatcher receiveBufferDispatcher = receiver[i];
+                    if ( receiveBufferDispatcher != null ) {
+                        TopicEntry topicEntry = receiveBufferDispatcher.getTopicEntry();
+                        List<String> timedOutSenders = topicEntry.getTimedOutSenders(now, topicEntry.getHbTimeoutMS());
+                        if ( timedOutSenders != null && timedOutSenders.size() > 0 ) {
+                            cleanup(timedOutSenders,i);
+                            topicEntry.removeSenders(timedOutSenders);
+                        }
                     }
                 }
+                for (int i = 0; i < sender.length; i++) {
+                    PacketSendBuffer packetSendBuffer = sender[i];
+                    if ( packetSendBuffer != null ) {
+                        long lastFlush = packetSendBuffer.lastFlush;
+                        if ( lastMsg[i] == 0 )
+                            lastMsg[i] = lastFlush;
+                        else if ( lastMsg[i] == lastFlush) {
+                            // no flush since last turnaround, generate a flush
+//                            packetSendBuffer.offer(null,0,0,true);
+                        } else {
+                            lastMsg[i] = lastFlush;
+                        }
+                    }
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            if ( anyThingSent ) {
-                nothingSentCount = 0;
-            } else {
-                nothingSentCount++;
-            }
-//            if ( nothingSentCount > IDLE_SPIN_IDLE_COUNT) {
-//                LockSupport.parkNanos(1000*IDLE_SLEEP_MICRO_SECONDS);
-//            }
         }
-    }
-
-    public boolean putHeartbeat(PacketSendBuffer packetSendBuffer) {
-        return packetSendBuffer.putMessage(-1,heartbeat,0,1,true);
     }
 
     Packet receivedPacket;
@@ -196,7 +181,7 @@ public class FCTransportDispatcher {
                 {
                     if ( receiver[topic] == null )
                         return true;
-                    if (
+                    if ( true || // FIXME
                         ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
                         ( receivedPacketReceiver.equals(nodeId) )
                        )

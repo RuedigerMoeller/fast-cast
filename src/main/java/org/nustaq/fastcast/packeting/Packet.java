@@ -17,7 +17,7 @@ public class Packet extends FSTStruct {
     protected StructString receiver = new StructString(15);
     protected StructString sender = new StructString(15);
     protected int topic;
-    protected long seqNo;
+    protected volatile long seqNo;
     protected long sent;
     protected int sendPauseSender;
 

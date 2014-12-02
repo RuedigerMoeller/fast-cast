@@ -18,7 +18,6 @@ import java.util.concurrent.Executor;
  */
 public class ReceiveBufferDispatcher {
 
-    Executor topicWideDeliveryThread;
     HashMap<StructString,PacketReceiveBuffer> bufferMap = new HashMap<StructString, PacketReceiveBuffer>();
 
     int packetSize;
@@ -37,7 +36,6 @@ public class ReceiveBufferDispatcher {
         this.historySize = entry.getReceiverConf().getReceiveBufferPackets();
         this.topic = entry.getTopicId();
         topicEntry = entry;
-        topicWideDeliveryThread = FCUtils.createIncomingMessageThreadExecutor("global delivery " + topicEntry.getTopicId(), topicEntry.getReceiverConf().getDecodeQSize() );
     }
 
     public TopicEntry getTopicEntry() {
@@ -47,7 +45,7 @@ public class ReceiveBufferDispatcher {
     public PacketReceiveBuffer getBuffer(StructString sender) {
         PacketReceiveBuffer receiveBuffer = bufferMap.get(sender);
         if ( receiveBuffer == null ) {
-            receiveBuffer = new PacketReceiveBuffer(packetSize,clusterName,nodeId,historySize,sender.toString(), topicEntry, receiver, topicWideDeliveryThread);
+            receiveBuffer = new PacketReceiveBuffer(packetSize,clusterName,nodeId,historySize,sender.toString(), topicEntry, receiver);
             bufferMap.put((StructString) sender.createCopy(),receiveBuffer);
         }
         return receiveBuffer;
@@ -61,9 +59,15 @@ public class ReceiveBufferDispatcher {
         StructString struct = new StructString(senderName);
         PacketReceiveBuffer packetReceiveBuffer = bufferMap.get(struct);
         bufferMap.remove(struct);
-        packetReceiveBuffer.terminate();
-//        FCRemotingListener remotingListener = FastCast.getRemoting().getRemotingListener();
-//        if ( remotingListener != null )
-//            remotingListener.senderDied(topicEntry.getTopicId(), topicEntry.getName(), senderName);
+        if ( packetReceiveBuffer != null ) {
+            packetReceiveBuffer.terminate();
+            FCSubscriber subscriber = packetReceiveBuffer.getTopicEntry().getSubscriber();
+            if ( subscriber != null ) {
+                subscriber.senderTerminated(senderName);
+            }
+        }
+        else {
+            System.out.println("cannot find packetReceiver to terminate");
+        }
     }
 }

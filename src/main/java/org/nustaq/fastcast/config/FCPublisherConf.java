@@ -30,7 +30,7 @@ public class FCPublisherConf {
     // This is the major rate limiting throttle influencing throughput and overload control
     // if too low => lots of retransmission
     // if too high => no throughput
-    int sendPauseMicros = 200;
+    int sendPauseMicros = 300;
 
     // when a sender does not send on a topicId for this time, drop it and free memory.
     // if the sender starts sending again, a resync will be done as if the sender has

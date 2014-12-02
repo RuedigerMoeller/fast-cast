@@ -38,6 +38,7 @@ public class TopicEntry {
     volatile boolean listenCalls = false; // if false => only listen to call results if any
     private FCSubscriber subscriber;
     int topicId = -1;
+    private long hbTimeoutMS = 3000*1000; // dev
 
     public TopicEntry(FCSubscriberConf receiverConf, FCPublisherConf publisherConf) {
         this.receiverConf = receiverConf;
@@ -161,5 +162,9 @@ public class TopicEntry {
 
     public FCPublisherConf getPublisherConf() {
         return publisherConf;
+    }
+
+    public long getHbTimeoutMS() {
+        return hbTimeoutMS;
     }
 }

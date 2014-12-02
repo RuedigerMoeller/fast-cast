@@ -29,7 +29,7 @@ public class FastCast {
     }
 
     static FastCast fc;
-    private String clusterName = "clname";
+    private String clusterName = "-";
 
     public static FastCast getFastCast() {
         synchronized (FastCast.class) {

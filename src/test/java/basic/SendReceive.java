@@ -62,12 +62,14 @@ public class SendReceive {
         toSend.getString().setString("Hello");
 
         while( true ) {
-            toSend.setTimeNanos(System.nanoTime());
-            while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize()) ) {
-                System.out.println("offer rejected !");
+//            Thread.sleep(500);
+            for ( int i = 0; i < 2; i++ ) {
+                toSend.setTimeNanos(System.nanoTime());
+                while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
+                    System.out.println("offer rejected !");
+                }
             }
-//            LockSupport.parkNanos(1000*250);
-//            System.out.println("sent");
+//            System.out.println("sent msg");
         }
     }
 
@@ -93,10 +95,9 @@ public class SendReceive {
             {
                 TestMsg received = FSTStructFactory.getInstance().createStructWrapper(b,off).cast();
                 long nanos = System.nanoTime()-received.getTimeNanos();
-                if ( count++%1000 == 0 ) {
-                    worker.execute(() -> {
-                        System.out.println("receive " + received.getString().toString() + " latency:" + (nanos / 1000));
-                    });
+                if ( count++%1000 == 0 )
+                {
+                    System.out.println("receive " + received.getString().toString() + " latency:" + (nanos / 1000));
                 }
             }
 
@@ -107,7 +108,7 @@ public class SendReceive {
 
             @Override
             public void senderTerminated(String senderNodeId) {
-                System.out.println("sender termniated "+senderNodeId);
+                System.out.println("sender terminated "+senderNodeId);
             }
 
             @Override

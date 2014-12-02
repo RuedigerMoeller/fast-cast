@@ -38,8 +38,6 @@ public class FCSubscriberConf {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    private int decodeQSize = 10000; // receiver
-
     public FCSubscriberConf() {
     }
 
@@ -88,12 +86,5 @@ public class FCSubscriberConf {
         this.maxDelayNextRetransMS = maxDelayNextRetransMS;
     }
 
-    public int getDecodeQSize() {
-        return decodeQSize;
-    }
-
-    public void setDecodeQSize(int decodeQSize) {
-        this.decodeQSize = decodeQSize;
-    }
 
 }

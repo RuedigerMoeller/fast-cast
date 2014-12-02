@@ -2,12 +2,15 @@ package org.nustaq.fastcast.packeting;
 
 import org.nustaq.fastcast.control.FlowControl;
 import org.nustaq.fastcast.remoting.FCPublisher;
+import org.nustaq.fastcast.remoting.FastCast;
 import org.nustaq.fastcast.transport.Transport;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.fastcast.util.RateMeasure;
 import org.nustaq.fastcast.util.Sleeper;
 import org.nustaq.offheap.bytez.ByteSource;
+import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.bytez.malloc.MallocBytezAllocator;
+import org.nustaq.offheap.bytez.onheap.HeapBytez;
 import org.nustaq.offheap.structs.FSTStruct;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructArray;
@@ -38,17 +41,21 @@ public class PacketSendBuffer implements FCPublisher {
     final Transport trans;
 
     FSTStructAllocator packetAllocator;
-    ArrayList<RetransPacket> retransRequests = new ArrayList<RetransPacket>();
+    volatile ArrayList<RetransPacket> retransRequests = new ArrayList<RetransPacket>();
 
-    StructArray<DataPacket> history;
+
     String nodeId;
     int payMaxLen;
-    volatile int currentAvail; // number of bytes avaiable in current package
+    int currentAvail; // number of bytes avaiable in current package
     int topic;
 
+    FSTStruct currentPacketBytePointer; // points to currently written packet
     AtomicLong currentSequence = new AtomicLong(1); // putmsg sequence
     AtomicLong nextSendMsg = new AtomicLong(1);     // sendmsg sequence
-    FSTStruct currentPacketBytePointer;
+
+    StructArray<DataPacket> history;
+    int historySize;
+
     ControlPacket dropMsg;
 
     Sleeper sleeperSendMsg = new Sleeper();
@@ -56,29 +63,8 @@ public class PacketSendBuffer implements FCPublisher {
 
     boolean isUnordered;
     TopicEntry topicEntry;
-    boolean useSpinLock;
 
     TopicStats stats;
-    FlowControl control;
-    int historySize;
-    int maxDGramRate;
-
-    RateMeasure rate = new RateMeasure("sendDgramRate",100) {
-        @Override
-        protected void statsUpdated(long lastRatePersecond) {
-//            super.statsUpdated(lastRatePersecond);
-            if (maxDGramRate>0 && hasSendPressure()) {
-                float percent = (float)lastRatePersecond/maxDGramRate;
-//                System.out.println("  perc "+percent+" cur slow "+sendPauseMicros);
-                sendPauseMicros = (int) ((sendPauseMicros*percent+1*sendPauseMicros)/2);
-                if (sendPauseMicros<1)
-                    sendPauseMicros = 1;
-                if (sendPauseMicros < 10 && percent>1.2)
-                    sendPauseMicros++;
-//                System.out.println("  new slowdown "+sendPauseMicros+" queue "+(currentSequence.get()-nextSendMsg.get()));
-            }
-        }
-    };
 
     DataPacket template;
     public PacketSendBuffer(Transport trans, String clusterName, String nodeId, TopicEntry entry ) {
@@ -86,8 +72,6 @@ public class PacketSendBuffer implements FCPublisher {
         this.topic = entry.getTopicId();
         topicEntry = entry;
         this.nodeId = nodeId;
-
-        useSpinLock = true; //entry.getConf().useSpinlockInSendQueue();
 
         FCLog.log( "init send buffer for topic "+entry.getTopicId() );
 
@@ -105,23 +89,39 @@ public class PacketSendBuffer implements FCPublisher {
         FCLog.log("allocating send buffer for topic " + topicEntry.getTopicId() + " of " + history.getByteSize() / 1024 / 1024 + " MByte");
         historySize = history.size();
 
-        dropMsg = new ControlPacket();
-        dropMsg.getCluster().setString(clusterName);
-        dropMsg.getSender().setString(nodeId);
-        dropMsg.setTopic(topic);
-        dropMsg.setType(ControlPacket.DROPPED);
-        dropMsg = packetAllocator.newStruct(dropMsg);
+        setUnordered(topicEntry.isUnordered());
+        this.sendPauseMicros = topicEntry.getPublisherConf().getSendPauseMicros();
+        this.stats = topicEntry.getStats();
+
+        initDropMsgPacket(clusterName, nodeId);
 
         DataPacket curP = getVolatile(currentSequence.get());
         currentPacketBytePointer = curP.detach();
         curP.setSeqNo(currentSequence.get());
         curP.dataPointer(currentPacketBytePointer);
         currentAvail = payMaxLen-TAG_BUFF; // room for tags
-        setUnordered(topicEntry.isUnordered());
-        this.sendPauseMicros = topicEntry.getPublisherConf().getSendPauseMicros();
-        this.stats = topicEntry.getStats();
-        this.control = topicEntry.getControl();
-        maxDGramRate = topicEntry.getPublisherConf().getDGramRate();
+
+//        new Thread() {
+//            public void run() {
+//                while(true) {
+//                    try {
+//                        sendPendingRetrans();
+//                        sendPendingPackets();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }.start();
+    }
+
+    protected void initDropMsgPacket(String clusterName, String nodeId) {
+        dropMsg = new ControlPacket();
+        dropMsg.getCluster().setString(clusterName);
+        dropMsg.getSender().setString(nodeId);
+        dropMsg.setTopic(topic);
+        dropMsg.setType(ControlPacket.DROPPED);
+        dropMsg = packetAllocator.newStruct(dropMsg);
     }
 
     public void free() {
@@ -136,7 +136,6 @@ public class PacketSendBuffer implements FCPublisher {
         return stats;
     }
 
-
     public boolean isUnordered() {
         return isUnordered;
     }
@@ -145,7 +144,7 @@ public class PacketSendBuffer implements FCPublisher {
         isUnordered = unordered;
     }
 
-    DataPacket getVolatile(long seq) {
+    private DataPacket getVolatile(long seq) {
         return history.get(getIndexFromSequence(seq));
     }
 
@@ -153,22 +152,13 @@ public class PacketSendBuffer implements FCPublisher {
         return (int) (seq%historySize);
     }
 
-    public boolean putMessage(int tag, ByteSource b, long offset, int len, boolean tryPut) {
+    private boolean putMessage(int tag, ByteSource b, long offset, int len, boolean tryPut) {
         if (DEBUG_LAT)
             System.out.println("pm "+System.currentTimeMillis());
 //        if ( rec != null )
 //            getVolatile(currentSequence.get()).getReceiver().setString(rec);
         putMessageRecursive(tag, b, offset, len);
         return true;
-    }
-
-    protected void fireAndSend() {
-        fire();
-        try {
-            sendPackets(nextSendMsg.get(), currentSequence.get(), false, 0);
-        } catch (IOException e) {
-            FCLog.log(e);
-        }
     }
 
     boolean hasSendPressure() {
@@ -183,10 +173,10 @@ public class PacketSendBuffer implements FCPublisher {
             {
                 // message fits into avaiable paylen
                 putInternal(tag, DataPacket.COMPLETE, b, offset, len);
-                if ( nextSendMsg.get() == currentSequence.get() )
-                {
-                    fire();
-                }
+//                if ( nextSendMsg.get() == currentSequence.get() )
+//                {
+//                    fire();
+//                }
                 return;
             } else {
                 if ( isUnordered() ) {
@@ -237,6 +227,8 @@ public class PacketSendBuffer implements FCPublisher {
 
     // finishes current packet, and allocs a new one so packet can be sent
     private void fire() {
+        while ( currentSequence.get() - nextSendMsg.get() > historySize-10 )
+            Thread.yield();
         if (DEBUG_LAT)
             System.out.println("fire "+System.currentTimeMillis());
         if ( currentAvail == payMaxLen )
@@ -263,27 +255,14 @@ public class PacketSendBuffer implements FCPublisher {
      *
      * @throws IOException
      */
-    public boolean sendPendingPackets() throws IOException {
-        boolean anythingSent;
-        // send retransmission
-        if ( retransRequests.size() > 0 ) {
-            anythingSent = true;
-            ArrayList<RetransPacket> curRetrans = retransRequests;
-            retransRequests = new ArrayList<RetransPacket>();
-
-            mergeRetransmissions(curRetrans);
-            // FIXME: reuse retrans requests
-        } else {
-            anythingSent = false;
-        }
-
+    private boolean sendPendingPackets() throws IOException {
         long sendStart;
         long sendEnd;
 
         sendStart = nextSendMsg.get();
         sendEnd = currentSequence.get();
         if ( sendEnd == sendStart ) {
-            return anythingSent;
+            return false;
         }
         sendPackets(sendStart, sendEnd, false, 0);
         return true;
@@ -291,14 +270,24 @@ public class PacketSendBuffer implements FCPublisher {
 
     long sentRetransSeq[] = new long[RETRANS_MEM];
     long sentRetransTimes[] = new long[RETRANS_MEM];
+    private boolean sendPendingRetrans() throws IOException {
+        // send retransmission
+        if ( retransRequests.size() > 0 ) {
+            ArrayList<RetransPacket> curRetrans = retransRequests;
+            retransRequests = new ArrayList<RetransPacket>();
+            mergeRetransmissions(curRetrans);
+            return true;
+        }
+        return false;
+    }
 
-    void putRetransSent(long sequence, long tim ) {
+    private void putRetransSent(long sequence, long tim ) {
         int index = (int) (sequence % RETRANS_MEM);
         sentRetransSeq[index] = sequence;
         sentRetransTimes[index] = tim;
     }
 
-    long getLastRetransmitted(long sequence) {
+    private long getLastRetransmitted(long sequence) {
         int index = (int) (sequence % RETRANS_MEM);
         if ( sentRetransSeq[index] == sequence )
             return sentRetransTimes[index];
@@ -401,7 +390,6 @@ public class PacketSendBuffer implements FCPublisher {
 
                 if (DEBUG_LAT)
                     System.out.println("send "+System.currentTimeMillis());
-                rate.count();
                 trans.send(pack);
                 if ( retrans ) {
                     stats.retransRSPSent(1,dGramSize);
@@ -442,22 +430,63 @@ public class PacketSendBuffer implements FCPublisher {
         stats.reset();
     }
 
+    long hbInvtervalMS = 1000;
+    long lastHB = System.nanoTime();
+    Bytez heartbeat = new HeapBytez(new byte[]{FastCast.HEARTBEAT});
+
+    public volatile long lastFlush = System.currentTimeMillis();
+
     @Override
-    public boolean offer(ByteSource msg, long start, int len) {
-        boolean res = putMessage(-1,msg,start,len, true);
-        fire();
+    public boolean offer(ByteSource msg, long start, int len, boolean doFlush) {
         try {
-            if ( sendPendingPackets() ) {
-//                return false;
+            lock();
+            synchronized (this)
+            {
+                long now = System.nanoTime();
+                boolean res = msg == null ? true : putMessage(-1,msg,start,len, true);
+//                if ( now-lastHB > hbInvtervalMS *1000*1000) {
+//                    lastHB = now;
+//                    sendHeartBeat();
+//                    System.out.println("hb");
+//                    fire();
+//                }
+                if ( doFlush ) {
+                    lastFlush = now;
+                    fire();
+                }
+                try {
+                    sendPendingRetrans();
+                    if ( sendPendingPackets() ) {
+                        lastFlush = now;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return res;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } finally {
+            unlock();
         }
-        return res;
+    }
+
+    protected void sendHeartBeat() {
+//        putMessage(-1, heartbeat, 0, 1, true);
     }
 
     @Override
     public int getTopicId() {
         return 0;
     }
+
+    AtomicBoolean sendLock = new AtomicBoolean(false);
+    public void lock() {
+//        while( ! sendLock.compareAndSet(false,true)) {
+//
+//        }
+    }
+
+    public void unlock() {
+//        sendLock.set(false);
+    }
+
 }

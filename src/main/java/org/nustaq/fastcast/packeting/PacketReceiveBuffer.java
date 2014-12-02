@@ -41,13 +41,14 @@ public class PacketReceiveBuffer {
     SimpleByteArrayReceiver decoder = new SimpleByteArrayReceiver() {
         @Override
         public void msgDone(long seq, Bytez b, int off, int len) {
-        if ( receiver != null ) {
-            receiver.messageReceived(receivesFrom,seq,b,off,len);
-        }
+            if ( len == 1 && b.get(off) == FastCast.HEARTBEAT ) { // FIXME: use controlpacket for heartbeats
+                topicEntry.registerHeartBeat(receivesFrom,System.currentTimeMillis());
+            } else if ( receiver != null ) {
+                receiver.messageReceived(receivesFrom,seq,b,off,len);
+            }
         }
     };
 
-    Executor topicWideDeliveryThread;
     private boolean isUnordered = false;
     private boolean isUnreliable = false;
     TopicStats stats;
@@ -58,11 +59,9 @@ public class PacketReceiveBuffer {
     RetransPacket retransTemplate;
     DataPacket template;
 
-    public PacketReceiveBuffer(int dataGramSizeBytes, String clusterName, String nodeId, int historySize, String receivesFrom, TopicEntry entry, FCSubscriber receiver,Executor topicReceiverThread) {
-        topicWideDeliveryThread = topicReceiverThread;
+    public PacketReceiveBuffer(int dataGramSizeBytes, String clusterName, String nodeId, int historySize, String receivesFrom, TopicEntry entry, FCSubscriber receiver) {
         topicEntry = entry;
         dGramSize = dataGramSizeBytes;
-        int decodeQSize = entry.getReceiverConf().getDecodeQSize();
         this.topic = entry.getTopicId();
         this.receiver = receiver;
         template = DataPacket.getTemplate(dataGramSizeBytes);
