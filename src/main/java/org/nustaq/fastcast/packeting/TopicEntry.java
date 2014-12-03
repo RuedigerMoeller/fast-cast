@@ -38,7 +38,7 @@ public class TopicEntry {
     volatile boolean listenCalls = false; // if false => only listen to call results if any
     private FCSubscriber subscriber;
     int topicId = -1;
-    private long hbTimeoutMS = 3000*1000; // dev
+    private long hbTimeoutMS = 3000; // dev
 
     public TopicEntry(FCSubscriberConf receiverConf, FCPublisherConf publisherConf) {
         this.receiverConf = receiverConf;
@@ -49,6 +49,9 @@ public class TopicEntry {
             } catch (Exception e) {
                 FCLog.log(e);  //To change body of catch statement use File | Settings | File Templates.
             }
+        }
+        if ( receiverConf != null ) {
+            hbTimeoutMS = receiverConf.getSenderHBTimeout();
         }
     }
 

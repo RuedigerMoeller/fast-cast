@@ -407,22 +407,9 @@ public class FastCast {
         }
         try {
             FCLog.log("Connecting transport " + tconf.getName());
-            // fixme: use Guice
-            if ( FCSocketConf.MCAST_NIO_SOCKET.equals(tconf.getTransportType()) ) {
-                FCMulticastChannelTransport tr = new FCMulticastChannelTransport(tconf);
-                tr.join();
-                transports.put(tconf.getName(), tr);
-            } else if (FCSocketConf.MCAST_SOCKET.equals(tconf.getTransportType())) {
-                FCMulticastSocketTransport tr = new FCMulticastSocketTransport(tconf);
-                tr.join();
-                transports.put(tconf.getName(), tr);
-            } else if (FCSocketConf.MCAST_IPC.equals(tconf.getTransportType())) {
-                SharedMemTransport tr = new SharedMemTransport(tconf);
-                tr.join();
-                transports.put(tconf.getName(), tr);
-            } else {
-                throw new RuntimeException("unknown transport "+tconf.getTransportType());
-            }
+            FCMulticastChannelTransport tr = new FCMulticastChannelTransport(tconf);
+            tr.join();
+            transports.put(tconf.getName(), tr);
         } catch (IOException e) {
             FCLog.log(e);
         }

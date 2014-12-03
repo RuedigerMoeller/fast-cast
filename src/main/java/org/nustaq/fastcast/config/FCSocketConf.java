@@ -32,10 +32,6 @@ import java.util.Enumeration;
  */
 public class FCSocketConf {
 
-    public static String MCAST_NIO_SOCKET = "MCAST_NIO_SOCKET";
-    public static String MCAST_SOCKET = "MCAST_SOCKET";
-    public static String MCAST_IPC = "MCAST_IPC";
-
     String name;
 
     int dgramsize = 1300;
@@ -47,7 +43,6 @@ public class FCSocketConf {
     int ttl = 2;
     int receiveBufferSize = 30000000; // used as file size for shmem
     int sendBufferSize = 8000000;
-    String transportType = MCAST_NIO_SOCKET;
     String queueFile; // for shared mem, identifies file path of mmapped file for this transport
 
     public FCSocketConf() {
@@ -94,14 +89,6 @@ public class FCSocketConf {
             }
         }
         return ifacAdr;
-    }
-
-    public String getTransportType() {
-        return transportType;
-    }
-
-    public void setTransportType(String transportType) {
-        this.transportType = transportType;
     }
 
     public void setIfacAdr(String ifacAdr) {

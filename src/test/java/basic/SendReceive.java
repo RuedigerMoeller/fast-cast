@@ -7,6 +7,7 @@ import org.nustaq.fastcast.remoting.FCPublisher;
 import org.nustaq.fastcast.remoting.FCSubscriber;
 import org.nustaq.fastcast.remoting.FastCast;
 import org.nustaq.fastcast.config.FCSocketConf;
+import org.nustaq.fastcast.util.RateMeasure;
 import org.nustaq.fastcast.util.Sleeper;
 import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.structs.FSTStruct;
@@ -62,6 +63,7 @@ public class SendReceive {
 
         toSend.getString().setString("Hello");
         Sleeper sl = new Sleeper();
+        RateMeasure measure = new RateMeasure("msg send");
         while( true ) {
 //            Thread.sleep(500);
             sl.sleepMicros(100);
@@ -70,6 +72,7 @@ public class SendReceive {
                 while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
                     System.out.println("offer rejected !");
                 }
+                measure.count();
             }
 //            System.out.println("sent msg");
         }
@@ -99,7 +102,9 @@ public class SendReceive {
                 long nanos = System.nanoTime()-received.getTimeNanos();
                 if ( count++%1000 == 0 )
                 {
-                    System.out.println("receive " + received.getString().toString() + " latency:" + (nanos / 1000));
+                    worker.execute( () -> {
+                        System.out.println("receive " + received.getString().toString() + " latency:" + (nanos / 1000));
+                    });
                 }
             }
 

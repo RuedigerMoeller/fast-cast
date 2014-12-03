@@ -10,6 +10,7 @@ import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
@@ -138,11 +139,14 @@ public class FCTransportDispatcher {
     {
         byte[] receiveBuf = new byte[trans.getConf().getDgramsize()];
         DatagramPacket p = new DatagramPacket(receiveBuf,receiveBuf.length);
-        receivedPacket = (Packet) alloc.newStruct(new Packet());
+        ByteBuffer buff = ByteBuffer.wrap(p.getData(), p.getOffset(), p.getLength());
+        receivedPacket = alloc.newStruct(new Packet());
         int idleCount = 0;
+        receivedPacket.baseOn(receiveBuf, 0);
         while(true) {
             try {
-                if (receiveDatagram(p)) {
+                buff.position(0);
+                if (receiveDatagram(buff, receiveBuf)) {
                     idleCount = 0;
                 } else {
                     idleCount++;
@@ -156,9 +160,8 @@ public class FCTransportDispatcher {
         }
     }
 
-    private boolean receiveDatagram(DatagramPacket p) throws IOException {
+    private boolean receiveDatagram(ByteBuffer p, byte wrappedArr[]) throws IOException {
         if ( trans.receive(p) ) {
-            receivedPacket.baseOn(p.getData(), p.getOffset());
 
             boolean sameCluster = receivedPacket.getCluster().equals(clusterName);
             boolean selfSent = receivedPacket.getSender().equals(nodeId);

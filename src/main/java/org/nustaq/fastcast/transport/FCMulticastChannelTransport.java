@@ -37,8 +37,24 @@ public class FCMulticastChannelTransport implements Transport {
         return receive != null;
     }
 
+    public boolean receive(ByteBuffer pack) throws IOException {
+        SocketAddress receive = receiveSocket.receive(pack);
+        return receive != null;
+    }
+
+    @Override
     public void send(DatagramPacket pack) throws IOException {
         sendSocket.send(ByteBuffer.wrap(pack.getData(), pack.getOffset(), pack.getLength()), socketAddress);
+    }
+
+    @Override
+    public void send(byte[] bytes, int off, int len) throws IOException {
+        sendSocket.send(ByteBuffer.wrap(bytes, off, len), socketAddress);
+    }
+
+    @Override
+    public void send(ByteBuffer b) throws IOException {
+        sendSocket.send(b, socketAddress);
     }
 
     public InetSocketAddress getAddress() {
