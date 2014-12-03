@@ -116,7 +116,7 @@ public class FCTransportDispatcher {
                             lastMsg[i] = lastFlush;
                         else if ( lastMsg[i] == lastFlush) {
                             // no flush since last turnaround, generate a flush
-//                            packetSendBuffer.offer(null,0,0,true);
+                            packetSendBuffer.offer(null,0,0,true);
                         } else {
                             lastMsg[i] = lastFlush;
                         }
@@ -199,7 +199,7 @@ public class FCTransportDispatcher {
                 {
                     ControlPacket control = (ControlPacket) receivedPacket.cast();
                     if ( control.getType() == ControlPacket.DROPPED &&
-                         receivedPacketReceiver.equals(nodeId) ) {
+                        receivedPacketReceiver.equals(nodeId) ) {
                         ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
                         if ( receiveBufferDispatcher != null ) {
                             FCLog.get().warn(nodeId+" has been dropped by "+receivedPacket.getSender()+" on service "+receiveBufferDispatcher.getTopicEntry().getTopicId());
@@ -209,6 +209,12 @@ public class FCTransportDispatcher {
                             }
 //                            receiver[topic] = null;
                             // FIXME: initate resync
+                        }
+                    } else if ( control.getType() == ControlPacket.HEARTBEAT ) {
+                        ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
+                        if ( receiveBufferDispatcher != null ) {
+                            TopicEntry topicEntry = receiveBufferDispatcher.getTopicEntry();
+                            topicEntry.registerHeartBeat(control.getSender().toString(), System.currentTimeMillis());
                         }
                     }
                 }

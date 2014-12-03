@@ -7,6 +7,7 @@ import org.nustaq.fastcast.remoting.FCPublisher;
 import org.nustaq.fastcast.remoting.FCSubscriber;
 import org.nustaq.fastcast.remoting.FastCast;
 import org.nustaq.fastcast.config.FCSocketConf;
+import org.nustaq.fastcast.util.Sleeper;
 import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.structs.FSTStruct;
 import org.nustaq.offheap.structs.FSTStructAllocator;
@@ -60,9 +61,10 @@ public class SendReceive {
         FCPublisher sender = fc.publish(new FCPublisherConf("default", 1));
 
         toSend.getString().setString("Hello");
-
+        Sleeper sl = new Sleeper();
         while( true ) {
 //            Thread.sleep(500);
+            sl.sleepMicros(100);
             for ( int i = 0; i < 2; i++ ) {
                 toSend.setTimeNanos(System.nanoTime());
                 while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {

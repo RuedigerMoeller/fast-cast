@@ -41,11 +41,7 @@ public class PacketReceiveBuffer {
     SimpleByteArrayReceiver decoder = new SimpleByteArrayReceiver() {
         @Override
         public void msgDone(long seq, Bytez b, int off, int len) {
-            if ( len == 1 && b.get(off) == FastCast.HEARTBEAT ) { // FIXME: use controlpacket for heartbeats
-                topicEntry.registerHeartBeat(receivesFrom,System.currentTimeMillis());
-            } else if ( receiver != null ) {
-                receiver.messageReceived(receivesFrom,seq,b,off,len);
-            }
+            receiver.messageReceived(receivesFrom,seq,b,off,len);
         }
     };
 

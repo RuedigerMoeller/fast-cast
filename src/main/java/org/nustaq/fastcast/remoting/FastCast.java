@@ -22,7 +22,6 @@ import java.util.*;
  */
 public class FastCast {
 
-    public static final int HEARTBEAT = 99;
 
     static {
         FSTStructFactory.getInstance().registerSystemClz((byte)127, Packet.class, DataPacket.class, RetransPacket.class, RetransEntry.class, ControlPacket.class);

@@ -8,7 +8,8 @@ package org.nustaq.fastcast.packeting;
  * To change this template use File | Settings | File Templates.
  */
 public class ControlPacket extends Packet {
-    public static short DROPPED = 0;
+    public static final short DROPPED = 0;
+    public static final short HEARTBEAT = 99;
 
     protected short type;
 
