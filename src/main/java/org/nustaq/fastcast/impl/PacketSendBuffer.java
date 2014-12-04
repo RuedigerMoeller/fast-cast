@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class PacketSendBuffer implements FCPublisher {
 
     public static final boolean RETRANSDEBUG = true;
-    private static final int RETRANS_MEM = 10000;
+    private static final int RETRANS_MEM = 10000; // retransrequest history to accumulate identical retrans requests
     private static final int TAG_BUFF = 4;
     private static final boolean DEBUG_LAT = false;
     final PhysicalTransport trans;
