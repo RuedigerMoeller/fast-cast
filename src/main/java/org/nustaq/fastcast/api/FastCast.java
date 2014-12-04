@@ -1,6 +1,6 @@
 package org.nustaq.fastcast.api;
 
-import org.nustaq.fastcast.config.PhysicalTransportConf;
+import org.nustaq.fastcast.config.*;
 import org.nustaq.fastcast.impl.TransportDriver;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.fastcast.util.FCUtils;
@@ -26,6 +26,7 @@ public class FastCast {
 
     static FastCast fc;
     private String clusterName = "-";
+    private ClusterConf config;
 
     public static FastCast getFastCast() {
         synchronized (FastCast.class) {
@@ -75,9 +76,54 @@ public class FastCast {
         return res;
     }
 
+    public void loadConfig(String filePath) throws Exception {
+        setConfig(ClusterConf.readFrom(filePath));
+    }
+
+    public void setConfig(ClusterConf config) {
+        this.config = config;
+        addTransportsFrom(config);
+    }
+
+    /**
+     * only avaiable if initialized with setConfig or loadConfig
+     * @param name
+     * @return
+     */
+    public SubscriberConf getSubscriberConf(String name) {
+        TopicConf topic = getConfig().getTopic(name);
+        if ( topic != null )
+            return topic.getSub();
+        return null;
+    }
+
+    /**
+     * only avaiable if initialized with setConfig or loadConfig
+     * @param name
+     * @return
+     */
+    public PublisherConf getPublisherConf(String name) {
+        TopicConf topic = getConfig().getTopic(name);
+        if ( topic != null )
+            return topic.getPub();
+        return null;
+    }
+
+    public ClusterConf getConfig() {
+        return config;
+    }
+
     public static class ConfigurationAlreadyDefinedException extends RuntimeException {
         public ConfigurationAlreadyDefinedException(String message) {
             super(message);
+        }
+    }
+
+    public void addTransportsFrom(ClusterConf config) {
+        PhysicalTransportConf[] trs = config.transports;
+        for (int i = 0; i < trs.length; i++) {
+            PhysicalTransportConf tr = trs[i];
+            addTransport(tr);
         }
     }
 

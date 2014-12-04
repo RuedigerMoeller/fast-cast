@@ -64,11 +64,11 @@ public class PacketSendBuffer implements FCPublisher {
 
     ByteBuffer tmpSend;
 
-    boolean isUnordered;
 
     Topic topicEntry;
     TopicStats stats;
-    int mPacketRateLimit;
+    boolean isUnordered;
+    int packetRateLimit;
 
     public PacketSendBuffer(PhysicalTransport trans, String clusterName, String nodeId, Topic entry ) {
         this.trans = trans;
@@ -477,12 +477,12 @@ public class PacketSendBuffer implements FCPublisher {
 
     @Override
     public void setPacketRateLimit(int limit) {
-        mPacketRateLimit = limit;
+        packetRateLimit = limit;
     }
 
     @Override
     public int getPacketRateLimit() {
-        return mPacketRateLimit;
+        return packetRateLimit;
     }
 
 }

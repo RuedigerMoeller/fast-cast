@@ -26,7 +26,6 @@ public class PublisherConf {
     ///////////////////////////////////////////////////////////////////////////////
 
     long heartbeatInterval = 200;    // sent per topicId, ms. detects senderTimeoutMillis
-    long flowControlInterval = 1000; // time window(ms) flow control uses to determine send rate + stats reset rate
 
     public PublisherConf(int topicId) {
         this.topicId = topicId;
@@ -37,7 +36,6 @@ public class PublisherConf {
     // sender misc (threading, locking
     //
     ///////////////////////////////////////////////////////////////////////////////
-    private int dGramRate; // ignored if 0
 
     public int getNumPacketHistory() {
         return numPacketHistory;
@@ -61,18 +59,6 @@ public class PublisherConf {
 
     public void setHeartbeatInterval(long heartbeatInterval) {
         this.heartbeatInterval = heartbeatInterval;
-    }
-
-    public long getFlowControlInterval() {
-        return flowControlInterval;
-    }
-
-    public void setFlowControlInterval(long flowControlInterval) {
-        this.flowControlInterval = flowControlInterval;
-    }
-
-    public int getDGramRate() {
-        return dGramRate;
     }
 
 }

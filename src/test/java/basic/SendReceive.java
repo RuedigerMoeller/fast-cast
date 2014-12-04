@@ -1,6 +1,7 @@
 package basic;
 
 import org.junit.Test;
+import org.nustaq.fastcast.config.ClusterConf;
 import org.nustaq.fastcast.config.PublisherConf;
 import org.nustaq.fastcast.config.SubscriberConf;
 import org.nustaq.fastcast.config.PhysicalTransportConf;
@@ -23,7 +24,7 @@ import java.util.concurrent.Executors;
  */
 public class SendReceive {
 
-    public static final String IFAC = "bond0";
+    public static final String IFAC = "lo";
 
     public static class TestMsg extends FSTStruct {
 
@@ -50,17 +51,14 @@ public class SendReceive {
     @Test
     public void send() throws InterruptedException {
 
-        initFactory();
+        FastCast fc = initFC();
 
         TestMsg template = new TestMsg();
         FSTStructAllocator allocator = new FSTStructAllocator(0);
 
         TestMsg toSend = allocator.newStruct(template);
 
-        System.setProperty("java.net.preferIPv4Stack","true" );
-        FastCast fc = FastCast.getFastCast();
-        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr(IFAC));
-        FCPublisher sender = fc.getTransportDriver("default").publish(new PublisherConf(1));
+        FCPublisher sender = fc.getTransportDriver("default").publish(fc.getPublisherConf("test"));
 
         toSend.getString().setString("Hello");
         Sleeper sl = new Sleeper();
@@ -79,22 +77,28 @@ public class SendReceive {
         }
     }
 
-    protected void initFactory() {
+    protected FastCast initFC() {
+        System.setProperty("java.net.preferIPv4Stack","true" );
         FSTStructFactory.getInstance().registerClz(TestMsg.class);
+
+        try {
+            FastCast fc = FastCast.getFastCast();
+            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/basic/sendreceive.kson");
+            return fc;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Test
     public void receive() throws InterruptedException {
 
-        initFactory();
+        FastCast fc = initFC();
 
         final Executor worker = Executors.newSingleThreadExecutor();
 
-        System.setProperty("java.net.preferIPv4Stack","true" );
-        FastCast fc = FastCast.getFastCast();
-        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr(IFAC));
-
-        fc.getTransportDriver("default").subscribe(new SubscriberConf(1), new FCSubscriber() {
+        fc.getTransportDriver("default").subscribe(fc.getSubscriberConf("test"), new FCSubscriber() {
 
             int count = 0;
 

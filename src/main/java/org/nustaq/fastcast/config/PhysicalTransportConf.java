@@ -34,17 +34,32 @@ public class PhysicalTransportConf {
 
     String name;
 
+    // determines the max size of a datagram sent.
+    // use value near [MTU-100] for lowest latency (requires high end hardware), use 4k .. 16k for throughput (don't flush each msg then)
     int dgramsize = 1300;
+    // interface used
     String ifacAdr = "lo";
+    // mcast address
     String mcastAdr = "229.9.9.9";
+    // port
     int port = 45555;
+    // see scoket options
     int trafficClass = 0x08;
+    // set to true in order to receive packets on other processes on the same system
     boolean loopBack = true;
+    // see socket options
     int ttl = 2;
-    int socketReceiveBufferSize = 30000000; // used as file size for shmem
-    int sendBufferSize = 8000000;
-    String queueFile; // for shared mem, identifies file path of mmapped file for this transport
-    private long autoFlushMS = 3;
+    // receive and sendbuffer sizes. Try to get large ones ..
+    int socketReceiveBufferSize = 30_000_000;
+    int sendBufferSize = 8_000_000;
+
+    // time until a msg sent with flush=false is automatically flushed out
+    // (batching for throughput)
+    long autoFlushMS = 3;
+    // number of idle receveive loops until spinlock is stopped to free CPU ressources
+    int spinIdleLoopMax = 10_000_000;
+    // how long receiving thread will be haltet once idle. (high values => higher latency after idle, lower values => more cpu burn)
+    int idleParkMicros = 1000;
 
     public PhysicalTransportConf() {
     }
@@ -57,16 +72,18 @@ public class PhysicalTransportConf {
         return name;
     }
 
-    public void setName(String name) {
+    public PhysicalTransportConf setName(String name) {
         this.name = name;
+        return this;
     }
 
     public int getDgramsize() {
         return dgramsize;
     }
 
-    public void setDgramsize(int dgramsize) {
+    public PhysicalTransportConf setDgramsize(int dgramsize) {
         this.dgramsize = dgramsize;
+        return this;
     }
 
     public String getIfacAdr() {
@@ -101,67 +118,89 @@ public class PhysicalTransportConf {
         return mcastAdr;
     }
 
-    public void setMcastAdr(String mcastAdr) {
+    public PhysicalTransportConf setMcastAdr(String mcastAdr) {
         this.mcastAdr = mcastAdr;
+        return this;
     }
 
     public int getPort() {
         return port;
     }
 
-    public void setPort(int port) {
+    public PhysicalTransportConf setPort(int port) {
         this.port = port;
+        return this;
     }
 
     public int getTrafficClass() {
         return trafficClass;
     }
 
-    public void setTrafficClass(int trafficClass) {
+    public PhysicalTransportConf setTrafficClass(int trafficClass) {
         this.trafficClass = trafficClass;
+        return this;
     }
 
     public boolean isLoopBack() {
         return loopBack;
     }
 
-    public void setLoopBack(boolean loopBack) {
+    public PhysicalTransportConf setLoopBack(boolean loopBack) {
         this.loopBack = loopBack;
+        return this;
     }
 
     public int getTtl() {
         return ttl;
     }
 
-    public void setTtl(int ttl) {
+    public PhysicalTransportConf setTtl(int ttl) {
         this.ttl = ttl;
+        return this;
     }
 
     public int getSocketReceiveBufferSize() {
         return socketReceiveBufferSize;
     }
 
-    public void setSocketReceiveBufferSize(int socketReceiveBufferSize) {
+    public PhysicalTransportConf setSocketReceiveBufferSize(int socketReceiveBufferSize) {
         this.socketReceiveBufferSize = socketReceiveBufferSize;
+        return this;
     }
 
     public int getSendBufferSize() {
         return sendBufferSize;
     }
 
-    public void setSendBufferSize(int sendBufferSize) {
+    public PhysicalTransportConf setSendBufferSize(int sendBufferSize) {
         this.sendBufferSize = sendBufferSize;
-    }
-
-    public String getQueueFile() {
-        return queueFile;
-    }
-
-    public void setQueueFile(String queueFile) {
-        this.queueFile = queueFile;
+        return this;
     }
 
     public long getAutoFlushMS() {
         return autoFlushMS;
+    }
+
+    public int getIdleParkMicros() {
+        return idleParkMicros;
+    }
+
+    public int getSpinIdleLoopMax() {
+        return spinIdleLoopMax;
+    }
+
+    public PhysicalTransportConf setAutoFlushMS(long autoFlushMS) {
+        this.autoFlushMS = autoFlushMS;
+        return this;
+    }
+
+    public PhysicalTransportConf setIdleParkMicros(int idleParkMicros) {
+        this.idleParkMicros = idleParkMicros;
+        return this;
+    }
+
+    public PhysicalTransportConf setSpinIdleLoopMax(int spinIdleLoopMax) {
+        this.spinIdleLoopMax = spinIdleLoopMax;
+        return this;
     }
 }

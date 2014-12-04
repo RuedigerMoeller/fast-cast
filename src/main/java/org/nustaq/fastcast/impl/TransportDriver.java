@@ -1,6 +1,7 @@
 package org.nustaq.fastcast.impl;
 
 import org.nustaq.fastcast.api.FCPublisher;
+import org.nustaq.fastcast.config.PhysicalTransportConf;
 import org.nustaq.fastcast.config.PublisherConf;
 import org.nustaq.fastcast.config.SubscriberConf;
 import org.nustaq.fastcast.api.FCSubscriber;
@@ -25,9 +26,11 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class TransportDriver {
 
-    public static final int IDLE_SPIN_IDLE_COUNT = 1000*1000*10;
-    private static final int IDLE_SLEEP_MICRO_SECONDS = 1000;
     public static int MAX_NUM_TOPICS = 256;
+
+    int spinIdleLoopMax = 1000*1000*10;
+    int idleParkMicros = 1000;
+
     PhysicalTransport trans;
 
     ReceiveBufferDispatcher receiver[];
@@ -46,19 +49,22 @@ public class TransportDriver {
         this.trans = trans;
         this.nodeId = alloc.newStruct( new StructString(nodeId) );
         this.clusterName = alloc.newStruct( new StructString(clusterName) );
-        this.autoFlushMS = trans.getConf().getAutoFlushMS();
+        final PhysicalTransportConf tconf = trans.getConf();
+        this.autoFlushMS = tconf.getAutoFlushMS();
+        this.spinIdleLoopMax = tconf.getSpinIdleLoopMax();
+        this.idleParkMicros = tconf.getIdleParkMicros();
 
         receiver = new ReceiveBufferDispatcher[MAX_NUM_TOPICS];
         sender = new PacketSendBuffer[MAX_NUM_TOPICS];
         lastMsg = new long[MAX_NUM_TOPICS];
 
-        receiverThread = new Thread("trans receiver "+trans.getConf().getName()) {
+        receiverThread = new Thread("trans receiver "+ tconf.getName()) {
             public void run() {
                 receiveLoop();
             }
         };
         receiverThread.start();
-        houseKeeping = new Thread("trans houseKeeping"+trans.getConf().getName()) {
+        houseKeeping = new Thread("trans houseKeeping"+ tconf.getName()) {
             public void run() {
                 houseKeepingLoop();
             }
@@ -152,8 +158,8 @@ public class TransportDriver {
                     idleCount = 0;
                 } else {
                     idleCount++;
-                    if ( idleCount > IDLE_SPIN_IDLE_COUNT ) {
-                        LockSupport.parkNanos(1000*IDLE_SLEEP_MICRO_SECONDS);
+                    if ( idleCount > spinIdleLoopMax) {
+                        LockSupport.parkNanos(1000*idleParkMicros);
                     }
                 }
             } catch (IOException e) {
