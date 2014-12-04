@@ -66,13 +66,11 @@ public class SendReceive {
         while( true ) {
 //            Thread.sleep(500);
             sl.sleepMicros(5);
-            for ( int i = 0; i < 2; i++ ) {
-                toSend.setTimeNanos(System.nanoTime());
-                while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
-                    System.out.println("offer rejected !");
-                }
-                measure.count();
+            toSend.setTimeNanos(System.nanoTime());
+            while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
+                System.out.println("offer rejected !");
             }
+            measure.count();
 //            System.out.println("sent msg");
         }
     }
