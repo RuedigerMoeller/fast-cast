@@ -443,8 +443,7 @@ public class PacketSendBuffer implements FCPublisher {
             if ( ! sendPendingRetrans() ) {
                 if ( sendPendingPackets() ) {
                     lastFlush = now;
-                } else
-                    res = false;
+                }
             } else
                 res = false;
         } catch (IOException e) {

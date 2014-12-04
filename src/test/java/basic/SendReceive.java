@@ -65,9 +65,9 @@ public class SendReceive {
         RateMeasure measure = new RateMeasure("msg send");
         while( true ) {
 //            Thread.sleep(500);
-            sl.sleepMicros(5);
+//            sl.sleepMicros(5);
             toSend.setTimeNanos(System.nanoTime());
-            while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
+            while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), false ) ) {
                 System.out.println("offer rejected !");
             }
             measure.count();

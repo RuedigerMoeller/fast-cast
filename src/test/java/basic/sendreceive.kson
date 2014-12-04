@@ -21,7 +21,7 @@ ClusterConf {
             name: test
 
             pub: {
-                numPacketHistory: 500_000
+                numPacketHistory: 100_000
             }
 
             sub: {
