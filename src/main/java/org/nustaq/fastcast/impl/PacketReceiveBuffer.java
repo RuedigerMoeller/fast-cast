@@ -428,7 +428,9 @@ public class PacketReceiveBuffer {
     }
 
     private void decodeMsgBytes(long packetSeqNo, Bytez dataPacketBase, int dataindex, int packIndex) {
-        FCReceiveContext.get().setSender(receivesFrom);
+        FCReceiveContext fcReceiveContext = FCReceiveContext.get();
+        fcReceiveContext.setSender(receivesFrom);
+        fcReceiveContext.setTopicInfo(topicEntry);
 
         long now = System.currentTimeMillis();
         packCount++;
@@ -498,5 +500,18 @@ public class PacketReceiveBuffer {
         packetAllocator.free();
         long curr = MallocBytezAllocator.alloced.get();
         FCLog.log("freed " + (alloced - curr) / 1024 / 1024 + "MB to " + curr / 1024 / 1024 + " MB");
+    }
+
+    /**
+     * reset all sequences and resync (creates unrecoverable message loss)
+     */
+    public void resync() {
+        maxOrderedSeq = new AtomicLong(0);
+        maxDeliveredSeq = new AtomicLong(0);
+        startTime = 0;
+        retransCount = 0;
+        firstGapDetected = 0;
+        debugPrevSeq = 0;
+        inInitialSync = true; // in case first packet is chained, stay in initial until complete msg is found
     }
 }

@@ -45,7 +45,7 @@ public class FCReceiveContext {
     Topic entry;
     String sender;
 
-    public void setEntry(Topic entry) {
+    public void setTopicInfo(Topic entry) {
         this.entry = entry;
     }
 
@@ -57,7 +57,7 @@ public class FCReceiveContext {
         return sender;
     }
 
-    public Topic getEntry() {
+    public Topic getTopicInfo() {
         return entry;
     }
 }

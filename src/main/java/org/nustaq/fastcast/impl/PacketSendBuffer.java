@@ -68,6 +68,7 @@ public class PacketSendBuffer implements FCPublisher {
 
     Topic topicEntry;
     TopicStats stats;
+    int mPacketRateLimit;
 
     public PacketSendBuffer(PhysicalTransport trans, String clusterName, String nodeId, Topic entry ) {
         this.trans = trans;
@@ -409,23 +410,19 @@ public class PacketSendBuffer implements FCPublisher {
         offer(null,0,0,true);
     }
 
+    AtomicBoolean sendLock = new AtomicBoolean(false);
+    private void lock() {
+        while( ! sendLock.compareAndSet(false,true)) {
+        }
+    }
+
+    private void unlock() {
+        sendLock.set(false);
+    }
     long hbInvtervalMS = 1000;
     long lastHB = System.nanoTime();
 
     public volatile long lastFlush = System.currentTimeMillis();
-
-    @Override
-    public boolean offer(ByteSource msg, long start, int len, boolean doFlush) {
-        try {
-            lock();
-//            synchronized (this)
-            {
-                return offerNoLock(msg, start, len, doFlush);
-            }
-        } finally {
-            unlock();
-        }
-    }
 
     protected boolean offerNoLock(ByteSource msg, long start, int len, boolean doFlush) {
         long now = System.nanoTime();
@@ -456,19 +453,36 @@ public class PacketSendBuffer implements FCPublisher {
         return res;
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // publisher interface
+    //
+    @Override
+    public boolean offer(ByteSource msg, long start, int len, boolean doFlush) {
+        try {
+            lock();
+//            synchronized (this)
+            {
+                return offerNoLock(msg, start, len, doFlush);
+            }
+        } finally {
+            unlock();
+        }
+    }
+
     @Override
     public int getTopicId() {
         return topicEntry.getTopicId();
     }
 
-    AtomicBoolean sendLock = new AtomicBoolean(false);
-    private void lock() {
-        while( ! sendLock.compareAndSet(false,true)) {
-        }
+    @Override
+    public void setPacketRateLimit(int limit) {
+        mPacketRateLimit = limit;
     }
 
-    private void unlock() {
-        sendLock.set(false);
+    @Override
+    public int getPacketRateLimit() {
+        return mPacketRateLimit;
     }
 
 }

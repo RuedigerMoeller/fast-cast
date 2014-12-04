@@ -204,15 +204,27 @@ public class TransportDriver {
                 {
                     ControlPacket control = (ControlPacket) receivedPacket.cast();
                     if ( control.getType() == ControlPacket.DROPPED &&
-                        receivedPacketReceiver.equals(nodeId) ) {
+                        receivedPacketReceiver.equals(nodeId) )
+                    {
                         ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
                         if ( receiveBufferDispatcher != null ) {
                             FCLog.get().warn(nodeId+" has been dropped by "+receivedPacket.getSender()+" on service "+receiveBufferDispatcher.getTopicEntry().getTopicId());
                             FCSubscriber service = receiveBufferDispatcher.getTopicEntry().getSubscriber();
                             if ( service != null ) {
-                                service.dropped();
+                                if ( service.dropped() ) { // retry if returns try
+                                    FCLog.get().warn("..resyncing..");
+                                    PacketReceiveBuffer buffer = receiveBufferDispatcher.getBuffer(receivedPacket.getSender());
+                                    if ( buffer != null ) {
+                                        buffer.resync();
+                                    } else {
+                                        FCLog.get().warn("unexpected null buffer");
+                                    }
+                                } else {
+                                    // topic is lost forever now ..
+                                    receiver[topic] = null;
+                                    receiveBufferDispatcher.cleanupTopic();
+                                }
                             }
-//                            receiver[topic] = null;
                             // FIXME: initate resync
                         }
                     } else if ( control.getType() == ControlPacket.HEARTBEAT ) {

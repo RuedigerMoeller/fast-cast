@@ -3,6 +3,7 @@ package org.nustaq.fastcast.impl;
 import org.nustaq.fastcast.api.FCSubscriber;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /*
@@ -14,7 +15,7 @@ import java.util.HashMap;
  */
 
 /**
- * receives messages of a topic an multiplexes messages of different publishers to their
+ * receives messages of a topic and multiplexes messages of different publishers to their
  * associated PacketReceiveBuffer
  */
 public class ReceiveBufferDispatcher {
@@ -69,6 +70,14 @@ public class ReceiveBufferDispatcher {
         }
         else {
             System.out.println("cannot find packetReceiver to terminate");
+        }
+    }
+
+    public void cleanupTopic() {
+        ArrayList<String> keys = new ArrayList(bufferMap.keySet());
+        for (int i = 0; i < keys.size(); i++) {
+            String o =  keys.get(i);
+            cleanup(o);
         }
     }
 }

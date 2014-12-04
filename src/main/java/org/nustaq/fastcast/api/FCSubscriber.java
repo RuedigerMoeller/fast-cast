@@ -12,8 +12,9 @@ public interface FCSubscriber {
     /**
      * called in case the receiver was too slow in processing messages
      * and therefore got dropped (unrecoverable message loss).
+     * return true in order to let fast-cast automatically reconnect and resync
      */
-    public void dropped();
+    public boolean dropped();
 
     /**
      * a sender stopped sending or terminated
@@ -27,4 +28,6 @@ public interface FCSubscriber {
      * @param seqNo
      */
     public void senderBootstrapped(String receivesFrom, long seqNo);
+
+//    public void resync(); FIXME
 }

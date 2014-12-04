@@ -23,6 +23,8 @@ import java.util.concurrent.Executors;
  */
 public class SendReceive {
 
+    public static final String IFAC = "bond0";
+
     public static class TestMsg extends FSTStruct {
 
         protected StructString string = new StructString(15);
@@ -57,7 +59,7 @@ public class SendReceive {
 
         System.setProperty("java.net.preferIPv4Stack","true" );
         FastCast fc = FastCast.getFastCast();
-        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr("localhost"));
+        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr(IFAC));
         FCPublisher sender = fc.getTransportDriver("default").publish(new PublisherConf(1));
 
         toSend.getString().setString("Hello");
@@ -65,7 +67,7 @@ public class SendReceive {
         RateMeasure measure = new RateMeasure("msg send");
         while( true ) {
 //            Thread.sleep(500);
-            sl.sleepMicros(100);
+            sl.sleepMicros(5);
             for ( int i = 0; i < 2; i++ ) {
                 toSend.setTimeNanos(System.nanoTime());
                 while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
@@ -90,7 +92,8 @@ public class SendReceive {
 
         System.setProperty("java.net.preferIPv4Stack","true" );
         FastCast fc = FastCast.getFastCast();
-        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr("localhost"));
+        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr(IFAC));
+
         fc.getTransportDriver("default").subscribe(new SubscriberConf(1), new FCSubscriber() {
 
             int count = 0;
@@ -111,9 +114,10 @@ public class SendReceive {
             }
 
             @Override
-            public void dropped() {
+            public boolean dropped() {
                 System.out.println("receiver dropped");
-                System.exit(1);
+//                System.exit(1);
+                return true;
             }
 
             @Override
@@ -125,6 +129,7 @@ public class SendReceive {
             public void senderBootstrapped(String receivesFrom, long seqNo) {
                 System.out.println("synced " + receivesFrom + " sequence " + seqNo);
             }
+
         });
         Thread.sleep(1000 * 1000);
     }

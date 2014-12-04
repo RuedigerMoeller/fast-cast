@@ -9,5 +9,10 @@ public interface FCPublisher {
 
     public boolean offer(ByteSource msg, long start, int len, boolean doFlush);
     public int getTopicId();
+    // FIXME: add listener interface
+//    public void retransMissionRequestReceived(int percentageOfHistory, String nodeId);
+
+    public void setPacketRateLimit(int limit);
+    public int getPacketRateLimit();
 
 }
