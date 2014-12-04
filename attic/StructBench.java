@@ -1,7 +1,7 @@
 package de.ruedigermoeller.fastcast.test;
 
-import org.nustaq.fastcast.packeting.TopicStats;
-import org.nustaq.fastcast.remoting.*;
+import org.nustaq.fastcast.impl.TopicStats;
+import org.nustaq.fastcast.api.*;
 import org.nustaq.fastcast.util.FCUtils;
 import de.ruedigermoeller.heapoff.bytez.Bytez;
 import de.ruedigermoeller.heapoff.structs.FSTStruct;

@@ -1,6 +1,6 @@
-package org.nustaq.fastcast.remoting;
+package org.nustaq.fastcast.api;
 
-import org.nustaq.fastcast.packeting.TopicEntry;
+import org.nustaq.fastcast.impl.Topic;
 
 /**
  * Copyright (c) 2012, Ruediger Moeller. All rights reserved.
@@ -24,6 +24,11 @@ import org.nustaq.fastcast.packeting.TopicEntry;
  * Time: 19:53
  * To change this template use File | Settings | File Templates.
  */
+
+/**
+ * ThreadLocal containing additional context information about a message received.
+ * Use FCReceiveCntext.get(). Only valid inside receiving thread
+ */
 public class FCReceiveContext {
 
     public static FCReceiveContext get() {
@@ -37,10 +42,10 @@ public class FCReceiveContext {
         }
     };
 
-    TopicEntry entry;
+    Topic entry;
     String sender;
 
-    public void setEntry(TopicEntry entry) {
+    public void setEntry(Topic entry) {
         this.entry = entry;
     }
 
@@ -52,7 +57,7 @@ public class FCReceiveContext {
         return sender;
     }
 
-    public TopicEntry getEntry() {
+    public Topic getEntry() {
         return entry;
     }
 }

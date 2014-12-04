@@ -1,17 +1,21 @@
-package org.nustaq.fastcast.packeting;
+package org.nustaq.fastcast.impl;
 
 
 import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.bytez.onheap.HeapBytez;
 
-/**
+/*
  * Created with IntelliJ IDEA.
  * User: ruedi
  * Date: 8/11/13
  * Time: 1:20 PM
  * To change this template use File | Settings | File Templates.
  */
-public class SimpleByteArrayReceiver implements ByteArrayReceiver {
+
+/**
+ * Manages defragmentation of large messages + splitting of multiple messages per packet
+ */
+public class Defragmenter implements ByteArrayReceiver {
     final int STATE_CHAIN = 1;
     final int STATE_COMPLETE = 0;
 

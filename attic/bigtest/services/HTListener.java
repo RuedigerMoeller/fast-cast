@@ -8,8 +8,8 @@ package de.ruedigermoeller.fastcast.bigtest.services;
  * To change this template use File | Settings | File Templates.
  */
 
-import org.nustaq.fastcast.remoting.FCTopicService;
-import org.nustaq.fastcast.remoting.RemoteMethod;
+import org.nustaq.fastcast.api.FCTopicService;
+import org.nustaq.fastcast.api.RemoteMethod;
 
 import java.util.concurrent.ConcurrentHashMap;
 

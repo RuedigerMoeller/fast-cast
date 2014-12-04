@@ -1,6 +1,5 @@
-package org.nustaq.fastcast.remoting;
+package org.nustaq.fastcast.api;
 
-import org.nustaq.offheap.bytez.ByteSource;
 import org.nustaq.offheap.bytez.Bytez;
 
 /**

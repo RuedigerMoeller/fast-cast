@@ -1,8 +1,8 @@
 package de.ruedigermoeller.fastcast.bigtest.services;
 
-import org.nustaq.fastcast.remoting.FCFutureResultHandler;
-import org.nustaq.fastcast.remoting.FCTopicService;
-import org.nustaq.fastcast.remoting.RemoteMethod;
+import org.nustaq.fastcast.api.FCFutureResultHandler;
+import org.nustaq.fastcast.api.FCTopicService;
+import org.nustaq.fastcast.api.RemoteMethod;
 
 import java.io.Serializable;
 import java.util.ArrayList;

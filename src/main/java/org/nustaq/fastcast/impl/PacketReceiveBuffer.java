@@ -1,6 +1,6 @@
-package org.nustaq.fastcast.packeting;
+package org.nustaq.fastcast.impl;
 
-import org.nustaq.fastcast.remoting.*;
+import org.nustaq.fastcast.api.*;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.bytez.malloc.MallocBytezAllocator;
@@ -8,7 +8,6 @@ import org.nustaq.offheap.structs.FSTStruct;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructArray;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 
 /**
- * tracks packets sent from a single sender (single threaded)
+ * tracks packets and sequences sent from a single sender
  */
 public class PacketReceiveBuffer {
 
@@ -38,7 +37,7 @@ public class PacketReceiveBuffer {
 
     RetransPacket retrans; // used temporary from receive to return retrans packet
 
-    SimpleByteArrayReceiver decoder = new SimpleByteArrayReceiver() {
+    Defragmenter decoder = new Defragmenter() {
         @Override
         public void msgDone(long seq, Bytez b, int off, int len) {
             receiver.messageReceived(receivesFrom,seq,b,off,len);
@@ -55,7 +54,7 @@ public class PacketReceiveBuffer {
     RetransPacket retransTemplate;
     DataPacket template;
 
-    public PacketReceiveBuffer(int dataGramSizeBytes, String clusterName, String nodeId, int historySize, String receivesFrom, TopicEntry entry, FCSubscriber receiver) {
+    public PacketReceiveBuffer(int dataGramSizeBytes, String clusterName, String nodeId, int historySize, String receivesFrom, Topic entry, FCSubscriber receiver) {
         topicEntry = entry;
         dGramSize = dataGramSizeBytes;
         this.topic = entry.getTopicId();
@@ -91,7 +90,7 @@ public class PacketReceiveBuffer {
         maxDelayNextRetrans = topicEntry.getReceiverConf().getMaxDelayNextRetransMS();
     }
 
-    public TopicEntry getTopicEntry() {
+    public Topic getTopicEntry() {
         return topicEntry;
     }
 
@@ -120,7 +119,7 @@ public class PacketReceiveBuffer {
     long maxDelayNextRetrans = 50;
     long maxDelayRetrans = 10;
     boolean inInitialSync = true; // in case first packet is chained, stay in initial until complete msg is found
-    TopicEntry topicEntry;
+    Topic topicEntry;
 
     long startTime = 0;
 

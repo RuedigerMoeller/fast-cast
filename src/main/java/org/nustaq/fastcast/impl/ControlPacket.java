@@ -1,4 +1,4 @@
-package org.nustaq.fastcast.packeting;
+package org.nustaq.fastcast.impl;
 
 /**
  * Created with IntelliJ IDEA.

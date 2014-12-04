@@ -1,6 +1,6 @@
 package org.nustaq.fastcast.transport;
 
-import org.nustaq.fastcast.config.FCSocketConf;
+import org.nustaq.fastcast.config.PhysicalTransportConf;
 
 import java.io.IOException;
 import java.net.*;
@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  * Time: 20:21
  * To change this template use File | Settings | File Templates.
  */
-public interface Transport {
+public interface PhysicalTransport {
 
     public boolean receive(ByteBuffer pack) throws IOException;
     public boolean receive(DatagramPacket pack) throws IOException;
@@ -36,6 +36,6 @@ public interface Transport {
     public void send(byte bytes[], int off, int len) throws IOException;
     public void send(ByteBuffer b) throws IOException;
     public void join() throws IOException;
-    public FCSocketConf getConf();
+    public PhysicalTransportConf getConf();
 
 }

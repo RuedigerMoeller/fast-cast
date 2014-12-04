@@ -15,7 +15,7 @@ transports:
   dgramsize: 8000
 
   # in java we like large buffers to minimize packet loss due to GC jitter
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   sendBufferSize: 640000
 
   #misc

@@ -1,7 +1,7 @@
 package org.nustaq.fastcast.config;
 
 import org.nustaq.fastcast.util.FCLog;
-import java.io.*;
+
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -30,25 +30,26 @@ import java.util.Enumeration;
  * Time: 18:27
  * To change this template use File | Settings | File Templates.
  */
-public class FCSocketConf {
+public class PhysicalTransportConf {
 
     String name;
 
     int dgramsize = 1300;
-    private String ifacAdr = "lo";
+    String ifacAdr = "lo";
     String mcastAdr = "229.9.9.9";
     int port = 45555;
     int trafficClass = 0x08;
     boolean loopBack = true;
     int ttl = 2;
-    int receiveBufferSize = 30000000; // used as file size for shmem
+    int socketReceiveBufferSize = 30000000; // used as file size for shmem
     int sendBufferSize = 8000000;
     String queueFile; // for shared mem, identifies file path of mmapped file for this transport
+    private long autoFlushMS = 3;
 
-    public FCSocketConf() {
+    public PhysicalTransportConf() {
     }
 
-    public FCSocketConf(String name) {
+    public PhysicalTransportConf(String name) {
         this.name = name;
     }
 
@@ -91,8 +92,9 @@ public class FCSocketConf {
         return ifacAdr;
     }
 
-    public void setIfacAdr(String ifacAdr) {
+    public PhysicalTransportConf setIfacAdr(String ifacAdr) {
         this.ifacAdr = ifacAdr;
+        return this;
     }
 
     public String getMcastAdr() {
@@ -135,12 +137,12 @@ public class FCSocketConf {
         this.ttl = ttl;
     }
 
-    public int getReceiveBufferSize() {
-        return receiveBufferSize;
+    public int getSocketReceiveBufferSize() {
+        return socketReceiveBufferSize;
     }
 
-    public void setReceiveBufferSize(int receiveBufferSize) {
-        this.receiveBufferSize = receiveBufferSize;
+    public void setSocketReceiveBufferSize(int socketReceiveBufferSize) {
+        this.socketReceiveBufferSize = socketReceiveBufferSize;
     }
 
     public int getSendBufferSize() {
@@ -157,5 +159,9 @@ public class FCSocketConf {
 
     public void setQueueFile(String queueFile) {
         this.queueFile = queueFile;
+    }
+
+    public long getAutoFlushMS() {
+        return autoFlushMS;
     }
 }

@@ -1,37 +1,35 @@
-package org.nustaq.fastcast.packeting;
+package org.nustaq.fastcast.impl;
 
-import org.nustaq.fastcast.config.FCPublisherConf;
-import org.nustaq.fastcast.config.FCSubscriberConf;
-import org.nustaq.fastcast.control.FCTransportDispatcher;
-import org.nustaq.fastcast.control.FlowControl;
-import org.nustaq.fastcast.remoting.*;
-import org.nustaq.fastcast.transport.Transport;
-import org.nustaq.fastcast.util.FCLog;
+import org.nustaq.fastcast.config.PublisherConf;
+import org.nustaq.fastcast.config.SubscriberConf;
+import org.nustaq.fastcast.api.*;
+import org.nustaq.fastcast.transport.PhysicalTransport;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
 
-/**
+/*
 * Created with IntelliJ IDEA.
 * User: ruedi
 * Date: 23.08.13
 * Time: 02:04
 * To change this template use File | Settings | File Templates.
 */
-public class TopicEntry {
 
-    FCPublisherConf publisherConf;
-    FCSubscriberConf receiverConf;
+/**
+ * Combines publisher+subscriber configuration, topic stats ..
+ */
+public class Topic {
 
-    FCTransportDispatcher channelDispatcher;
+    PublisherConf publisherConf;
+    SubscriberConf receiverConf;
+
+    TransportDriver channelDispatcher;
     PacketSendBuffer sender;
     TopicStats stats;
-    Transport trans;
-    FlowControl control;
     ConcurrentHashMap<String,Long> senderHeartbeat = new ConcurrentHashMap<String, Long>();
-
 
     boolean isUnordered = false;
     boolean isUnreliable = false;
@@ -40,16 +38,9 @@ public class TopicEntry {
     int topicId = -1;
     private long hbTimeoutMS = 3000; // dev
 
-    public TopicEntry(FCSubscriberConf receiverConf, FCPublisherConf publisherConf) {
+    public Topic(SubscriberConf receiverConf, PublisherConf publisherConf) {
         this.receiverConf = receiverConf;
         this.publisherConf = publisherConf;
-        if ( publisherConf != null && publisherConf.getFlowControlClass() != null ) {
-            try {
-                control = (FlowControl) Class.forName(publisherConf.getFlowControlClass()).newInstance();
-            } catch (Exception e) {
-                FCLog.log(e);  //To change body of catch statement use File | Settings | File Templates.
-            }
-        }
         if ( receiverConf != null ) {
             hbTimeoutMS = receiverConf.getSenderHBTimeout();
         }
@@ -75,28 +66,15 @@ public class TopicEntry {
         return res;
     }
 
-    public FlowControl getControl() {
-        return control;
-    }
-
-    public void setControl(FlowControl control) {
-        this.control = control;
-    }
-
-    public FCSubscriberConf getReceiverConf() {
+    public SubscriberConf getReceiverConf() {
         return receiverConf;
     }
 
-    public Transport getTrans() {
-        return trans;
+    public PhysicalTransport getTrans() {
+        return channelDispatcher.trans;
     }
 
-    public void setTrans(Transport trans) {
-        this.trans = trans;
-        stats = new TopicStats(trans.getConf().getDgramsize());
-    }
-
-    public void setReceiverConf(FCSubscriberConf receiverConf) {
+    public void setReceiverConf(SubscriberConf receiverConf) {
         this.receiverConf = receiverConf;
     }
 
@@ -104,11 +82,11 @@ public class TopicEntry {
         return isUnordered;
     }
 
-    public FCTransportDispatcher getChannelDispatcher() {
+    public TransportDriver getChannelDispatcher() {
         return channelDispatcher;
     }
 
-    public void setChannelDispatcher(FCTransportDispatcher channelDispatcher) {
+    public void setChannelDispatcher(TransportDriver channelDispatcher) {
         this.channelDispatcher = channelDispatcher;
     }
 
@@ -149,7 +127,7 @@ public class TopicEntry {
 
     public TopicStats getStats() {
         if ( stats == null )
-            stats = new TopicStats(((FastCast)FastCast.getFastCast()).getTransport(getReceiverConf().getTransport()).getConf().getDgramsize());
+            stats = new TopicStats(getTrans().getConf().getDgramsize());
         return stats;
     }
 
@@ -159,11 +137,11 @@ public class TopicEntry {
         }
     }
 
-    public void setPublisherConf(FCPublisherConf publisherConf) {
+    public void setPublisherConf(PublisherConf publisherConf) {
         this.publisherConf = publisherConf;
     }
 
-    public FCPublisherConf getPublisherConf() {
+    public PublisherConf getPublisherConf() {
         return publisherConf;
     }
 

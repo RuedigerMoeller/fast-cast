@@ -1,10 +1,6 @@
 package org.nustaq.fastcast.util;
 
-import org.nustaq.fastcast.remoting.FastCast;
-
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 /**
  * Created with IntelliJ IDEA.

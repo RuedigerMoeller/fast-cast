@@ -2,9 +2,9 @@ package de.ruedigermoeller.fastcast.bigtest;
 
 import de.ruedigermoeller.fastcast.bigtest.services.HTHost;
 import de.ruedigermoeller.fastcast.bigtest.services.HTListener;
-import org.nustaq.fastcast.remoting.FCFutureResultHandler;
-import org.nustaq.fastcast.remoting.FCRemoting;
-import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.api.FCFutureResultHandler;
+import org.nustaq.fastcast.api.FCRemoting;
+import org.nustaq.fastcast.api.FastCast;
 
 import java.io.IOException;
 import java.util.Iterator;

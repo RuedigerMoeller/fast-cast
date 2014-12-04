@@ -1,8 +1,8 @@
 package de.ruedigermoeller.fastcast.gui;
 
-import org.nustaq.fastcast.packeting.TopicStats;
-import org.nustaq.fastcast.remoting.FCFutureResultHandler;
-import org.nustaq.fastcast.remoting.FCSendContext;
+import org.nustaq.fastcast.impl.TopicStats;
+import org.nustaq.fastcast.api.FCFutureResultHandler;
+import org.nustaq.fastcast.api.FCSendContext;
 import org.nustaq.fastcast.service.FCMembership;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;

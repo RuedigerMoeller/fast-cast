@@ -1,7 +1,7 @@
 package de.ruedigermoeller.fastcast.bigtest;
 
-import org.nustaq.fastcast.remoting.FCRemoting;
-import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.api.FCRemoting;
+import org.nustaq.fastcast.api.FastCast;
 
 import java.io.IOException;
 

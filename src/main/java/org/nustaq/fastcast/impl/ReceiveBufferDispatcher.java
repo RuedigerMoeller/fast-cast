@@ -1,20 +1,21 @@
-package org.nustaq.fastcast.control;
+package org.nustaq.fastcast.impl;
 
-import org.nustaq.fastcast.packeting.PacketReceiveBuffer;
-import org.nustaq.fastcast.packeting.TopicEntry;
-import org.nustaq.fastcast.remoting.FCSubscriber;
-import org.nustaq.fastcast.util.FCUtils;
+import org.nustaq.fastcast.api.FCSubscriber;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.util.HashMap;
-import java.util.concurrent.Executor;
 
-/**
+/*
  * Created with IntelliJ IDEA.
  * User: ruedi
  * Date: 14.08.13
  * Time: 00:42
  * To change this template use File | Settings | File Templates.
+ */
+
+/**
+ * receives messages of a topic an multiplexes messages of different publishers to their
+ * associated PacketReceiveBuffer
  */
 public class ReceiveBufferDispatcher {
 
@@ -26,9 +27,9 @@ public class ReceiveBufferDispatcher {
     int historySize;
     int topic;
     FCSubscriber receiver;
-    TopicEntry topicEntry;
+    Topic topicEntry;
 
-    public ReceiveBufferDispatcher(int packetSize, String clusterName, String nodeId, TopicEntry entry, FCSubscriber rec) {
+    public ReceiveBufferDispatcher(int packetSize, String clusterName, String nodeId, Topic entry, FCSubscriber rec) {
         receiver = rec;
         this.packetSize = packetSize;
         this.clusterName = clusterName;
@@ -38,7 +39,7 @@ public class ReceiveBufferDispatcher {
         topicEntry = entry;
     }
 
-    public TopicEntry getTopicEntry() {
+    public Topic getTopicEntry() {
         return topicEntry;
     }
 

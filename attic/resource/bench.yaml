@@ -21,7 +21,7 @@ transports:
   loopBack: true
 
   # in java we like large buffers to minimize packet loss due to GC jitter
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   sendBufferSize: 640000
 
   #misc
@@ -43,7 +43,7 @@ transports:
   loopBack: true
 
   # in java we like large buffers to minimize packet loss due to GC :(
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   sendBufferSize: 640000
 
   #misc
@@ -57,7 +57,7 @@ transports:
 - name: ipc
   dgramsize: 32000
   # size of shared mem buffer
-  receiveBufferSize: 225000000
+  socketReceiveBufferSize: 225000000
 
   #misc
   transportType: MCAST_IPC

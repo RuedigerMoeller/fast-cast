@@ -1,10 +1,11 @@
-package org.nustaq.fastcast.control;
+package org.nustaq.fastcast.impl;
 
-import org.nustaq.fastcast.packeting.TopicEntry;
-import org.nustaq.fastcast.remoting.FCSubscriber;
-import org.nustaq.fastcast.transport.Transport;
+import org.nustaq.fastcast.api.FCPublisher;
+import org.nustaq.fastcast.config.PublisherConf;
+import org.nustaq.fastcast.config.SubscriberConf;
+import org.nustaq.fastcast.api.FCSubscriber;
+import org.nustaq.fastcast.transport.PhysicalTransport;
 import org.nustaq.fastcast.util.FCLog;
-import org.nustaq.fastcast.packeting.*;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -21,12 +23,12 @@ import java.util.concurrent.locks.LockSupport;
  * Time: 11:40 AM
  * To change this template use File | Settings | File Templates.
  */
-public class FCTransportDispatcher {
+public class TransportDriver {
 
-    public static final int IDLE_SPIN_IDLE_COUNT = 1000*1000;
+    public static final int IDLE_SPIN_IDLE_COUNT = 1000*1000*10;
     private static final int IDLE_SLEEP_MICRO_SECONDS = 1000;
     public static int MAX_NUM_TOPICS = 256;
-    Transport trans;
+    PhysicalTransport trans;
 
     ReceiveBufferDispatcher receiver[];
     PacketSendBuffer sender[];
@@ -37,12 +39,14 @@ public class FCTransportDispatcher {
 
     Thread receiverThread, houseKeeping;
     FSTStructAllocator alloc = new FSTStructAllocator(1);
+    long autoFlushMS;
+    private ConcurrentHashMap<Integer,Topic> topics = new ConcurrentHashMap<>();
 
-    public FCTransportDispatcher(Transport trans, String clusterName, String nodeId) {
+    public TransportDriver(PhysicalTransport trans, String clusterName, String nodeId) {
         this.trans = trans;
         this.nodeId = alloc.newStruct( new StructString(nodeId) );
         this.clusterName = alloc.newStruct( new StructString(clusterName) );
-
+        this.autoFlushMS = trans.getConf().getAutoFlushMS();
 
         receiver = new ReceiveBufferDispatcher[MAX_NUM_TOPICS];
         sender = new PacketSendBuffer[MAX_NUM_TOPICS];
@@ -62,7 +66,7 @@ public class FCTransportDispatcher {
         houseKeeping.start();
     }
 
-    public void installReceiver(TopicEntry chan, FCSubscriber msgListener) {
+    private void installReceiver(Topic chan, FCSubscriber msgListener) {
         ReceiveBufferDispatcher receiveBufferDispatcher = new ReceiveBufferDispatcher(trans.getConf().getDgramsize(), clusterName.toString(), nodeId.toString(), chan, msgListener);
         if ( receiver[chan.getTopicId()] != null ) {
             throw new RuntimeException("double usage of topic "+chan.getTopicId()+" on transport "+trans.getConf().getName() );
@@ -70,38 +74,36 @@ public class FCTransportDispatcher {
         receiver[chan.getTopicId()] = receiveBufferDispatcher;
     }
 
-    public boolean hasReceiver(TopicEntry chan) {
-        return receiver[chan.getTopicId()] != null;
+    public boolean hasReceiver(int topicId) {
+        return receiver[topicId] != null;
     }
 
-    public boolean hasSender(TopicEntry chan) {
-        return sender[chan.getTopicId()] != null;
+    public boolean hasSender(int topicId) {
+        return sender[topicId] != null;
     }
 
     /**
      * installs and initializes sender thread and buffer, sets is to topicEntry given in argument !!
      * @param topicEntry
      */
-    public PacketSendBuffer installSender(final TopicEntry topicEntry) {
+    private PacketSendBuffer installSender(final Topic topicEntry) {
         if ( sender[topicEntry.getTopicId()] != null ) {
             return sender[topicEntry.getTopicId()];
         }
-        topicEntry.setTrans(trans);
         PacketSendBuffer packetSendBuffer = new PacketSendBuffer(trans, clusterName.toString(), nodeId.toString(), topicEntry);
         sender[topicEntry.getTopicId()] = packetSendBuffer;
         topicEntry.setSender(packetSendBuffer);
         return packetSendBuffer;
     }
 
-
-    public void houseKeepingLoop() {
+    private void houseKeepingLoop() {
         while ( true ) {
             try {
                 long now = System.currentTimeMillis();
                 for (int i = 0; i < receiver.length; i++) {
                     ReceiveBufferDispatcher receiveBufferDispatcher = receiver[i];
                     if ( receiveBufferDispatcher != null ) {
-                        TopicEntry topicEntry = receiveBufferDispatcher.getTopicEntry();
+                        Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
                         List<String> timedOutSenders = topicEntry.getTimedOutSenders(now, topicEntry.getHbTimeoutMS());
                         if ( timedOutSenders != null && timedOutSenders.size() > 0 ) {
                             cleanup(timedOutSenders,i);
@@ -124,7 +126,7 @@ public class FCTransportDispatcher {
                     }
                 }
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(autoFlushMS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -135,7 +137,7 @@ public class FCTransportDispatcher {
     }
 
     Packet receivedPacket;
-    void receiveLoop()
+    private void receiveLoop()
     {
         byte[] receiveBuf = new byte[trans.getConf().getDgramsize()];
         DatagramPacket p = new DatagramPacket(receiveBuf,receiveBuf.length);
@@ -184,7 +186,7 @@ public class FCTransportDispatcher {
                 {
                     if ( receiver[topic] == null )
                         return true;
-                    if ( true || // FIXME
+                    if (
                         ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
                         ( receivedPacketReceiver.equals(nodeId) )
                        )
@@ -216,7 +218,7 @@ public class FCTransportDispatcher {
                     } else if ( control.getType() == ControlPacket.HEARTBEAT ) {
                         ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
                         if ( receiveBufferDispatcher != null ) {
-                            TopicEntry topicEntry = receiveBufferDispatcher.getTopicEntry();
+                            Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
                             topicEntry.registerHeartBeat(control.getSender().toString(), System.currentTimeMillis());
                         }
                     }
@@ -244,15 +246,7 @@ public class FCTransportDispatcher {
         sender[topic].addRetransmissionRequest(retransPacket, trans);
     }
 
-//    public void startListening(TopicEntry topic) {
-//        installReceiver(topic, topic.getMsgReceiver() );
-//    }
-//
-//    public void stopListening(TopicEntry topic) {
-//        receiver[topic.getTopicId()] = null;
-//    }
-
-    public void cleanup(List<String> timedOutSenders, int topic) {
+    void cleanup(List<String> timedOutSenders, int topic) {
         for (int i = 0; i < timedOutSenders.size(); i++) {
             String s = timedOutSenders.get(i);
             ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
@@ -261,5 +255,32 @@ public class FCTransportDispatcher {
                 receiveBufferDispatcher.cleanup(s);
             }
         }
+    }
+
+    public void subscribe( SubscriberConf subsConf, FCSubscriber subscriber ) {
+        Topic topicEntry = topics.get(subsConf.getTopicId());
+        if ( topicEntry == null )
+            topicEntry = new Topic(null,null);
+        if ( topicEntry.getPublisherConf() != null ) {
+            throw new RuntimeException("already a sender registered at "+subsConf.getTopicId());
+        }
+        topicEntry.setReceiverConf(subsConf);
+        topicEntry.setChannelDispatcher(this);
+        topicEntry.setSubscriber(subscriber);
+        installReceiver(topicEntry, subscriber);
+    }
+
+    public FCPublisher publish( PublisherConf pubConf ) {
+        Topic topicEntry = topics.get(pubConf.getTopicId());
+        if ( topicEntry == null )
+            topicEntry = new Topic(null,null);
+        if ( topicEntry.getPublisherConf() != null ) {
+            throw new RuntimeException("already a sender registered at "+pubConf.getTopicId());
+        }
+        topicEntry.setChannelDispatcher(this);
+        topicEntry.setPublisherConf(pubConf);
+        topics.put(pubConf.getTopicId(), topicEntry);
+        final PacketSendBuffer packetSendBuffer = installSender(topicEntry);
+        return packetSendBuffer;
     }
 }

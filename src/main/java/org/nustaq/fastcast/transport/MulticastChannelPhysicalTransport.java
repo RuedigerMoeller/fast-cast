@@ -1,6 +1,6 @@
 package org.nustaq.fastcast.transport;
 
-import org.nustaq.fastcast.config.FCSocketConf;
+import org.nustaq.fastcast.config.PhysicalTransportConf;
 import org.nustaq.fastcast.util.FCLog;
 
 import java.io.*;
@@ -15,16 +15,16 @@ import java.nio.channels.*;
  * Time: 13:45
  * To change this template use File | Settings | File Templates.
  */
-public class FCMulticastChannelTransport implements Transport {
+public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     DatagramChannel receiveSocket;
     DatagramChannel sendSocket;
-    FCSocketConf conf;
+    PhysicalTransportConf conf;
     NetworkInterface iface;
     InetAddress address;
     InetSocketAddress socketAddress;
 
-    public FCMulticastChannelTransport(FCSocketConf conf) {
+    public MulticastChannelPhysicalTransport(PhysicalTransportConf conf) {
         System.setProperty("java.net.preferIPv4Stack","true" );
         this.conf = conf;
     }
@@ -91,7 +91,7 @@ public class FCMulticastChannelTransport implements Transport {
         DatagramChannel channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
                 .setOption(StandardSocketOptions.IP_MULTICAST_IF, iface)
-                .setOption(StandardSocketOptions.SO_RCVBUF, conf.getReceiveBufferSize())
+                .setOption(StandardSocketOptions.SO_RCVBUF, conf.getSocketReceiveBufferSize())
                 .setOption(StandardSocketOptions.IP_TOS, conf.getTrafficClass())
                 .setOption(StandardSocketOptions.IP_MULTICAST_LOOP, conf.isLoopBack())
                 .setOption(StandardSocketOptions.IP_MULTICAST_TTL, conf.getTtl())
@@ -101,7 +101,7 @@ public class FCMulticastChannelTransport implements Transport {
     }
 
     @Override
-    public FCSocketConf getConf() {
+    public PhysicalTransportConf getConf() {
         return conf;
     }
 }

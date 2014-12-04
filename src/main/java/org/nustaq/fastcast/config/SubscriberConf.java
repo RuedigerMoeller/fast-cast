@@ -7,9 +7,8 @@ package org.nustaq.fastcast.config;
  * Time: 5:18 PM
  * To change this template use File | Settings | File Templates.
  */
-public class FCSubscriberConf {
+public class SubscriberConf {
 
-    String transport = "default";
     int topicId;
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -25,13 +24,17 @@ public class FCSubscriberConf {
 
     ///////////////////////////////////////////////////////////////////////////////
     //
-    // receiver timings
+    // timings
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    long maxDelayRetransMS = 1; // send retrans
+    // time interval until a receiver sends a retransmission request after a gap
+    long maxDelayRetransMS = 1;
+    // time until a retransrequest is sent again if sender does not fulfill
     long maxDelayNextRetransMS = 5;
-    private long senderHBTimeout = 3000;
+
+    // time until a sender is lost+deallocated if it stops sending heartbeats
+    long senderHBTimeout = 5000;
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -39,20 +42,11 @@ public class FCSubscriberConf {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    public FCSubscriberConf() {
+    public SubscriberConf() {
     }
 
-    public FCSubscriberConf(String transport, int topicId) {
-        this.transport = transport;
+    public SubscriberConf(int topicId) {
         this.topicId = topicId;
-    }
-
-    public String getTransport() {
-        return transport;
-    }
-
-    public void setTransport(String transport) {
-        this.transport = transport;
     }
 
     public int getTopicId() {
@@ -86,7 +80,6 @@ public class FCSubscriberConf {
     public void setMaxDelayNextRetransMS(long maxDelayNextRetransMS) {
         this.maxDelayNextRetransMS = maxDelayNextRetransMS;
     }
-
 
     public long getSenderHBTimeout() {
         return senderHBTimeout;

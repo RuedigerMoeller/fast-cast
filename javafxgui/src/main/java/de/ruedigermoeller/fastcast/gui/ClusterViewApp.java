@@ -1,8 +1,8 @@
 package de.ruedigermoeller.fastcast.gui;
 
 import org.nustaq.fastcast.config.FCClusterConfig;
-import org.nustaq.fastcast.config.FCSubscriberConf;
-import org.nustaq.fastcast.remoting.FastCast;
+import org.nustaq.fastcast.config.SubscriberConf;
+import org.nustaq.fastcast.api.FastCast;
 import org.nustaq.fastcast.service.FCMembership;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -146,11 +146,11 @@ public class ClusterViewApp extends Application implements FCMembership.MemberSh
             System.exit(0);
         }
         try {
-            FCSubscriberConf toJoin = null;
+            SubscriberConf toJoin = null;
             FCClusterConfig fcClusterConfig = FCClusterConfig.read(yamlFinam);
-            FCSubscriberConf[] topics = (FCSubscriberConf[]) fcClusterConfig.getTopics();
+            SubscriberConf[] topics = (SubscriberConf[]) fcClusterConfig.getTopics();
             for (int i = 0; i < topics.length; i++) {
-                FCSubscriberConf topic = topics[i];
+                SubscriberConf topic = topics[i];
                 if ( topic.getServiceClass() != null && topic.getServiceClass().equals(FCMembership.class.getName()) ) {
                     toJoin = topic;
                     break;

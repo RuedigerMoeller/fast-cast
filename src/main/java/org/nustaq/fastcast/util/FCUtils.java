@@ -28,64 +28,7 @@ import java.util.concurrent.*;
  */
 public class FCUtils {
 
-    public static boolean NETLOG = true;
     public static boolean FAT_NODE_NAME = false; // nodeid includes host if true
-
-    public static class FCIncomingMessageThread extends Thread {
-        public FCIncomingMessageThread() {
-            super();
-        }
-
-        public FCIncomingMessageThread(Runnable target) {
-            super(target);
-        }
-
-        public FCIncomingMessageThread(String name) {
-            super(name);
-        }
-
-        public FCIncomingMessageThread(Runnable target, String name) {
-            super(target, name);
-        }
-    }
-
-    public static Executor createIncomingMessageThreadExecutor( final String name, int qsize ) {
-        ThreadPoolExecutor res = new ThreadPoolExecutor(1,1,1000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(qsize));
-        res.setThreadFactory(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                return new FCIncomingMessageThread( r, name );
-            }
-        });
-        res.setRejectedExecutionHandler(new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                while ( !executor.isShutdown() && !executor.getQueue().offer(r)) {
-                    Thread.yield();
-                }
-            }
-        } );
-        return res;
-    }
-
-    public static Executor createBoundedSingleThreadExecutor( final String name, int qsize ) {
-        ThreadPoolExecutor res = new ThreadPoolExecutor(1,1,1000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(qsize));
-        res.setThreadFactory(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                return new Thread( r, name );
-            }
-        });
-        res.setRejectedExecutionHandler(new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                while ( !executor.isShutdown() && !executor.getQueue().offer(r)) {
-                    Thread.yield();
-                }
-            }
-        } );
-        return res;
-    }
 
     public static String createNodeId( String addendum ) {
         if ( FAT_NODE_NAME ) {

@@ -1,8 +1,8 @@
 package de.ruedigermoeller.fastcast.test;
 
-import org.nustaq.fastcast.remoting.FCRemoting;
-import org.nustaq.fastcast.remoting.FastCast;
-import org.nustaq.fastcast.remoting.Unordered;
+import org.nustaq.fastcast.api.FCRemoting;
+import org.nustaq.fastcast.api.FastCast;
+import org.nustaq.fastcast.api.Unordered;
 
 import java.io.IOException;
 

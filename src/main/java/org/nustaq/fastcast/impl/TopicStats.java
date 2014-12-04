@@ -1,4 +1,4 @@
-package org.nustaq.fastcast.packeting;
+package org.nustaq.fastcast.impl;
 
 import java.io.Serializable;
 

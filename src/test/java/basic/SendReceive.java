@@ -1,12 +1,12 @@
 package basic;
 
 import org.junit.Test;
-import org.nustaq.fastcast.config.FCPublisherConf;
-import org.nustaq.fastcast.config.FCSubscriberConf;
-import org.nustaq.fastcast.remoting.FCPublisher;
-import org.nustaq.fastcast.remoting.FCSubscriber;
-import org.nustaq.fastcast.remoting.FastCast;
-import org.nustaq.fastcast.config.FCSocketConf;
+import org.nustaq.fastcast.config.PublisherConf;
+import org.nustaq.fastcast.config.SubscriberConf;
+import org.nustaq.fastcast.config.PhysicalTransportConf;
+import org.nustaq.fastcast.api.FCPublisher;
+import org.nustaq.fastcast.api.FCSubscriber;
+import org.nustaq.fastcast.api.FastCast;
 import org.nustaq.fastcast.util.RateMeasure;
 import org.nustaq.fastcast.util.Sleeper;
 import org.nustaq.offheap.bytez.Bytez;
@@ -17,7 +17,6 @@ import org.nustaq.offheap.structs.unsafeimpl.FSTStructFactory;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by ruedi on 29.11.2014.
@@ -58,8 +57,8 @@ public class SendReceive {
 
         System.setProperty("java.net.preferIPv4Stack","true" );
         FastCast fc = FastCast.getFastCast();
-        fc.createTransport(new FCSocketConf("default"));
-        FCPublisher sender = fc.publish(new FCPublisherConf("default", 1));
+        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr("localhost"));
+        FCPublisher sender = fc.getTransportDriver("default").publish(new PublisherConf(1));
 
         toSend.getString().setString("Hello");
         Sleeper sl = new Sleeper();
@@ -87,42 +86,46 @@ public class SendReceive {
 
         initFactory();
 
-        Executor worker = Executors.newSingleThreadExecutor();
+        final Executor worker = Executors.newSingleThreadExecutor();
 
         System.setProperty("java.net.preferIPv4Stack","true" );
         FastCast fc = FastCast.getFastCast();
-        fc.createTransport(new FCSocketConf("default"));
-        fc.subscribe( new FCSubscriberConf("default",1), new FCSubscriber() {
+        fc.addTransport(new PhysicalTransportConf("default").setIfacAdr("localhost"));
+        fc.getTransportDriver("default").subscribe(new SubscriberConf(1), new FCSubscriber() {
 
             int count = 0;
+
             @Override
-            public void messageReceived(String sender, long sequence, Bytez b, long off, int len)
-            {
-                TestMsg received = FSTStructFactory.getInstance().createStructWrapper(b,off).cast();
-                long nanos = System.nanoTime()-received.getTimeNanos();
-                if ( count++%1000 == 0 )
-                {
-                    worker.execute( () -> {
-                        System.out.println("receive " + received.getString().toString() + " latency:" + (nanos / 1000));
+            public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
+                TestMsg received = FSTStructFactory.getInstance().getStructPointer(b, off).cast();
+                final long nanos = System.nanoTime() - received.getTimeNanos();
+                if (count++ % 1000 == 0) {
+                    final TestMsg finRec = received.detach();
+                    worker.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.println("receive " + finRec.getString().toString() + " latency:" + (nanos / 1000));
+                        }
                     });
                 }
             }
 
             @Override
             public void dropped() {
-                System.out.println("receiver dropped"); System.exit(1);
+                System.out.println("receiver dropped");
+                System.exit(1);
             }
 
             @Override
             public void senderTerminated(String senderNodeId) {
-                System.out.println("sender terminated "+senderNodeId);
+                System.out.println("sender terminated " + senderNodeId);
             }
 
             @Override
             public void senderBootstrapped(String receivesFrom, long seqNo) {
-                System.out.println("synced "+receivesFrom+" sequence "+seqNo );
+                System.out.println("synced " + receivesFrom + " sequence " + seqNo);
             }
         });
-        Thread.sleep(1000*1000);
+        Thread.sleep(1000 * 1000);
     }
 }

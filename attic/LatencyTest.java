@@ -1,6 +1,6 @@
 package de.ruedigermoeller.fastcast.test;
 
-import org.nustaq.fastcast.remoting.*;
+import org.nustaq.fastcast.api.*;
 
 import java.io.IOException;
 

@@ -17,7 +17,7 @@ transports:
   loopBack: true
 
   # in java we like large buffers to minimize packet loss due to GC jitter
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   sendBufferSize: 640000
 
   #misc
@@ -35,7 +35,7 @@ transports:
   loopBack: true
 
   # in java we like large buffers to minimize packet loss due to GC jitter
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   sendBufferSize: 640000
 
   #misc
@@ -43,14 +43,14 @@ transports:
   ttl: 2
 
 - name: ip0
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   #misc
   transportType: MCAST_IPC
   queueFile: /tmp/market0.bin
 
 # for some reason on linux only one IPC transport is possible (file locking works different)
 - name: ip1
-  receiveBufferSize: 25000000
+  socketReceiveBufferSize: 25000000
   #misc
   transportType: MCAST_IPC
   queueFile: /tmp/market1.bin

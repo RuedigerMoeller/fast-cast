@@ -1,10 +1,9 @@
-package org.nustaq.fastcast.packeting;
+package org.nustaq.fastcast.impl;
 
-import org.nustaq.fastcast.remoting.FCPublisher;
-import org.nustaq.fastcast.transport.Transport;
+import org.nustaq.fastcast.api.FCPublisher;
+import org.nustaq.fastcast.transport.PhysicalTransport;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.bytez.ByteSource;
-import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.bytez.malloc.MallocBytez;
 import org.nustaq.offheap.bytez.malloc.MallocBytezAllocator;
 import org.nustaq.offheap.structs.FSTStruct;
@@ -38,7 +37,7 @@ public class PacketSendBuffer implements FCPublisher {
     private static final int RETRANS_MEM = 10000;
     private static final int TAG_BUFF = 4;
     private static final boolean DEBUG_LAT = false;
-    final Transport trans;
+    final PhysicalTransport trans;
 
     FSTStructAllocator packetAllocator;
     ConcurrentLinkedQueue<RetransPacket> retransRequests = new ConcurrentLinkedQueue<RetransPacket>();
@@ -65,14 +64,12 @@ public class PacketSendBuffer implements FCPublisher {
 
     ByteBuffer tmpSend;
 
-    int microsPerPacket; // pause inbetween packets
-
     boolean isUnordered;
 
-    TopicEntry topicEntry;
+    Topic topicEntry;
     TopicStats stats;
 
-    public PacketSendBuffer(Transport trans, String clusterName, String nodeId, TopicEntry entry ) {
+    public PacketSendBuffer(PhysicalTransport trans, String clusterName, String nodeId, Topic entry ) {
         this.trans = trans;
         this.topic = entry.getTopicId();
         topicEntry = entry;
@@ -95,7 +92,6 @@ public class PacketSendBuffer implements FCPublisher {
         historySize = history.size();
 
         setUnordered(topicEntry.isUnordered());
-        microsPerPacket = topicEntry.getPublisherConf().getSendPauseMicros();
         stats = topicEntry.getStats();
 
         initDropMsgPacket(clusterName, nodeId);
@@ -174,7 +170,7 @@ public class PacketSendBuffer implements FCPublisher {
         packetAllocator.free();
     }
 
-    public TopicEntry getTopicEntry() {
+    public Topic getTopicEntry() {
         return topicEntry;
     }
 
@@ -211,10 +207,6 @@ public class PacketSendBuffer implements FCPublisher {
             {
                 // message fits into avaiable paylen
                 putInternal(tag, DataPacket.COMPLETE, b, offset, len);
-//                if ( nextSendMsg.get() == currentSequence.get() )
-//                {
-//                    fire();
-//                }
                 return;
             } else {
                 if ( isUnordered() ) {
@@ -398,43 +390,17 @@ public class PacketSendBuffer implements FCPublisher {
                     }
                     System.exit(1);
                 }
-                dataPacket.setSendPauseSender(microsPerPacket);
+                dataPacket.setSendPauseSender(0);
             }
-
-
             moveBuff(dataPacket);
             trans.send(tmpSend);
-
-
-//            int dGramSize = dataPacket.getDGramSize();
-//            try {
-//                byte b[] = msgBytes.get();
-//                if (b==null)
-//                {
-//                    b = new byte[dGramSize];
-//                    msgBytes.set(b);
-//                }
-//                dataPacket.getBytes(b,0,dGramSize);
-//                if (DEBUG_LAT)
-//                    System.out.println("send "+System.currentTimeMillis());
-//                trans.send(b,0,dGramSize);
-//                if ( retrans ) {
-//                    stats.retransRSPSent(1,dGramSize);
-//                } else {
-//                    stats.dataPacketSent(dGramSize);
-//                }
-//            } catch ( Throwable th) {
-//                System.out.println("seq "+i+" start "+sendStart+" end "+sendEnd+" idx "+getIndexFromSequence(i)+" len "+(dataPacket.getBase().length())+" off+siz "+(dataPacket.getOffset()+ dGramSize));
-//                throw new RuntimeException(th);
-//            }
-
         }
         if ( ! retrans ) {
             nextSendMsg = sendEnd;
         }
     }
 
-    public void addRetransmissionRequest(RetransPacket retransPacket, Transport trans) throws IOException {
+    void addRetransmissionRequest(RetransPacket retransPacket, PhysicalTransport trans) throws IOException {
         RetransPacket copy = (RetransPacket) retransPacket.createCopy();
         stats.retransRQReceived(copy.computeNumPackets(),copy.getSendPauseSender());
         if ( RETRANSDEBUG )
@@ -480,8 +446,10 @@ public class PacketSendBuffer implements FCPublisher {
             if ( ! sendPendingRetrans() ) {
                 if ( sendPendingPackets() ) {
                     lastFlush = now;
-                }
-            }
+                } else
+                    res = false;
+            } else
+                res = false;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -490,17 +458,16 @@ public class PacketSendBuffer implements FCPublisher {
 
     @Override
     public int getTopicId() {
-        return 0;
+        return topicEntry.getTopicId();
     }
 
     AtomicBoolean sendLock = new AtomicBoolean(false);
-    public void lock() {
+    private void lock() {
         while( ! sendLock.compareAndSet(false,true)) {
-
         }
     }
 
-    public void unlock() {
+    private void unlock() {
         sendLock.set(false);
     }
 
