@@ -27,8 +27,22 @@ public class PublisherConf {
 
     long heartbeatInterval = 200;    // sent per topicId, ms. detects senderTimeoutMillis
 
+    int pps = 10_000_000; // rate limit datagram per second
+    int ppsWindow = 10;   // time window rate limit is checked. e.g. ppsWindow = 10 => 1 sec/10 = 100ms another: ppsWindow = 1000 => 1 ms
+
+    public PublisherConf() {
+    }
+
     public PublisherConf(int topicId) {
         this.topicId = topicId;
+    }
+
+    public int getPpsWindow() {
+        return ppsWindow;
+    }
+
+    public void setPpsWindow(int ppsWindow) {
+        this.ppsWindow = ppsWindow;
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -61,4 +75,11 @@ public class PublisherConf {
         this.heartbeatInterval = heartbeatInterval;
     }
 
+    public int getPps() {
+        return pps;
+    }
+
+    public void setPps(int pps) {
+        this.pps = pps;
+    }
 }

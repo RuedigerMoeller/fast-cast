@@ -1,6 +1,7 @@
 package org.nustaq.fastcast.impl;
 
 import org.nustaq.fastcast.api.FCSubscriber;
+import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ public class ReceiveBufferDispatcher {
         this.packetSize = packetSize;
         this.clusterName = clusterName;
         this.nodeId = nodeId;
-        this.historySize = entry.getReceiverConf().getReceiveBufferPackets();
+        this.historySize = entry.getSubscriberConf().getReceiveBufferPackets();
         this.topic = entry.getTopicId();
         topicEntry = entry;
     }
@@ -47,6 +48,13 @@ public class ReceiveBufferDispatcher {
     public PacketReceiveBuffer getBuffer(StructString sender) {
         PacketReceiveBuffer receiveBuffer = bufferMap.get(sender);
         if ( receiveBuffer == null ) {
+            int hSize = historySize;
+            if ( ((long)hSize*packetSize) > Integer.MAX_VALUE-2*packetSize ) {
+                final int newHist = (Integer.MAX_VALUE - 2 * packetSize) / packetSize;
+                topicEntry.getSubscriberConf().setReceiveBufferPackets(newHist);
+                FCLog.get().warn("int overflow, degrading history size from "+hSize+" to "+newHist);
+                historySize = newHist;
+            }
             receiveBuffer = new PacketReceiveBuffer(packetSize,clusterName,nodeId,historySize,sender.toString(), topicEntry, receiver);
             bufferMap.put((StructString) sender.createCopy(),receiveBuffer);
         }

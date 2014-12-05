@@ -1,5 +1,7 @@
 package org.nustaq.fastcast.util;
 
+import org.nustaq.fastcast.impl.Packet;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.*;
@@ -28,21 +30,34 @@ import java.util.concurrent.*;
  */
 public class FCUtils {
 
-    public static boolean FAT_NODE_NAME = false; // nodeid includes host if true
-
     public static String createNodeId( String addendum ) {
-        if ( FAT_NODE_NAME ) {
-            String host = "unknown";
-            try {
-                host = InetAddress.getLocalHost().getHostName();
-            } catch (UnknownHostException e) {
-                FCLog.get().severe(null,e);
-            }
-            return host+"-"+addendum+"-"+(int)(Math.random()*1000000);
-        } else {
-            return addendum+"-"+Integer.toHexString((int)(Math.random()*1024000));
-        }
+        final String name = addendum + "-" + toUnsignedString((int) (Math.random()*0xfffff), 5);
+        if ( name.length() > Packet.MAX_NODE_NAME_LEN)
+            throw new RuntimeException("node name '"+name+"' too long. Max length is "+Packet.MAX_NODE_NAME_LEN);
+        return name;
     }
+
+    private static String toUnsignedString(int i, int shift) {
+        char[] buf = new char[32];
+        int charPos = 32;
+        int radix = 1 << shift;
+        int mask = radix - 1;
+        do {
+            buf[--charPos] = digits[i & mask];
+            i >>>= shift;
+        } while (i != 0);
+
+        return new String(buf, charPos, (32 - charPos));
+    }
+
+    final static char[] digits = {
+            '0' , '1' , '2' , '3' , '4' , '5' ,
+            '6' , '7' , '8' , '9' , 'a' , 'b' ,
+            'c' , 'd' , 'e' , 'f' , 'g' , 'h' ,
+            'i' , 'j' , 'k' , 'l' , 'm' , 'n' ,
+            'o' , 'p' , 'q' , 'r' , 's' , 't' ,
+            'u' , 'v' , 'w' , 'x' , 'y' , 'z'
+    };
 
     public static boolean isWindows() {
         return System.getProperty("os.name","").indexOf("indows") > 0;

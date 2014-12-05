@@ -28,7 +28,7 @@ public class SendReceive {
 
     public static class TestMsg extends FSTStruct {
 
-        protected StructString string = new StructString(15);
+        protected StructString string = new StructString(1);
         protected long timeNanos;
 
         public StructString getString() {
@@ -48,42 +48,15 @@ public class SendReceive {
         }
     }
 
-    @Test
-    public void send() throws InterruptedException {
-
-        FastCast fc = initFC();
-
-        TestMsg template = new TestMsg();
-        FSTStructAllocator allocator = new FSTStructAllocator(0);
-
-        TestMsg toSend = allocator.newStruct(template);
-
-        FCPublisher sender = fc.getTransportDriver("default").publish(fc.getPublisherConf("test"));
-
-        toSend.getString().setString("Hello");
-        Sleeper sl = new Sleeper();
-        RateMeasure measure = new RateMeasure("msg send");
-        while( true ) {
-//            Thread.sleep(500);
-            sl.sleepMicros(5);
-            for ( int i = 0; i < 2; i++ ) {
-                toSend.setTimeNanos(System.nanoTime());
-                while ( ! sender.offer( toSend.getBase(), toSend.getOffset(), toSend.getByteSize(), true ) ) {
-                    System.out.println("offer rejected !");
-                }
-                measure.count();
-            }
-//            System.out.println("sent msg");
-        }
-    }
-
-    protected FastCast initFC() {
+    protected FastCast initFC(String nodeId) {
         System.setProperty("java.net.preferIPv4Stack","true" );
         FSTStructFactory.getInstance().registerClz(TestMsg.class);
 
         try {
             FastCast fc = FastCast.getFastCast();
-            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/basic/sendreceive.kson");
+            fc.setNodeId(nodeId);
+//            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/basic/sendreceive.kson");
+            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\basic\\sendreceive.kson");
             return fc;
         } catch (Exception e) {
             e.printStackTrace();
@@ -92,13 +65,43 @@ public class SendReceive {
     }
 
     @Test
+    public void send() throws InterruptedException {
+
+        FastCast fc = initFC("SND");
+
+        TestMsg template = new TestMsg();
+        FSTStructAllocator allocator = new FSTStructAllocator(0);
+
+        TestMsg toSend = allocator.newStruct(template);
+
+        FCPublisher sender = fc.onTransport("default").publish(fc.getPublisherConf("test"));
+
+        toSend.getString().setString("H");
+        Sleeper sl = new Sleeper();
+        RateMeasure measure = new RateMeasure("msg send "+toSend.getByteSize());
+        final Bytez base = toSend.getBase();
+        final int byteSize = toSend.getByteSize();
+        final long offset = toSend.getOffset();
+        while( true ) {
+//            Thread.sleep(500);
+//            sl.sleepMicros(5);
+            toSend.setTimeNanos(System.nanoTime());
+            while ( ! sender.offer(base, offset, byteSize, false ) ) {
+//                System.out.println("offer rejected !");
+            }
+            measure.count();
+//            System.out.println("sent msg");
+        }
+    }
+
+    @Test
     public void receive() throws InterruptedException {
 
-        FastCast fc = initFC();
+        FastCast fc = initFC("REC");
 
         final Executor worker = Executors.newSingleThreadExecutor();
 
-        fc.getTransportDriver("default").subscribe(fc.getSubscriberConf("test"), new FCSubscriber() {
+        fc.onTransport("default").subscribe( fc.getSubscriberConf("test"), new FCSubscriber() {
 
             int count = 0;
 
@@ -111,7 +114,7 @@ public class SendReceive {
                     worker.execute(new Runnable() {
                         @Override
                         public void run() {
-                            System.out.println("receive " + finRec.getString().toString() + " latency:" + (nanos / 1000));
+                        System.out.println("receive " + finRec.getString().toString() + " latency:" + (nanos / 1000));
                         }
                     });
                 }

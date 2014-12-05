@@ -282,7 +282,7 @@ public class TransportDriver {
         if ( topicEntry.getPublisherConf() != null ) {
             throw new RuntimeException("already a sender registered at "+subsConf.getTopicId());
         }
-        topicEntry.setReceiverConf(subsConf);
+        topicEntry.setSubscriberConf(subsConf);
         topicEntry.setChannelDispatcher(this);
         topicEntry.setSubscriber(subscriber);
         installReceiver(topicEntry, subscriber);

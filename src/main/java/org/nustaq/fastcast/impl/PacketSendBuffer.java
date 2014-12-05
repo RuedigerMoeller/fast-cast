@@ -1,6 +1,8 @@
 package org.nustaq.fastcast.impl;
 
 import org.nustaq.fastcast.api.FCPublisher;
+import org.nustaq.fastcast.config.PhysicalTransportConf;
+import org.nustaq.fastcast.config.PublisherConf;
 import org.nustaq.fastcast.transport.PhysicalTransport;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.bytez.ByteSource;
@@ -64,11 +66,15 @@ public class PacketSendBuffer implements FCPublisher {
 
     ByteBuffer tmpSend;
 
-
     Topic topicEntry;
     TopicStats stats;
     boolean isUnordered;
     int packetRateLimit;
+    int pps;
+    int ppsWindowNanos;
+
+    int packetCounter;
+    long lastPpsRateCheckNanos;
 
     public PacketSendBuffer(PhysicalTransport trans, String clusterName, String nodeId, Topic entry ) {
         this.trans = trans;
@@ -78,7 +84,8 @@ public class PacketSendBuffer implements FCPublisher {
 
         FCLog.log( "init send buffer for topic "+entry.getTopicId() );
 
-        template = DataPacket.getTemplate(trans.getConf().getDgramsize());
+        final PhysicalTransportConf conf = trans.getConf();
+        template = DataPacket.getTemplate(conf.getDgramsize());
         payMaxLen = template.data.length;
 
         template.getCluster().setString(clusterName);
@@ -87,8 +94,15 @@ public class PacketSendBuffer implements FCPublisher {
 
         packetAllocator = new FSTStructAllocator(10, new MallocBytezAllocator());
 //        packetAllocator = new FSTTypedStructAllocator<DataPacket>(template,10);
-
-        history = packetAllocator.newArray(topicEntry.getPublisherConf().getNumPacketHistory(), template);
+        final PublisherConf publisherConf = topicEntry.getPublisherConf();
+        int hSize = publisherConf.getNumPacketHistory();
+        if ( ((long)hSize*conf.getDgramsize()) > Integer.MAX_VALUE-2*conf.getDgramsize() ) {
+            final int newHist = (Integer.MAX_VALUE - 2 * conf.getDgramsize()) / conf.getDgramsize();
+            publisherConf.setNumPacketHistory(newHist);
+            FCLog.get().warn("int overflow, degrading history size from "+hSize+" to "+newHist);
+            hSize = newHist;
+        }
+        history = packetAllocator.newArray(hSize, template);
         FCLog.log("allocating send buffer for topic " + topicEntry.getTopicId() + " of " + history.getByteSize() / 1024 / 1024 + " MByte");
         historySize = history.size();
 
@@ -110,6 +124,8 @@ public class PacketSendBuffer implements FCPublisher {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+        pps = publisherConf.getPps()/publisherConf.getPpsWindow();
+        ppsWindowNanos = (1000*1000*1000)/publisherConf.getPpsWindow();
     }
 
     public static List<Field> getAllFields(List<Field> fields, Class<?> type) {
@@ -274,7 +290,7 @@ public class PacketSendBuffer implements FCPublisher {
         newPack.dataPointer(currentPacketBytePointer);
         newPack.setSeqNo(newSeq);
         currentAvail = payMaxLen-TAG_BUFF; // safe to always put a tag
-        newPack.setSent(System.currentTimeMillis());
+        newPack.setSent(System.nanoTime());
 
         currentSequence++; // publish packet
     }
@@ -351,7 +367,8 @@ public class PacketSendBuffer implements FCPublisher {
                 }
                 dropMsg.setReceiver(retransPacket.getSender());
                 dropMsg.setSeqNo(en.getFrom());
-                FCLog.get().warn("Sending Drop " + dropMsg + " requestedSeq " + fromSeqNo+" on service "+getTopicEntry().getTopicId()+" currentSeq "+currentSequence+" age: "+(currentSequence-en.getFrom() ) );
+                FCLog.get().warn("Sending Drop " + dropMsg + " requestedSeq " + fromSeqNo + " on service " + getTopicEntry().getTopicId() + " currentSeq " + currentSequence + " age: " + (currentSequence - en.getFrom()));
+                packetCounter++;
                 trans.send(new DatagramPacket(dropMsg.getBase().toBytes((int) dropMsg.getOffset(), dropMsg.getByteSize()), 0,dropMsg.getByteSize()));
             } else {
                 long from = en.getFrom();
@@ -391,9 +408,9 @@ public class PacketSendBuffer implements FCPublisher {
                     }
                     System.exit(1);
                 }
-                dataPacket.setSendPauseSender(0);
             }
             moveBuff(dataPacket);
+            packetCounter++;
             trans.send(tmpSend);
         }
         if ( ! retrans ) {
@@ -403,7 +420,7 @@ public class PacketSendBuffer implements FCPublisher {
 
     void addRetransmissionRequest(RetransPacket retransPacket, PhysicalTransport trans) throws IOException {
         RetransPacket copy = (RetransPacket) retransPacket.createCopy();
-        stats.retransRQReceived(copy.computeNumPackets(),copy.getSendPauseSender());
+        stats.retransRQReceived(copy.computeNumPackets(),pps);
         if ( RETRANSDEBUG )
             System.out.println("received retrans request and add to Q " + copy);
         retransRequests.add(copy);
@@ -412,7 +429,7 @@ public class PacketSendBuffer implements FCPublisher {
 
     AtomicBoolean sendLock = new AtomicBoolean(false);
     private void lock() {
-        while( ! sendLock.compareAndSet(false,true)) {
+        while( ! sendLock.compareAndSet(false,true) ) {
         }
     }
 
@@ -426,10 +443,22 @@ public class PacketSendBuffer implements FCPublisher {
 
     protected boolean offerNoLock(ByteSource msg, long start, int len, boolean doFlush) {
         long now = System.nanoTime();
+        if ( now-lastPpsRateCheckNanos > ppsWindowNanos ) {
+            packetCounter = Math.max(0,packetCounter-pps);
+            lastPpsRateCheckNanos = now;
+        }
+        if (msg != null ) {
+            if ( packetCounter > pps*2 )
+                return false;
+            else if (packetCounter > pps) {
+                doFlush = false;
+            }
+        }
         boolean res = msg == null ? true : putMessage(-1,msg,start,len, true);
-        if ( now-lastHB > hbInvtervalMS *1000*1000) {
+        if ( now-lastHB > hbInvtervalMS *1000*1000 ) {
             lastHB = now;
             try {
+                packetCounter++;
                 trans.send(heartBeatDG);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -443,8 +472,7 @@ public class PacketSendBuffer implements FCPublisher {
             if ( ! sendPendingRetrans() ) {
                 if ( sendPendingPackets() ) {
                     lastFlush = now;
-                } else
-                    res = false;
+                }
             } else
                 res = false;
         } catch (IOException e) {

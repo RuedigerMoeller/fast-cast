@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 public class Topic {
 
     PublisherConf publisherConf;
-    SubscriberConf receiverConf;
+    SubscriberConf subscriberConf;
 
     TransportDriver channelDispatcher;
     PacketSendBuffer sender;
@@ -38,11 +38,11 @@ public class Topic {
     int topicId = -1;
     private long hbTimeoutMS = 3000; // dev
 
-    public Topic(SubscriberConf receiverConf, PublisherConf publisherConf) {
-        this.receiverConf = receiverConf;
+    public Topic(SubscriberConf subscriberConf, PublisherConf publisherConf) {
+        this.subscriberConf = subscriberConf;
         this.publisherConf = publisherConf;
-        if ( receiverConf != null ) {
-            hbTimeoutMS = receiverConf.getSenderHBTimeout();
+        if ( subscriberConf != null ) {
+            hbTimeoutMS = subscriberConf.getSenderHBTimeout();
         }
     }
 
@@ -66,16 +66,16 @@ public class Topic {
         return res;
     }
 
-    public SubscriberConf getReceiverConf() {
-        return receiverConf;
+    public SubscriberConf getSubscriberConf() {
+        return subscriberConf;
     }
 
     public PhysicalTransport getTrans() {
         return channelDispatcher.trans;
     }
 
-    public void setReceiverConf(SubscriberConf receiverConf) {
-        this.receiverConf = receiverConf;
+    public void setSubscriberConf(SubscriberConf subscriberConf) {
+        this.subscriberConf = subscriberConf;
     }
 
     public boolean isUnordered() {
@@ -116,8 +116,8 @@ public class Topic {
 
     public int getTopicId() {
         if ( topicId < 0 ) {
-            if ( receiverConf != null ) {
-                topicId = receiverConf.getTopicId();
+            if ( subscriberConf != null ) {
+                topicId = subscriberConf.getTopicId();
             } else if ( publisherConf != null ) {
                 topicId = publisherConf.getTopicId();
             }

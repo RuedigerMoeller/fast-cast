@@ -47,7 +47,6 @@ public class PacketReceiveBuffer {
     private boolean isUnordered = false;
     private boolean isUnreliable = false;
     TopicStats stats;
-    int lastOrderedSendPause;
     private boolean terminated = false;
     int dGramSize;
     static int recMatchCount;
@@ -86,8 +85,8 @@ public class PacketReceiveBuffer {
         stats = topicEntry.getStats();
         isUnordered = topicEntry.isUnordered();
         isUnreliable = topicEntry.isUnreliable();
-        maxDelayRetrans = topicEntry.getReceiverConf().getMaxDelayRetransMS();
-        maxDelayNextRetrans = topicEntry.getReceiverConf().getMaxDelayNextRetransMS();
+        maxDelayRetrans = topicEntry.getSubscriberConf().getMaxDelayRetransMS();
+        maxDelayNextRetrans = topicEntry.getSubscriberConf().getMaxDelayNextRetransMS();
     }
 
     public Topic getTopicEntry() {
@@ -202,9 +201,6 @@ public class PacketReceiveBuffer {
             readBuffer.set(index,packet);
             maxOrderedSeq.set(seqNo);
             DataPacket toDecode = readBuffer.get(index);
-            int sendPauseSender = toDecode.getSendPauseSender();
-            if (sendPauseSender>0)
-                lastOrderedSendPause = sendPauseSender;
             decodePacket(toDecode);
             // if a gap was filled => deliver continous packets
             if ( ! inSync() ) { // there might be future packets in buffer
@@ -254,7 +250,7 @@ public class PacketReceiveBuffer {
             long now = System.currentTimeMillis();
             if ( now-logBremse > 1000 )
             {
-                System.out.println("wait for retrans, received "+packet.getSeqNo()+" "+getTopicEntry().getReceiverConf().getTopicId()+" waiting for "+(maxOrderedSeq.get()+1));
+                System.out.println("wait for retrans, received "+packet.getSeqNo()+" "+getTopicEntry().getSubscriberConf().getTopicId()+" waiting for "+(maxOrderedSeq.get()+1));
                 if ( packet.getSeqNo() < maxOrderedSeq.get() ) {
                     System.out.println("   sent by "+packet.getSender());
                 }
@@ -290,9 +286,6 @@ public class PacketReceiveBuffer {
             readBuffer.set(index,packet);
             maxOrderedSeq.set(seqNo);
             DataPacket toDecode = readBuffer.get(index);
-            int sendPauseSender = toDecode.getSendPauseSender();
-            if (sendPauseSender>0)
-                lastOrderedSendPause = sendPauseSender;
             decodePacket(toDecode);
 
             retransCount = 0; // reset interval extension if any packet was received in sequence
@@ -356,7 +349,7 @@ public class PacketReceiveBuffer {
         maxOrderedSeq.set(seqNo-1); // ok, init only
         maxDeliveredSeq.set(seqNo-1); // ok, init only
         inInitialSync = true;
-        FCLog.get().cluster("for sender "+receivesFrom+" bootstrap sequence "+getTopicEntry().getReceiverConf().getTopicId()+" no "+seqNo);
+        FCLog.get().cluster("for sender "+receivesFrom+" bootstrap sequence "+getTopicEntry().getSubscriberConf().getTopicId()+" no "+seqNo);
         final FCSubscriber subscriber = getTopicEntry().getSubscriber();
         if ( subscriber != null ) {
             subscriber.senderBootstrapped(receivesFrom,seqNo);
@@ -386,10 +379,9 @@ public class PacketReceiveBuffer {
         }
         retransCount++;
         if ( retransCount > 10 ) { // FIXME: give up at some point ?
-            FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getReceiverConf().getTopicId()+" retrans:"+retrans);
+            FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getSubscriberConf().getTopicId()+" retrans:"+retrans);
         }
         firstGapDetected = maxDelayNextRetrans*Math.max(retransCount,100) + now;
-        toReturn.setSendPauseSender(lastOrderedSendPause);
         return toReturn;
     }
 

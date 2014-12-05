@@ -38,7 +38,6 @@ public class FastCast {
                     "____ ____ ____ ___ ____ ____ ____ ___\n" +
                     "|--- |--| ====  |  |___ |--| ====  |  \n" + "> v3"
             );
-            fc.setNodeId("N"+(int)(Math.random()*1000));
             return fc;
         }
     }
@@ -66,6 +65,15 @@ public class FastCast {
         return physicalTransport;
     }
 
+    /**
+     * same as getTransportDriver
+     * @param transName
+     * @return
+     */
+    public TransportDriver onTransport(String transName) {
+        return getTransportDriver(transName);
+    }
+
     public TransportDriver getTransportDriver(String transName) {
         TransportDriver res = drivers.get(transName);
         if ( res == null ) {
@@ -76,8 +84,9 @@ public class FastCast {
         return res;
     }
 
-    public void loadConfig(String filePath) throws Exception {
+    public FastCast loadConfig(String filePath) throws Exception {
         setConfig(ClusterConf.readFrom(filePath));
+        return this;
     }
 
     public void setConfig(ClusterConf config) {

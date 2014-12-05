@@ -13,13 +13,14 @@ import org.nustaq.offheap.structs.structtypes.StructString;
  */
 public class Packet extends FSTStruct {
 
-    protected StructString cluster = new StructString(8);
-    protected StructString receiver = new StructString(15);
-    protected StructString sender = new StructString(15);
+    public static final int MAX_CLUSTER_NAME_LEN = 4;
+    public static final int MAX_NODE_NAME_LEN = 10;
+    protected StructString cluster = new StructString(MAX_CLUSTER_NAME_LEN);
+    protected StructString receiver = new StructString(MAX_NODE_NAME_LEN);
+    protected StructString sender = new StructString(MAX_NODE_NAME_LEN);
     protected int topic;
     protected volatile long seqNo;
     protected long sent;
-    protected int sendPauseSender;
 
     public long getSent() {
         return sent;
@@ -81,11 +82,4 @@ public class Packet extends FSTStruct {
                 '}';
     }
 
-    public void setSendPauseSender(int sendPauseSender) {
-        this.sendPauseSender = sendPauseSender;
-    }
-
-    public int getSendPauseSender() {
-        return sendPauseSender;
-    }
 }
