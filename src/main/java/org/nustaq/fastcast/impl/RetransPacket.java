@@ -8,7 +8,9 @@ import org.nustaq.offheap.structs.Templated;
  * User: ruedi
  * Date: 8/10/13
  * Time: 11:50 PM
- * To change this template use File | Settings | File Templates.
+ * Retransmission request. Contains an array of sequence intervals.
+ * 
+ * ATTENTION: this is a struct class.
  */
 public class RetransPacket extends Packet {
 
