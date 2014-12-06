@@ -9,7 +9,9 @@ import org.nustaq.offheap.structs.structtypes.StructString;
  * User: ruedi
  * Date: 8/10/13
  * Time: 11:43 PM
- * To change this template use File | Settings | File Templates.
+ * superclass of all packets sent.
+ * ATTENTION: This is a struct class, runtime byte code instrumentation will layout this in a flat manner
+ * on top a Bytez instance.
  */
 public class Packet extends FSTStruct {
 
