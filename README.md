@@ -10,7 +10,7 @@ Changes done from 2.x to 3.x:
 - removed remote method framework completely (will be replaced by kontraktor actors on top of fast-cast)
 - refurbished core NAK UDP streaming implementation. Renamed many classes to improve understandability
 - simplified API significantly
-- 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). Depending on hardware/OS I have seen average latencys of <5 micro seconds. Detailed measurements (outliers+deviation) still open.
+- 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). Depending on hardware/OS I have seen average latencies of <5 micro seconds. Detailed measurements (outliers+deviation) still open.
 - requires fast-serialization 2.17 branch build for struct support
 - allocation free under normal operation
 
