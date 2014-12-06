@@ -4,7 +4,7 @@ fast-cast
 
 High performance low latency topic/stream based reliable UDP messaging ("event-bus").
 
-3.x is in the making, see Wiki for documentation for old 2.x release. 2.x is avaialable at maven.
+3.x is in the making, see Wiki for documentation for old 2.x release. 2.x is available at maven.
 
 Changes done from 2.x to 3.x:
 - removed remote method framework completely (will be replaced by kontraktor actors on top of fast-cast)
