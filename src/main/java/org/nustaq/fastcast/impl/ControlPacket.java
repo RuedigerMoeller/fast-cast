@@ -5,7 +5,9 @@ package org.nustaq.fastcast.impl;
  * User: ruedi
  * Date: 15.08.13
  * Time: 01:30
- * To change this template use File | Settings | File Templates.
+ * 
+ * Control packet to signal drops/heartbeats. These packets are always unreliable
+ * ATTENTION: struct class
  */
 public class ControlPacket extends Packet {
     public static final short DROPPED = 0;
