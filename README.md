@@ -2,21 +2,15 @@ fast-cast
 =========
 
 
-High performance topic based reliable brokerless UDP messaging ("event-bus") backed by 1:N remote-method metaphor. 
+High performance low latency topic/stream based reliable UDP messaging ("event-bus").
 
-[Documentation (converted from gcode, so bad formatting ..)](https://github.com/RuedigerMoeller/fast-cast/wiki/Documentation)
+3.x is in the making, see Wiki for documentation for old 2.x release. 2.x is avaialable at maven.
 
-[Example application: KeyValue store broadcasting (multicasts) all changes](https://github.com/RuedigerMoeller/fastcast-sample)
-
-
-WebSite: http://ruedigermoeller.github.io/fast-cast
-
-```xml
-<dependency>
-    <groupId>de.ruedigermoeller</groupId>
-    <artifactId>fast-cast</artifactId>
-    <version>LATEST</version>
-</dependency>
-```
+Changes done from 2.x to 3.x:
+- removed remote method framework completely (will be replaced by kontraktor actor on top of fast-cast)
+- refurbished core NAK UDP streaming implementation. Renamed many classes to improve understandability
+- simplified API significantly
+- optimized for low latency. Depending on hardware/OS I have seen average latencys of <5 micro seconds average. Detailed measruements (outliers+deviation) still open.
+- requires fast-serialization 2.17 branch build for struct support
 
 Use mvn build, the gradle build is for private use and might not work.
