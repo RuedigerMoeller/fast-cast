@@ -12,5 +12,6 @@ Changes done from 2.x to 3.x:
 - simplified API significantly
 - optimized for low latency. Depending on hardware/OS I have seen average latencys of <5 micro seconds. Detailed measurements (outliers+deviation) still open.
 - requires fast-serialization 2.17 branch build for struct support
+- allocation free under normal operation
 
 Use mvn build, the gradle build is for private use and might not work.
