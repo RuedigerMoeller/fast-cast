@@ -4,8 +4,8 @@ ClusterConf {
         {
             name:      default
 
-            dgramsize: 16000
-            ifacAdr:   localhost
+            dgramsize: 1500
+            ifacAdr:   127.0.0.1
             mcastAdr:  229.9.9.9
             port:      45555
 
@@ -22,8 +22,8 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 500_000
-                pps: 300_000
-                ppsWindow: 10
+                pps: 20_000
+                ppsWindow: 100
             }
 
             sub: {

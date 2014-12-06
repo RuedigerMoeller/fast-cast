@@ -55,8 +55,8 @@ public class SendReceive {
         try {
             FastCast fc = FastCast.getFastCast();
             fc.setNodeId(nodeId);
-//            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/basic/sendreceive.kson");
-            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\basic\\sendreceive.kson");
+            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/basic/sendreceive.kson");
+//            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\basic\\sendreceive.kson");
             return fc;
         } catch (Exception e) {
             e.printStackTrace();
@@ -84,7 +84,7 @@ public class SendReceive {
         final long offset = toSend.getOffset();
         while( true ) {
 //            Thread.sleep(500);
-//            sl.sleepMicros(5);
+//            sl.sleepMicros(50);
             toSend.setTimeNanos(System.nanoTime());
             while ( ! sender.offer(base, offset, byteSize, false ) ) {
 //                System.out.println("offer rejected !");

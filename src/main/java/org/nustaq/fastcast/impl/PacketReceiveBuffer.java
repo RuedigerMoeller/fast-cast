@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class PacketReceiveBuffer {
 
+    public static final int MAX_NON_GAP_PACKET_SERIES_TO_JUSTIFY_NEW_RETRANS_ENTRY = 20;
     final int topic;
     final int payMaxLen;
     final FSTStructAllocator packetAllocator;
@@ -244,7 +245,6 @@ public class PacketReceiveBuffer {
     }
 
     long logBremse;
-    // single threaded per sender
     public RetransPacket receivePacketOrdered(DataPacket packet) {
         if ( retransCount > 1 ) {
             long now = System.currentTimeMillis();
@@ -362,17 +362,29 @@ public class PacketReceiveBuffer {
         toReturn.clear();
         toReturn.setSent(System.nanoTime());
         long curSeq = maxOrderedSeq.get()+1;
+        boolean anotherGapNearCurrentGap = false;
         while( curSeq < highestSeq && ! toReturn.isFull() ) {
             if ( getPacketVolatile(curSeq).getSeqNo() != curSeq ) {
-                toReturn.current().setFrom(curSeq);
+                if ( ! anotherGapNearCurrentGap )
+                    toReturn.current().setFrom(curSeq);
                 curSeq++;
                 while( curSeq < highestSeq && ! toReturn.isFull() && getPacketVolatile(curSeq).getSeqNo() != curSeq ) {
                     curSeq++;
                 }
-                toReturn.current().setTo(curSeq);
-//                toReturn.current().setTo(highestSeq);
-                toReturn.nextEntry();
-//                break;
+                anotherGapNearCurrentGap = false;
+                for ( long off = curSeq; off < curSeq+ MAX_NON_GAP_PACKET_SERIES_TO_JUSTIFY_NEW_RETRANS_ENTRY; off++ ) {
+                    if ( off < highestSeq && ! toReturn.isFull() && getPacketVolatile(off).getSeqNo() != off ) {
+                        anotherGapNearCurrentGap = true;
+                        curSeq = off;
+                        break;
+                    } else {
+
+                    }
+                }
+                if ( ! anotherGapNearCurrentGap ) {
+                    toReturn.current().setTo(curSeq);
+                    toReturn.nextEntry();
+                }
             } else {
                 curSeq++;
             }

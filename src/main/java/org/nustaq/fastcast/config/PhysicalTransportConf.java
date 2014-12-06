@@ -78,7 +78,7 @@ public class PhysicalTransportConf {
     }
 
     public int getDgramsize() {
-        return dgramsize;
+        return dgramsize-4; // account for quirksy computation errors
     }
 
     public PhysicalTransportConf setDgramsize(int dgramsize) {
