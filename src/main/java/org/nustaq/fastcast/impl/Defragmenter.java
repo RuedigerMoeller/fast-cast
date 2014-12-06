@@ -34,7 +34,7 @@ public class Defragmenter implements ByteArrayReceiver {
                 } else {
                     state = STATE_CHAIN;
                 }
-                // fall through
+                // fall through Fixme: can do zerocopy in this case
             case STATE_CHAIN:
                 if ( len+bufIndex >= buf.length ) {
                     byte old[] = buf;
@@ -51,7 +51,7 @@ public class Defragmenter implements ByteArrayReceiver {
                 }
                 bufIndex+=len;
                 if ( complete ) {
-                    msgDone(sequence,new HeapBytez(buf),0,bufIndex);
+                    msgDone(sequence,new HeapBytez(buf),0,bufIndex); // FIXME alloc
                     state = STATE_COMPLETE;
                     bufIndex = 0;
                 }
