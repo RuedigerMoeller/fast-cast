@@ -24,17 +24,15 @@ public class ReceiveBufferDispatcher {
     HashMap<StructString,PacketReceiveBuffer> bufferMap = new HashMap<StructString, PacketReceiveBuffer>();
 
     int packetSize;
-    String clusterName;
     String nodeId;
     int historySize;
     int topic;
     FCSubscriber receiver;
     Topic topicEntry;
 
-    public ReceiveBufferDispatcher(int packetSize, String clusterName, String nodeId, Topic entry, FCSubscriber rec) {
+    public ReceiveBufferDispatcher(int packetSize, String nodeId, Topic entry, FCSubscriber rec) {
         receiver = rec;
         this.packetSize = packetSize;
-        this.clusterName = clusterName;
         this.nodeId = nodeId;
         this.historySize = entry.getSubscriberConf().getReceiveBufferPackets();
         this.topic = entry.getTopicId();
@@ -55,7 +53,7 @@ public class ReceiveBufferDispatcher {
                 FCLog.get().warn("int overflow, degrading history size from "+hSize+" to "+newHist);
                 historySize = newHist;
             }
-            receiveBuffer = new PacketReceiveBuffer(packetSize,clusterName,nodeId,historySize,sender.toString(), topicEntry, receiver);
+            receiveBuffer = new PacketReceiveBuffer(packetSize,nodeId,historySize,sender.toString(), topicEntry, receiver);
             bufferMap.put((StructString) sender.createCopy(),receiveBuffer);
         }
         return receiveBuffer;

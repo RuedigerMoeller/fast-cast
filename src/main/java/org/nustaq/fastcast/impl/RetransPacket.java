@@ -68,12 +68,10 @@ public class RetransPacket extends Packet {
     @Override
     public String toString() {
         return "RetransPacket{" +
-                "sent=" + sent +
-                ", seqNo=" + seqNo +
+                "seqNo=" + seqNo +
                 ", topic=" + topic +
                 ", sender=" + sender +
                 ", receiver=" + receiver +
-                ", cluster=" + cluster +
                 ", retransEntries=" + entriesString() +
                 ", retransIndex=" + retransIndex +
                 '}';

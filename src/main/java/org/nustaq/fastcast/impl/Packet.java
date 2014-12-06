@@ -15,30 +15,11 @@ import org.nustaq.offheap.structs.structtypes.StructString;
  */
 public class Packet extends FSTStruct {
 
-    public static final int MAX_CLUSTER_NAME_LEN = 4;
     public static final int MAX_NODE_NAME_LEN = 10;
-    protected StructString cluster = new StructString(MAX_CLUSTER_NAME_LEN);
     protected StructString receiver = new StructString(MAX_NODE_NAME_LEN);
     protected StructString sender = new StructString(MAX_NODE_NAME_LEN);
     protected int topic;
-    protected volatile long seqNo;
-    protected long sent;
-
-    public long getSent() {
-        return sent;
-    }
-
-    public void setSent(long sent) {
-        this.sent = sent;
-    }
-
-    public StructString getCluster() {
-        return cluster;
-    }
-
-    public void setCluster(StructString cluster) {
-        this.cluster = cluster;
-    }
+    protected long seqNo;
 
     public StructString getSender() {
         return sender;
@@ -75,12 +56,10 @@ public class Packet extends FSTStruct {
     @Override
     public String toString() {
         return "Packet{" +
-                "sent=" + sent +
-                ", seqNo=" + seqNo +
+                "seqNo=" + seqNo +
                 ", topic=" + topic +
                 ", sender=" + sender +
                 ", receiver=" + receiver +
-                ", cluster=" + cluster +
                 '}';
     }
 

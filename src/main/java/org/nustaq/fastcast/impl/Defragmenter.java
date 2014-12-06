@@ -22,6 +22,7 @@ public class Defragmenter implements ByteArrayReceiver {
     int state = STATE_COMPLETE;
 
     byte buf[] = new byte[500];
+    HeapBytez bufBytez = new HeapBytez(buf,0,0);
     int bufIndex = 0;
 
     @Override
@@ -51,7 +52,8 @@ public class Defragmenter implements ByteArrayReceiver {
                 }
                 bufIndex+=len;
                 if ( complete ) {
-                    msgDone(sequence,new HeapBytez(buf),0,bufIndex); // FIXME alloc
+                    bufBytez.setBase(buf,0,bufIndex);
+                    msgDone(sequence,bufBytez,0,bufIndex);
                     state = STATE_COMPLETE;
                     bufIndex = 0;
                 }
@@ -60,7 +62,6 @@ public class Defragmenter implements ByteArrayReceiver {
     }
 
     public void msgDone(long sequence, Bytez b, int off, int len) {
-        // pls override
         System.out.println("received byte array "+len);
     }
 }

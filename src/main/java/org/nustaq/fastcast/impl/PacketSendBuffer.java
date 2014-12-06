@@ -67,7 +67,6 @@ public class PacketSendBuffer implements FCPublisher {
     ByteBuffer tmpSend;
 
     Topic topicEntry;
-    TopicStats stats;
     boolean isUnordered;
     int packetRateLimit;
     int pps;
@@ -75,12 +74,14 @@ public class PacketSendBuffer implements FCPublisher {
 
     int packetCounter;
     long lastPpsRateCheckNanos;
+    String currentReceiver = null;
 
-    public PacketSendBuffer(PhysicalTransport trans, String clusterName, String nodeId, Topic entry ) {
+    public PacketSendBuffer(PhysicalTransport trans, String nodeId, Topic entry ) {
         this.trans = trans;
         this.topic = entry.getTopicId();
         topicEntry = entry;
         this.nodeId = nodeId;
+        this.hbInvtervalMS = entry.getPublisherConf().getHeartbeatInterval();
 
         FCLog.log( "init send buffer for topic "+entry.getTopicId() );
 
@@ -88,7 +89,6 @@ public class PacketSendBuffer implements FCPublisher {
         template = DataPacket.getTemplate(conf.getDgramsize());
         payMaxLen = template.data.length;
 
-        template.getCluster().setString(clusterName);
         template.getSender().setString(nodeId);
         template.setTopic(topic);
 
@@ -107,10 +107,9 @@ public class PacketSendBuffer implements FCPublisher {
         historySize = history.size();
 
         setUnordered(topicEntry.isUnordered());
-        stats = topicEntry.getStats();
 
-        initDropMsgPacket(clusterName, nodeId);
-        initHeartbeatPacket(clusterName, nodeId);
+        initDropMsgPacket(nodeId);
+        initHeartbeatPacket(nodeId);
 
         DataPacket curP = getPacketAt(currentSequence);
         currentPacketBytePointer = curP.detach();
@@ -137,9 +136,11 @@ public class PacketSendBuffer implements FCPublisher {
     }
 
     private void initTmpBBuf() throws NoSuchFieldException, IllegalAccessException {
+        // patch MallocBytes such that it points to a DirectByteBuffer (allows zerocopy using fst bytez utils)
         tmpSend = ByteBuffer.allocateDirect(0);
         Field address = null;
         Field capacity = null;
+
         List<Field> fields = new ArrayList<>();
         getAllFields(fields, tmpSend.getClass());
         for (int i = 0; i < fields.size(); i++) {
@@ -163,18 +164,16 @@ public class PacketSendBuffer implements FCPublisher {
         tmpSend.position((int) packet.getOffset());
     }
 
-    protected void initDropMsgPacket(String clusterName, String nodeId) {
+    protected void initDropMsgPacket(String nodeId) {
         dropMsg = new ControlPacket();
-        dropMsg.getCluster().setString(clusterName);
         dropMsg.getSender().setString(nodeId);
         dropMsg.setTopic(topic);
         dropMsg.setType(ControlPacket.DROPPED);
         dropMsg = packetAllocator.newStruct(dropMsg);
     }
 
-    protected void initHeartbeatPacket(String clusterName, String nodeId) {
+    protected void initHeartbeatPacket(String nodeId) {
         heartBeat = new ControlPacket();
-        heartBeat.getCluster().setString(clusterName);
         heartBeat.getSender().setString(nodeId);
         heartBeat.setTopic(topic);
         heartBeat.setType(ControlPacket.HEARTBEAT);
@@ -189,10 +188,6 @@ public class PacketSendBuffer implements FCPublisher {
 
     public Topic getTopicEntry() {
         return topicEntry;
-    }
-
-    public TopicStats getStats() {
-        return stats;
     }
 
     public boolean isUnordered() {
@@ -218,7 +213,6 @@ public class PacketSendBuffer implements FCPublisher {
 
     private void putMessageRecursive(int tag, ByteSource b, long offset, int len) {
         while(true) {
-            stats.msgSent();
             // payheader is type 2, len 2
             if ( currentAvail > len+DataPacket.HEADERLEN+2 )  // 2 byte needed for eop
             {
@@ -276,7 +270,7 @@ public class PacketSendBuffer implements FCPublisher {
     private void fire() {
         if (DEBUG_LAT)
             System.out.println("fire "+System.currentTimeMillis());
-        if ( currentAvail == payMaxLen-TAG_BUFF ) // no message yet in packet
+        if (isCurrentPacketEmpty()) // no message yet in packet
             return;
         currentPacketBytePointer.setShort(DataPacket.EOP);
         long curSeq = currentSequence;
@@ -290,9 +284,18 @@ public class PacketSendBuffer implements FCPublisher {
         newPack.dataPointer(currentPacketBytePointer);
         newPack.setSeqNo(newSeq);
         currentAvail = payMaxLen-TAG_BUFF; // safe to always put a tag
-        newPack.setSent(System.nanoTime());
+
+        if ( currentReceiver != null )
+            newPack.getReceiver().setString(currentReceiver);
 
         currentSequence++; // publish packet
+    }
+
+    /**
+     * @return true if current packet does not contain any payload
+     */
+    private boolean isCurrentPacketEmpty() {
+        return currentAvail == payMaxLen - TAG_BUFF;
     }
 
     /**
@@ -420,7 +423,6 @@ public class PacketSendBuffer implements FCPublisher {
 
     void addRetransmissionRequest(RetransPacket retransPacket, PhysicalTransport trans) throws IOException {
         RetransPacket copy = (RetransPacket) retransPacket.createCopy();
-        stats.retransRQReceived(copy.computeNumPackets(),pps);
         if ( RETRANSDEBUG )
             System.out.println("received retrans request and add to Q " + copy);
         retransRequests.add(copy);
@@ -436,7 +438,7 @@ public class PacketSendBuffer implements FCPublisher {
     private void unlock() {
         sendLock.set(false);
     }
-    long hbInvtervalMS = 1000;
+    long hbInvtervalMS = 1000; // FIXME: use settings
     long lastHB = System.nanoTime();
 
     public volatile long lastFlush = System.currentTimeMillis();
@@ -454,8 +456,13 @@ public class PacketSendBuffer implements FCPublisher {
                 doFlush = false;
             }
         }
-        boolean res = msg == null ? true : putMessage(-1,msg,start,len, true);
-        if ( now-lastHB > hbInvtervalMS *1000*1000 ) {
+        boolean res;
+        if ( msg == null ) {
+            res = true;
+        } else {
+            res = putMessage(-1,msg,start,len, true);
+        }
+        if ( now-lastHB > hbInvtervalMS*1000*1000 ) {
             lastHB = now;
             try {
                 packetCounter++;
@@ -499,8 +506,47 @@ public class PacketSendBuffer implements FCPublisher {
     }
 
     @Override
+    public boolean offer(ByteSource msg, boolean doFlush) {
+        try {
+            lock();
+//            synchronized (this)
+            {
+                return offerNoLock(msg, 0, (int) msg.length(), doFlush);
+            }
+        } finally {
+            unlock();
+        }
+    }
+
+    @Override
     public int getTopicId() {
         return topicEntry.getTopicId();
+    }
+
+    @Override
+    public void setReceiver(String receiverNodeId) {
+        if ( receiverNodeId == null ) {
+            if ( currentReceiver != null ) {
+                currentReceiver = null;
+                updateCurrentReceiver();
+            } else {
+                return; // nothing changed
+            }
+        } else if ( receiverNodeId.equals(currentReceiver) ) {
+            return;
+        } else {
+            currentReceiver = receiverNodeId;
+            updateCurrentReceiver();
+        }
+    }
+
+    private void updateCurrentReceiver() {
+        if ( isCurrentPacketEmpty() ) {
+            getPacketAt(currentSequence).getReceiver().setString(currentReceiver);
+        } else {
+            fire();
+            updateCurrentReceiver();
+        }
     }
 
     @Override

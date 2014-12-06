@@ -37,7 +37,6 @@ public class TransportDriver {
     PacketSendBuffer sender[];
     long lastMsg[]; // marks last flush on a topic to enable batch delay
 
-    StructString clusterName;
     StructString nodeId;
 
     Thread receiverThread, houseKeeping;
@@ -45,10 +44,9 @@ public class TransportDriver {
     long autoFlushMS;
     private ConcurrentHashMap<Integer,Topic> topics = new ConcurrentHashMap<>();
 
-    public TransportDriver(PhysicalTransport trans, String clusterName, String nodeId) {
+    public TransportDriver(PhysicalTransport trans, String nodeId) {
         this.trans = trans;
         this.nodeId = alloc.newStruct( new StructString(nodeId) );
-        this.clusterName = alloc.newStruct( new StructString(clusterName) );
         final PhysicalTransportConf tconf = trans.getConf();
         this.autoFlushMS = tconf.getAutoFlushMS();
         this.spinIdleLoopMax = tconf.getSpinIdleLoopMax();
@@ -73,7 +71,7 @@ public class TransportDriver {
     }
 
     private void installReceiver(Topic chan, FCSubscriber msgListener) {
-        ReceiveBufferDispatcher receiveBufferDispatcher = new ReceiveBufferDispatcher(trans.getConf().getDgramsize(), clusterName.toString(), nodeId.toString(), chan, msgListener);
+        ReceiveBufferDispatcher receiveBufferDispatcher = new ReceiveBufferDispatcher(trans.getConf().getDgramsize(), nodeId.toString(), chan, msgListener);
         if ( receiver[chan.getTopicId()] != null ) {
             throw new RuntimeException("double usage of topic "+chan.getTopicId()+" on transport "+trans.getConf().getName() );
         }
@@ -96,7 +94,7 @@ public class TransportDriver {
         if ( sender[topicEntry.getTopicId()] != null ) {
             return sender[topicEntry.getTopicId()];
         }
-        PacketSendBuffer packetSendBuffer = new PacketSendBuffer(trans, clusterName.toString(), nodeId.toString(), topicEntry);
+        PacketSendBuffer packetSendBuffer = new PacketSendBuffer(trans, nodeId.toString(), topicEntry);
         sender[topicEntry.getTopicId()] = packetSendBuffer;
         topicEntry.setSender(packetSendBuffer);
         return packetSendBuffer;
@@ -171,10 +169,9 @@ public class TransportDriver {
     private boolean receiveDatagram(ByteBuffer p, byte wrappedArr[]) throws IOException {
         if ( trans.receive(p) ) {
 
-            boolean sameCluster = receivedPacket.getCluster().equals(clusterName);
             boolean selfSent = receivedPacket.getSender().equals(nodeId);
 
-            if ( sameCluster && ! selfSent) {
+            if ( ! selfSent) {
 
                 int topic = receivedPacket.getTopic();
 
@@ -192,32 +189,26 @@ public class TransportDriver {
                 {
                     if ( receiver[topic] == null )
                         return true;
-                    if (
-                        ( receivedPacketReceiver == null || receivedPacketReceiver.getLen() == 0 ) ||
-                        ( receivedPacketReceiver.equals(nodeId) )
-                       )
-                    {
-                        dispatchDataPacket(receivedPacket, topic);
-                    }
+                    dispatchDataPacket(receivedPacket, topic);
                 } else if ( type == RetransPacket.class )
                 {
                     if ( sender[topic] == null )
                         return true;
-                    if ( receivedPacketReceiver.equals(nodeId) ) {
-                        dispatchRetransmissionRequest(receivedPacket, topic);
-                    }
+                    dispatchRetransmissionRequest(receivedPacket, topic);
                 } else if (type == ControlPacket.class )
                 {
-                    ControlPacket control = (ControlPacket) receivedPacket.cast();
-                    if ( control.getType() == ControlPacket.DROPPED &&
-                        receivedPacketReceiver.equals(nodeId) )
+                    if (isForeignReceiver(receivedPacketReceiver)) {
+                        return true;
+                    }
+                    ControlPacket control = receivedPacket.cast();
+                    if ( control.getType() == ControlPacket.DROPPED )
                     {
                         ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
                         if ( receiveBufferDispatcher != null ) {
                             FCLog.get().warn(nodeId+" has been dropped by "+receivedPacket.getSender()+" on service "+receiveBufferDispatcher.getTopicEntry().getTopicId());
                             FCSubscriber service = receiveBufferDispatcher.getTopicEntry().getSubscriber();
                             if ( service != null ) {
-                                if ( service.dropped() ) { // retry if returns try
+                                if ( service.dropped() ) { // retry if returns true
                                     FCLog.get().warn("..resyncing..");
                                     PacketReceiveBuffer buffer = receiveBufferDispatcher.getBuffer(receivedPacket.getSender());
                                     if ( buffer != null ) {
@@ -231,7 +222,6 @@ public class TransportDriver {
                                     receiveBufferDispatcher.cleanupTopic();
                                 }
                             }
-                            // FIXME: initate resync
                         }
                     } else if ( control.getType() == ControlPacket.HEARTBEAT ) {
                         ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
@@ -245,6 +235,10 @@ public class TransportDriver {
             return true;
         } 
         return false;
+    }
+
+    private boolean isForeignReceiver(StructString receivedPacketReceiver) {
+        return receivedPacketReceiver != null && receivedPacketReceiver.getLen() > 0 && ! receivedPacketReceiver.equals(nodeId);
     }
 
     private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {

@@ -25,7 +25,6 @@ public class FastCast {
     }
 
     static FastCast fc;
-    private String clusterName = "-";
     private ClusterConf config;
 
     public static FastCast getFastCast() {
@@ -78,7 +77,7 @@ public class FastCast {
         TransportDriver res = drivers.get(transName);
         if ( res == null ) {
             PhysicalTransport physicalTransport = getTransport(transName);
-            res = new TransportDriver(physicalTransport, clusterName, nodeId );
+            res = new TransportDriver( physicalTransport, nodeId );
             drivers.put(transName, res);
         }
         return res;

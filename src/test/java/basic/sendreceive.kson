@@ -9,13 +9,14 @@ ClusterConf {
             mcastAdr:  229.9.9.9
             port:      45555
 
-            autoFlushMS:     3
+            autoFlushMS:     1
             spinIdleLoopMax: 10_000_000
             idleParkMicros:  1000
         }
     }
 
     topics: {
+
         {
             id: 1
             name: test
@@ -28,8 +29,44 @@ ClusterConf {
 
             sub: {
                 receiveBufferPackets: 500_000
-                senderHBTimeout: 5000
+                # senderHBTimeout: 5000
+                senderHBTimeout: 500000 # avoid crashes during debug
+            }
+        }
+
+        {
+            id: 2
+            name: echo
+
+            pub: {
+                numPacketHistory: 100_000
+                pps: 20_000
+                ppsWindow: 100
+            }
+
+            sub: {
+                receiveBufferPackets: 50_000
+                # senderHBTimeout: 5000
+                senderHBTimeout: 500000 # avoid crashes during debug
+            }
+        }
+
+        {
+            id: 3
+            name: echoresp
+
+            pub: {
+                numPacketHistory: 100_000
+                pps: 20_000
+                ppsWindow: 100
+            }
+
+            sub: {
+                receiveBufferPackets: 50_000
+                # senderHBTimeout: 5000
+                senderHBTimeout: 500000 # avoid crashes during debug
             }
         }
     }
+
 }

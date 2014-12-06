@@ -28,7 +28,7 @@ public class DataPacket extends Packet {
 
     public static final int HEADERLEN = 4;
 
-    volatile protected boolean isDecoded;
+    protected boolean isDecoded;
     protected int bytesLeft;
     protected byte[] data = new byte[0];
 
@@ -91,12 +91,10 @@ public class DataPacket extends Packet {
     @Override
     public String toString() {
         return "DataPacket{" +
-                "sent=" + sent +
-                ", seqNo=" + seqNo +
+                "seqNo=" + seqNo +
                 ", topic=" + topic +
                 ", sender=" + sender +
                 ", receiver=" + receiver +
-                ", cluster=" + cluster +
                 ", left=" + bytesLeft +
                 ", datalen=" + dataLen() +
                 ", dgsize="+getDGramSize()+

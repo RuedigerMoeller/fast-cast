@@ -7,8 +7,7 @@ import org.nustaq.offheap.bytez.malloc.MallocBytezAllocator;
 import org.nustaq.offheap.structs.FSTStruct;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructArray;
-
-import java.util.concurrent.atomic.AtomicLong;
+import org.nustaq.offheap.structs.structtypes.StructString;
 
 /**
  * Created with IntelliJ IDEA.
@@ -29,11 +28,12 @@ public class PacketReceiveBuffer {
     final FSTStructAllocator packetAllocator;
     final StructArray<DataPacket> readBuffer;
 
-    AtomicLong maxOrderedSeq = new AtomicLong(0); // highest ordered
-    AtomicLong maxDeliveredSeq = new AtomicLong(0);
+    long maxOrderedSeq = 0; // highest ordered
+    long maxDeliveredSeq = 0;
     long highestSeq = 0; // highest sequence ever received
 
     String receivesFrom; // a receiveBuffer is responsible for a single sender only
+    final StructString nodeId;
     FCSubscriber receiver;
 
     RetransPacket retrans; // used temporary from receive to return retrans packet
@@ -47,14 +47,13 @@ public class PacketReceiveBuffer {
 
     private boolean isUnordered = false;
     private boolean isUnreliable = false;
-    TopicStats stats;
     private boolean terminated = false;
     int dGramSize;
-    static int recMatchCount;
+
     RetransPacket retransTemplate;
     DataPacket template;
 
-    public PacketReceiveBuffer(int dataGramSizeBytes, String clusterName, String nodeId, int historySize, String receivesFrom, Topic entry, FCSubscriber receiver) {
+    public PacketReceiveBuffer(int dataGramSizeBytes, String theNodeId, int historySize, String receivesFrom, Topic entry, FCSubscriber receiver) {
         topicEntry = entry;
         dGramSize = dataGramSizeBytes;
         this.topic = entry.getTopicId();
@@ -62,19 +61,20 @@ public class PacketReceiveBuffer {
         template = DataPacket.getTemplate(dataGramSizeBytes);
         payMaxLen = template.data.length;
 
-        template.getCluster().setString(clusterName);
-        template.getSender().setString(nodeId);
+        template.getSender().setString(theNodeId);
         template.setTopic(topic);
 
         retransTemplate = new RetransPacket();
-        retransTemplate.getCluster().setString(clusterName);
-        retransTemplate.getSender().setString(nodeId);
+        retransTemplate.getSender().setString(theNodeId);
         retransTemplate.getReceiver().setString(receivesFrom);
         retransTemplate.setTopic(topic);
         retransTemplate.setSeqNo(-1);
 
         packetAllocator = new FSTStructAllocator(10, new MallocBytezAllocator());
         readBuffer = packetAllocator.newArray(historySize,template);
+        this.nodeId = packetAllocator.newStruct( new StructString(Packet.MAX_NODE_NAME_LEN) );
+        this.nodeId.setString(theNodeId);
+
         if ( readBuffer.getByteSize() > 5*1024*1024 ) {
             FCLog.log("allocating read buffer for topic '"+topicEntry.getTopicId()+"' of "+(readBuffer.getByteSize()/1024/1024)+" MByte");
         } else {
@@ -83,7 +83,6 @@ public class PacketReceiveBuffer {
         retrans = packetAllocator.newStruct(retransTemplate);
 
         this.receivesFrom = receivesFrom;
-        stats = topicEntry.getStats();
         isUnordered = topicEntry.isUnordered();
         isUnreliable = topicEntry.isUnreliable();
         maxDelayRetrans = topicEntry.getSubscriberConf().getMaxDelayRetransMS();
@@ -94,7 +93,7 @@ public class PacketReceiveBuffer {
         return topicEntry;
     }
 
-    DataPacket getPacketVolatile( long seqNo ) {
+    DataPacket getPacket(long seqNo) {
         return readBuffer.get((int) (seqNo%readBuffer.size()));
     }
 
@@ -125,8 +124,7 @@ public class PacketReceiveBuffer {
 
 
     public RetransPacket receivePacket(DataPacket packet) {
-        stats.dataPacketReceived(packet.getDGramSize());
-        if ( maxOrderedSeq.get() == 0 ) {
+        if ( maxOrderedSeq == 0 ) {
             if ( startTime == 0 ) {
                 startTime = System.currentTimeMillis();
 //                return null;
@@ -142,15 +140,9 @@ public class PacketReceiveBuffer {
             return null;
         } else if ( isUnordered ) {
             RetransPacket retransPacket = receivePacketUnOrdered(packet);
-            if ( retransPacket != null ) {
-                stats.retransRQSent(retransPacket.computeNumPackets());
-            }
             return retransPacket;
         } else {
             RetransPacket retransPacket = receivePacketOrdered(packet);
-            if ( retransPacket != null ) {
-                stats.retransRQSent(retransPacket.computeNumPackets());
-            }
             return retransPacket;
         }
     }
@@ -162,11 +154,11 @@ public class PacketReceiveBuffer {
 
         long now = System.currentTimeMillis(); // FIXME: not always needed !
 
-        if ( maxOrderedSeq.get() == 0 ) {
+        if ( maxOrderedSeq == 0 ) {
             handleInitialSync(seqNo);
         }
 
-        DataPacket previousPacket = getPacketVolatile(seqNo);
+        DataPacket previousPacket = getPacket(seqNo);
         if ( ! previousPacket.isDecoded() && previousPacket.getSeqNo() > 0 ) { // not decoded yet => drop packet
             return;
         }
@@ -176,6 +168,11 @@ public class PacketReceiveBuffer {
         decodePacket(toDecode);
     }
 
+    private boolean isForeignPacket(DataPacket toDecode) {
+        StructString rec = toDecode.getReceiver();
+        return rec != null && rec.getLen() > 0 && ! nodeId.equals(rec);
+    }
+
     public RetransPacket receivePacketUnOrdered(DataPacket packet) {
         RetransPacket toReturn = null;
         long seqNo = packet.getSeqNo();
@@ -183,40 +180,40 @@ public class PacketReceiveBuffer {
         highestSeq = Math.max(seqNo,highestSeq);
 
         long now = System.currentTimeMillis(); // FIXME: not always needed !
-        if ( seqNo != maxOrderedSeq.get()+1 && firstGapDetected > 0 && now - firstGapDetected > maxDelayRetrans ) {
+        if ( seqNo != maxOrderedSeq+1 && firstGapDetected > 0 && now - firstGapDetected > maxDelayRetrans ) {
             // generate retransmission requests
             toReturn = computeRetransPacket(now);
         }
 
-        if ( maxOrderedSeq.get() == 0 ) {
+        if ( maxOrderedSeq == 0 ) {
             handleInitialSync(seqNo);
         }
 
-        DataPacket previousPacket = getPacketVolatile(seqNo);
+        DataPacket previousPacket = getPacket(seqNo);
         if ( ! previousPacket.isDecoded() && previousPacket.getSeqNo() > 0 ) { // not decoded yet => drop packet
             return toReturn;
         }
 
-        if ( seqNo == maxOrderedSeq.get()+1 ) {
+        if ( seqNo == maxOrderedSeq+1 ) {
             // packet is next one
             readBuffer.set(index,packet);
-            maxOrderedSeq.set(seqNo);
+            maxOrderedSeq = seqNo;
             DataPacket toDecode = readBuffer.get(index);
             decodePacket(toDecode);
             // if a gap was filled => deliver continous packets
             if ( ! inSync() ) { // there might be future packets in buffer
-                DataPacket pack = getPacketVolatile(seqNo+1);
+                DataPacket pack = getPacket(seqNo + 1);
                 while ( pack.getSeqNo() == seqNo+1 ) {
                     // if unordered => check packages are not yet decoded
                     if ( ! pack.isDecoded() ) {
                         decodePacket(pack);
                     }
                     seqNo++;
-                    maxOrderedSeq.set(seqNo);
-                    pack = getPacketVolatile(seqNo+1);
+                    maxOrderedSeq = seqNo;
+                    pack = getPacket(seqNo + 1);
                 }
 //                System.out.println("done from loop highest:"+highestSeq);
-                highestSeq = Math.max(maxOrderedSeq.get(),highestSeq);
+                highestSeq = Math.max(maxOrderedSeq,highestSeq);
                 if ( inSync() )
                 {
                     if ( PacketSendBuffer.RETRANSDEBUG )
@@ -250,8 +247,8 @@ public class PacketReceiveBuffer {
             long now = System.currentTimeMillis();
             if ( now-logBremse > 1000 )
             {
-                System.out.println("wait for retrans, received "+packet.getSeqNo()+" "+getTopicEntry().getSubscriberConf().getTopicId()+" waiting for "+(maxOrderedSeq.get()+1));
-                if ( packet.getSeqNo() < maxOrderedSeq.get() ) {
+                System.out.println("wait for retrans, received "+packet.getSeqNo()+" "+getTopicEntry().getSubscriberConf().getTopicId()+" waiting for "+(maxOrderedSeq+1));
+                if ( packet.getSeqNo() < maxOrderedSeq ) {
                     System.out.println("   sent by "+packet.getSender());
                 }
                 logBremse = now;
@@ -264,27 +261,27 @@ public class PacketReceiveBuffer {
         long now = System.currentTimeMillis(); // FIXME: not always needed !
 
         // if packet has been received and stored => return. Old packet or queue is full
-        if ( seqNo <= maxOrderedSeq.get() ) {
+        if ( seqNo <= maxOrderedSeq ) {
             return null;
         }
 
-        if ( maxOrderedSeq.get() == 0 ) {
+        if ( maxOrderedSeq == 0 ) {
             handleInitialSync(seqNo);
         }
 
-        if ( seqNo != maxOrderedSeq.get()+1 && firstGapDetected > 0 && now - firstGapDetected >= maxDelayRetrans ) {
+        if ( seqNo != maxOrderedSeq+1 && firstGapDetected > 0 && now - firstGapDetected >= maxDelayRetrans ) {
             toReturn = computeRetransPacket(now);
         }
 
         // queue full ?
-        if ( maxOrderedSeq.get()-maxDeliveredSeq.get() > readBuffer.size()-3 ) {
+        if ( maxOrderedSeq-maxDeliveredSeq > readBuffer.size()-3 ) {
             return toReturn;
         }
 
-        if ( seqNo == maxOrderedSeq.get()+1 ) {
+        if ( seqNo == maxOrderedSeq+1 ) {
             // packet is next packet
             readBuffer.set(index,packet);
-            maxOrderedSeq.set(seqNo);
+            maxOrderedSeq = seqNo;
             DataPacket toDecode = readBuffer.get(index);
             decodePacket(toDecode);
 
@@ -294,17 +291,17 @@ public class PacketReceiveBuffer {
                 boolean onePack = true;
                 while( onePack ) {
                     onePack = false;
-                    DataPacket pack = getPacketVolatile(seqNo+1);
+                    DataPacket pack = getPacket(seqNo + 1);
                     while ( pack.getSeqNo() == seqNo+1 ) {
 //                        System.out.println("continue from buff "+(seqNo+1)+" "+pack.getSeqNo() );
                         decodePacket(pack);
                         seqNo++;
-                        maxOrderedSeq.set(seqNo);
-                        pack = getPacketVolatile(seqNo+1);
+                        maxOrderedSeq = seqNo;
+                        pack = getPacket(seqNo + 1);
                         onePack = true;
                     }
                 }
-                highestSeq = Math.max(maxOrderedSeq.get(),highestSeq);
+                highestSeq = Math.max(maxOrderedSeq,highestSeq);
 //                System.out.println("highest "+highestSeq);
                 if ( inSync() )
                 {
@@ -333,7 +330,7 @@ public class PacketReceiveBuffer {
 
         // if previously stored message is delivered => store future packet
         long prevSeq = readBuffer.get(index).getSeqNo();
-        if ( prevSeq < maxDeliveredSeq.get() ) {
+        if ( prevSeq < maxDeliveredSeq ) {
             readBuffer.set(index, packet);
         }
         else {
@@ -346,8 +343,8 @@ public class PacketReceiveBuffer {
 
 
     private void handleInitialSync(long seqNo) {
-        maxOrderedSeq.set(seqNo-1); // ok, init only
-        maxDeliveredSeq.set(seqNo-1); // ok, init only
+        maxOrderedSeq = seqNo-1; // ok, init only
+        maxDeliveredSeq = seqNo-1; // ok, init only
         inInitialSync = true;
         FCLog.get().cluster("for sender "+receivesFrom+" bootstrap sequence "+getTopicEntry().getSubscriberConf().getTopicId()+" no "+seqNo);
         final FCSubscriber subscriber = getTopicEntry().getSubscriber();
@@ -360,20 +357,19 @@ public class PacketReceiveBuffer {
         RetransPacket toReturn = retrans;
 //        RetransPacket toReturn = (RetransPacket) retrans.createCopy();
         toReturn.clear();
-        toReturn.setSent(System.nanoTime());
-        long curSeq = maxOrderedSeq.get()+1;
+        long curSeq = maxOrderedSeq+1;
         boolean anotherGapNearCurrentGap = false;
         while( curSeq < highestSeq && ! toReturn.isFull() ) {
-            if ( getPacketVolatile(curSeq).getSeqNo() != curSeq ) {
+            if ( getPacket(curSeq).getSeqNo() != curSeq ) {
                 if ( ! anotherGapNearCurrentGap )
                     toReturn.current().setFrom(curSeq);
                 curSeq++;
-                while( curSeq < highestSeq && ! toReturn.isFull() && getPacketVolatile(curSeq).getSeqNo() != curSeq ) {
+                while( curSeq < highestSeq && ! toReturn.isFull() && getPacket(curSeq).getSeqNo() != curSeq ) {
                     curSeq++;
                 }
                 anotherGapNearCurrentGap = false;
                 for ( long off = curSeq; off < curSeq+ MAX_NON_GAP_PACKET_SERIES_TO_JUSTIFY_NEW_RETRANS_ENTRY; off++ ) {
-                    if ( off < highestSeq && ! toReturn.isFull() && getPacketVolatile(off).getSeqNo() != off ) {
+                    if ( off < highestSeq && ! toReturn.isFull() && getPacket(off).getSeqNo() != off ) {
                         anotherGapNearCurrentGap = true;
                         curSeq = off;
                         break;
@@ -402,25 +398,28 @@ public class PacketReceiveBuffer {
     }
 
     public boolean inSync() {
-        return highestSeq == maxOrderedSeq.get();
+        return highestSeq == maxOrderedSeq;
     }
 
     FSTStruct currentPacketBytePointer = new FSTStruct();
 
     long debugPrevSeq = 0;
     long lastPacket = 0;
-    int packCount = 0;
     FSTStruct tmpStruct = new FSTStruct();
     DataPacket tmpPacket;
     void decodePacket(DataPacket packet) {
 //        packet.dumpBytes();
-        final long packetSeqNo = packet.getSeqNo();
 
         if ( receiver == null )
             return;
 
+        if ( isForeignPacket(packet) )
+            return;
+
+        final long packetSeqNo = packet.getSeqNo();
+
         if ( tmpPacket == null ) {
-            tmpPacket = packetAllocator.newPointer(DataPacket.class);
+            tmpPacket = packetAllocator.newPointer(DataPacket.class); // fixme: move to init
         }
 
         packet.dataPointer(tmpStruct);
@@ -432,28 +431,20 @@ public class PacketReceiveBuffer {
     }
 
     private void decodeMsgBytes(long packetSeqNo, Bytez dataPacketBase, int dataindex, int packIndex) {
-        FCReceiveContext fcReceiveContext = FCReceiveContext.get();
-        fcReceiveContext.setSender(receivesFrom);
-        fcReceiveContext.setTopicInfo(topicEntry);
 
-        long now = System.currentTimeMillis();
-        packCount++;
-        if (now - lastPacket > 1000) {
-            int persec = (int) ((packCount * 1000l) / (now - lastPacket));
-            lastPacket = now;
-            packCount = 0;
-        }
-        if (!isUnordered() && !isUnreliable() && debugPrevSeq != 0 && debugPrevSeq != packetSeqNo - 1) {
-            FCLog.get().fatal("FATAL ERROR " + packetSeqNo);
-            System.exit(1);
-        }
+//        check is valid only for non unicast traffic (else packets for other nodes will not be sent and create pseudo sequence gaps
+//        if (!isUnordered() && !isUnreliable() && debugPrevSeq != 0 && debugPrevSeq != packetSeqNo - 1) {
+//            FCLog.get().fatal("FATAL ERROR " + packetSeqNo);
+//            System.exit(1);
+//        }
+
         debugPrevSeq = packetSeqNo;
 
         currentPacketBytePointer.baseOn(dataPacketBase, dataindex);
         while (true) {
             short code = currentPacketBytePointer.getShort();
             if (code > DataPacket.MAX_CODE || code < 0) {
-                FCLog.get().warn("foreign traffic or error assume delivered: " + maxDeliveredSeq.get() + " maxOrdered " + maxOrderedSeq.get() + " packseq " + packetSeqNo + " highest " + highestSeq);
+                FCLog.get().warn("foreign traffic or error assume delivered: " + maxDeliveredSeq + " maxOrdered " + maxOrderedSeq + " packseq " + packetSeqNo + " highest " + highestSeq);
                 System.exit(1);
             }
             currentPacketBytePointer.next(2);
@@ -462,7 +453,7 @@ public class PacketReceiveBuffer {
                     tmpPacket.baseOn(dataPacketBase, packIndex);
                     tmpPacket.setDecoded(true);
                 }
-                maxDeliveredSeq.set(Math.max(maxDeliveredSeq.get(), packetSeqNo));
+                maxDeliveredSeq = Math.max(maxDeliveredSeq, packetSeqNo);
                 return;
             } else {
                 short len = currentPacketBytePointer.getShort();
@@ -479,7 +470,6 @@ public class PacketReceiveBuffer {
                         }
                     }
                     decoder.receiveChunk(packetSeqNo, currentPacketBytePointer.getBase(), (int) currentPacketBytePointer.getOffset(), len, code == DataPacket.COMPLETE);
-                    stats.msgReceived();
                 }
                 currentPacketBytePointer.next(len);
             }
@@ -510,8 +500,8 @@ public class PacketReceiveBuffer {
      * reset all sequences and resync (creates unrecoverable message loss)
      */
     public void resync() {
-        maxOrderedSeq = new AtomicLong(0);
-        maxDeliveredSeq = new AtomicLong(0);
+        maxOrderedSeq = 0;
+        maxDeliveredSeq = 0;
         startTime = 0;
         retransCount = 0;
         firstGapDetected = 0;

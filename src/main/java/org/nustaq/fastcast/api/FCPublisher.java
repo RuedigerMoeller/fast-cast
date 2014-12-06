@@ -8,7 +8,10 @@ import org.nustaq.offheap.bytez.ByteSource;
 public interface FCPublisher {
 
     public boolean offer(ByteSource msg, long start, int len, boolean doFlush);
+    public boolean offer(ByteSource msg, boolean doFlush);
     public int getTopicId();
+    public void setReceiver(String receiverNodeId);
+
     // FIXME: add listener interface
 //    public void retransMissionRequestReceived(int percentageOfHistory, String nodeId);
 

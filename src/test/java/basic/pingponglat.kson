@@ -1,0 +1,69 @@
+ClusterConf {
+
+    transports: {
+        {
+            name:      ping
+
+            dgramsize: 1500
+            ifacAdr:   127.0.0.1
+            mcastAdr:  229.9.9.10
+            port:      45556
+
+            autoFlushMS:     1
+            spinIdleLoopMax: 10_000_000
+            idleParkMicros:  1000
+        }
+
+        {
+            name:      pong
+
+            dgramsize: 1500
+            ifacAdr:   127.0.0.1
+            mcastAdr:  229.9.9.11
+            port:      45557
+
+            autoFlushMS:     10
+            spinIdleLoopMax: 10_000_000
+            idleParkMicros:  1000
+        }
+
+    }
+
+    topics: {
+       # for ping pong test. each topic gets its own transport, so same topic id's can be used
+       {
+            id: 1
+            name: ping
+
+            pub: {
+                numPacketHistory: 500_000
+                pps: 100_000
+                ppsWindow: 10
+            }
+
+            sub: {
+                receiveBufferPackets: 500_000
+                # senderHBTimeout: 5000
+                senderHBTimeout: 500000 # avoid crashes during debug
+            }
+        }
+
+       {
+            id: 1
+            name: pong
+
+            pub: {
+                numPacketHistory: 500_000
+                pps: 100_000
+                ppsWindow: 10
+            }
+
+            sub: {
+                receiveBufferPackets: 500_000
+                # senderHBTimeout: 5000
+                senderHBTimeout: 500000 # avoid crashes during debug
+            }
+        }
+    }
+
+}

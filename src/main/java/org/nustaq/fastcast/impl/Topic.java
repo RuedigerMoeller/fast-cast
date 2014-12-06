@@ -28,12 +28,11 @@ public class Topic {
 
     TransportDriver channelDispatcher;
     PacketSendBuffer sender;
-    TopicStats stats;
     ConcurrentHashMap<String,Long> senderHeartbeat = new ConcurrentHashMap<String, Long>();
 
     boolean isUnordered = false;
     boolean isUnreliable = false;
-    volatile boolean listenCalls = false; // if false => only listen to call results if any
+
     private FCSubscriber subscriber;
     int topicId = -1;
     private long hbTimeoutMS = 3000; // dev
@@ -76,6 +75,9 @@ public class Topic {
 
     public void setSubscriberConf(SubscriberConf subscriberConf) {
         this.subscriberConf = subscriberConf;
+        if ( subscriberConf != null ) {
+            hbTimeoutMS = subscriberConf.getSenderHBTimeout();
+        }
     }
 
     public boolean isUnordered() {
@@ -123,12 +125,6 @@ public class Topic {
             }
         }
         return topicId;
-    }
-
-    public TopicStats getStats() {
-        if ( stats == null )
-            stats = new TopicStats(getTrans().getConf().getDgramsize());
-        return stats;
     }
 
     public void removeSenders(List<String> timedOutSenders) {

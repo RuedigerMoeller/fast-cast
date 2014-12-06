@@ -25,10 +25,10 @@ public class PublisherConf {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    long heartbeatInterval = 200;    // sent per topicId, ms. detects senderTimeoutMillis
+    long heartbeatInterval = 1000;    // sent per topicId, ms. detects senderTimeoutMillis
 
     int pps = 10_000_000; // rate limit datagram per second
-    int ppsWindow = 10;   // time window rate limit is checked. e.g. ppsWindow = 10 => 1 sec/10 = 100ms another: ppsWindow = 1000 => 1 ms
+    int ppsWindow = 100;   // time window rate limit is checked. e.g. ppsWindow = 10 => 1 sec/10 = 100ms another: ppsWindow = 1000 => 1 ms
 
     public PublisherConf() {
     }
