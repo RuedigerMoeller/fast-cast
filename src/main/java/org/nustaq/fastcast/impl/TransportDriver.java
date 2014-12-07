@@ -110,8 +110,7 @@ public class TransportDriver {
                         Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
                         List<String> timedOutSenders = topicEntry.getTimedOutSenders(now, topicEntry.getHbTimeoutMS());
                         if ( timedOutSenders != null && timedOutSenders.size() > 0 ) {
-                            cleanup(timedOutSenders,i);
-                            topicEntry.removeSenders(timedOutSenders);
+                            cleanup(timedOutSenders, i);
                         }
                     }
                 }
@@ -123,7 +122,7 @@ public class TransportDriver {
                             lastMsg[i] = lastFlush;
                         else if ( lastMsg[i] == lastFlush) {
                             // no flush since last turnaround, generate a flush
-                            packetSendBuffer.offer(null,0,0,true);
+                            packetSendBuffer.flush();
                         } else {
                             lastMsg[i] = lastFlush;
                         }
@@ -223,13 +222,17 @@ public class TransportDriver {
                                 }
                             }
                         }
-                    } else if ( control.getType() == ControlPacket.HEARTBEAT ) {
-                        ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
-                        if ( receiveBufferDispatcher != null ) {
-                            Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
-                            topicEntry.registerHeartBeat(control.getSender().toString(), System.currentTimeMillis());
-                        }
                     }
+                    // heartbeats are sent as regular data packets in order to have initialSync to happen correctly
+//                    else if ( control.getType() == ControlPacket.HEARTBEAT ) {
+//                        ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
+//                        if ( receiveBufferDispatcher != null ) {
+//                            PacketReceiveBuffer buffer = receiveBufferDispatcher.getBuffer(control.getSender());
+//                            if ( buffer != null ) {
+//                                buffer.updateHeartBeat(control.getSeqNo(),System.currentTimeMillis());
+//                            }
+//                        }
+//                    }
                 }
             }
             return true;
@@ -243,7 +246,7 @@ public class TransportDriver {
 
     private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
         PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
-        DataPacket p = (DataPacket) receivedPacket.cast().detach();
+        DataPacket p = receivedPacket.cast().detach(); // FIXME: alloc
         RetransPacket retransPacket = buffer.receivePacket(p);
         if ( retransPacket != null ) {
             // packet is valid just in this thread
@@ -294,5 +297,9 @@ public class TransportDriver {
         topics.put(pubConf.getTopicId(), topicEntry);
         final PacketSendBuffer packetSendBuffer = installSender(topicEntry);
         return packetSendBuffer;
+    }
+
+    public ReceiveBufferDispatcher getReceiver(int topicId) {
+        return receiver[topicId];
     }
 }

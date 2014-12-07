@@ -11,6 +11,7 @@ public interface FCPublisher {
     public boolean offer(ByteSource msg, boolean doFlush);
     public int getTopicId();
     public void setReceiver(String receiverNodeId);
+    public void flush();
 
     // FIXME: add listener interface
 //    public void retransMissionRequestReceived(int percentageOfHistory, String nodeId);

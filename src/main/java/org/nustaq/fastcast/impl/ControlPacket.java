@@ -11,7 +11,7 @@ package org.nustaq.fastcast.impl;
  */
 public class ControlPacket extends Packet {
     public static final short DROPPED = 0;
-    public static final short HEARTBEAT = 99;
+    public static final short HEARTBEAT = 1; // NOT SENT AS CONTROL MESSAGE (required in stream to manage bootstrap)
 
     protected short type;
 

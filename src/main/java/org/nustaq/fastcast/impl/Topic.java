@@ -4,6 +4,7 @@ import org.nustaq.fastcast.config.PublisherConf;
 import org.nustaq.fastcast.config.SubscriberConf;
 import org.nustaq.fastcast.api.*;
 import org.nustaq.fastcast.transport.PhysicalTransport;
+import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,7 +29,6 @@ public class Topic {
 
     TransportDriver channelDispatcher;
     PacketSendBuffer sender;
-    ConcurrentHashMap<String,Long> senderHeartbeat = new ConcurrentHashMap<String, Long>();
 
     boolean isUnordered = false;
     boolean isUnreliable = false;
@@ -45,22 +45,11 @@ public class Topic {
         }
     }
 
-    public void registerHeartBeat(String sender, long time) {
-        senderHeartbeat.put(sender,time);
-    }
-
-    public boolean hadHeartbeat(String sender) {
-        return senderHeartbeat.containsKey(sender);
-    }
-
     public List<String> getTimedOutSenders(long now, long timeout) {
         List<String> res = new ArrayList<String>();
-        for (Iterator<String> iterator = senderHeartbeat.keySet().iterator(); iterator.hasNext(); ) {
-            String next = iterator.next();
-            long tim = senderHeartbeat.get(next);
-            if ( now-tim > timeout ) {
-                res.add(next);
-            }
+        ReceiveBufferDispatcher receiver = channelDispatcher.getReceiver(topicId);
+        if ( receiver != null ) {
+            receiver.getTimedOutSenders(now,timeout,res);
         }
         return res;
     }
@@ -125,12 +114,6 @@ public class Topic {
             }
         }
         return topicId;
-    }
-
-    public void removeSenders(List<String> timedOutSenders) {
-        for ( String s : timedOutSenders ) {
-            senderHeartbeat.remove(s);
-        }
     }
 
     public void setPublisherConf(PublisherConf publisherConf) {

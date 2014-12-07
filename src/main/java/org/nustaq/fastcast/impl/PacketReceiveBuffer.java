@@ -41,7 +41,11 @@ public class PacketReceiveBuffer {
     Defragmenter decoder = new Defragmenter() {
         @Override
         public void msgDone(long seq, Bytez b, int off, int len) {
-            receiver.messageReceived(receivesFrom,seq,b,off,len);
+            if ( len == 1 && b.get(off) == ControlPacket.HEARTBEAT ) {
+                // timestamp updated anyway
+            } else {
+                receiver.messageReceived(receivesFrom,seq,b,off,len);
+            }
         }
     };
 
@@ -52,6 +56,7 @@ public class PacketReceiveBuffer {
 
     RetransPacket retransTemplate;
     DataPacket template;
+    volatile long lastHBMillis;
 
     public PacketReceiveBuffer(int dataGramSizeBytes, String theNodeId, int historySize, String receivesFrom, Topic entry, FCSubscriber receiver) {
         topicEntry = entry;
@@ -124,6 +129,7 @@ public class PacketReceiveBuffer {
 
 
     public RetransPacket receivePacket(DataPacket packet) {
+        updateHeartBeat(System.currentTimeMillis());
         if ( maxOrderedSeq == 0 ) {
             if ( startTime == 0 ) {
                 startTime = System.currentTimeMillis();
@@ -151,8 +157,6 @@ public class PacketReceiveBuffer {
         long seqNo = packet.getSeqNo();
         int index = (int) (seqNo % readBuffer.size());
         highestSeq = Math.max(seqNo,highestSeq);
-
-        long now = System.currentTimeMillis(); // FIXME: not always needed !
 
         if ( maxOrderedSeq == 0 ) {
             handleInitialSync(seqNo);
@@ -463,12 +467,6 @@ public class PacketReceiveBuffer {
                         inInitialSync = false;
                     }
                 } else {
-                    if ( (packetSeqNo&2047) == 0 ) {
-                        if ( topicEntry.hadHeartbeat(receivesFrom) /* do not disturb bootstrap sequence */) {
-                            // under high pressure heartbeats are squeezed, treat any 2048'th packet as heartbeat then
-                            topicEntry.registerHeartBeat(receivesFrom, System.currentTimeMillis());
-                        }
-                    }
                     decoder.receiveChunk(packetSeqNo, currentPacketBytePointer.getBase(), (int) currentPacketBytePointer.getOffset(), len, code == DataPacket.COMPLETE);
                 }
                 currentPacketBytePointer.next(len);
@@ -507,5 +505,17 @@ public class PacketReceiveBuffer {
         firstGapDetected = 0;
         debugPrevSeq = 0;
         inInitialSync = true; // in case first packet is chained, stay in initial until complete msg is found
+    }
+
+    public void updateHeartBeat(long l) {
+        lastHBMillis = l;
+    }
+
+    public long getLastHBMillis() {
+        return lastHBMillis;
+    }
+
+    public String getReceivesFrom() {
+        return receivesFrom;
     }
 }

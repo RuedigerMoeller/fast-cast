@@ -19,6 +19,8 @@ import org.nustaq.offheap.structs.unsafeimpl.FSTStructFactory;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by ruedi on 29.11.2014.
@@ -91,7 +93,7 @@ public class SendReceive {
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
                 echoresp.setReceiver(sender);
                 while( ! echoresp.offer( b,off,len, true) ) {
-                    // just force direct bounce back
+                    echoresp.flush(); // ensure retrans processing etc.
                 }
             }
 
@@ -117,6 +119,7 @@ public class SendReceive {
 
     Histogram histo = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
 
+    // no coordinated ommission
     @Test
     public void pingClient() throws InterruptedException {
         final FastCast fc = initFC("pclie", "pingponglat.kson");
@@ -172,6 +175,68 @@ public class SendReceive {
         }
     }
 
+    // guilty of coordinated ommission
+    @Test
+    public void pingClientSync() throws InterruptedException {
+        final FastCast fc = initFC("pclie", "pingponglat.kson");
+        final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("ping"));
+        final Executor ex = Executors.newSingleThreadExecutor();
+        final AtomicInteger await = new AtomicInteger(0);
+
+        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pong"), new FCSubscriber() {
+
+            @Override
+            public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
+                await.decrementAndGet();
+            }
+
+            @Override
+            public boolean dropped() {
+                await.set(0); // reset
+                System.out.println("Drop and Reset counter !");
+                return true;
+            }
+
+            @Override
+            public void senderTerminated(String senderNodeId) {
+                System.out.println(senderNodeId+" terminated");
+            }
+
+            @Override
+            public void senderBootstrapped(String receivesFrom, long seqNo) {
+                System.out.println("bootstrap "+receivesFrom);
+            }
+        });
+
+        FSTStructAllocator alloc = new FSTStructAllocator(0); // just create a byte[] for each struct (*)
+        PingRequest pr = alloc.newStruct( new PingRequest() );
+
+        Thread.sleep(1000); // wait for at least one heartbeat
+        System.out.println("starting ping pong");
+        Sleeper sl = new Sleeper();
+        while( true ) {
+            await.set(0);
+            for (int i= 0; i < 1_000_000; i++ ) {
+//                sl.sleepMicros(100);
+                long tim = System.nanoTime();
+                await.set(1);
+                while( ! pingserver.offer(pr.getBase(),true) ) {
+                }
+                long waitTim = System.nanoTime();
+                while( await.get() > 0 ) {
+                    long delay = System.nanoTime() - waitTim;
+                    if ( delay > 1000l*1000*1000*3 ) {
+                        System.out.println("*** no response - give up ! ***");
+                        break;
+                    }
+                }
+                tim = System.nanoTime() - tim;
+                histo.recordValue(tim);
+            }
+            histo.outputPercentileDistribution(System.out, 1000.0);
+            histo.reset();
+        }
+    }
 
     // echo test is for correctness not performance latency (unnecessary alloc etc.)
     @Test
@@ -185,7 +250,6 @@ public class SendReceive {
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
                 echoresp.setReceiver(sender);
                 while( ! echoresp.offer(new AsciiStringByteSource("echo "+sender), false) ) {
-                    // just force send
                 }
             }
 

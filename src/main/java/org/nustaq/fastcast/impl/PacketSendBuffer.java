@@ -6,8 +6,10 @@ import org.nustaq.fastcast.config.PublisherConf;
 import org.nustaq.fastcast.transport.PhysicalTransport;
 import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.bytez.ByteSource;
+import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.offheap.bytez.malloc.MallocBytez;
 import org.nustaq.offheap.bytez.malloc.MallocBytezAllocator;
+import org.nustaq.offheap.bytez.onheap.HeapBytez;
 import org.nustaq.offheap.structs.FSTStruct;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructArray;
@@ -41,7 +43,8 @@ public class PacketSendBuffer implements FCPublisher {
     private static final boolean DEBUG_LAT = false;
     final PhysicalTransport trans;
 
-    FSTStructAllocator packetAllocator;
+    FSTStructAllocator offheapAllocator;
+    FSTStructAllocator heapAllocator;
     ConcurrentLinkedQueue<RetransPacket> retransRequests = new ConcurrentLinkedQueue<RetransPacket>();
 
 
@@ -60,8 +63,7 @@ public class PacketSendBuffer implements FCPublisher {
     StructArray<DataPacket> history;
     int historySize;
 
-    ControlPacket dropMsg, heartBeat; // prepared message for drop
-    DatagramPacket heartBeatDG;
+    ControlPacket dropMsg; // prepared message for drop
     DataPacket template;   // template for new data packet
 
     ByteBuffer tmpSend;
@@ -75,6 +77,7 @@ public class PacketSendBuffer implements FCPublisher {
     int packetCounter;
     long lastPpsRateCheckNanos;
     String currentReceiver = null;
+    Bytez heartbeat;
 
     public PacketSendBuffer(PhysicalTransport trans, String nodeId, Topic entry ) {
         this.trans = trans;
@@ -92,8 +95,9 @@ public class PacketSendBuffer implements FCPublisher {
         template.getSender().setString(nodeId);
         template.setTopic(topic);
 
-        packetAllocator = new FSTStructAllocator(10, new MallocBytezAllocator());
-//        packetAllocator = new FSTTypedStructAllocator<DataPacket>(template,10);
+        offheapAllocator = new FSTStructAllocator(0, new MallocBytezAllocator());
+        heapAllocator = new FSTStructAllocator(0);
+
         final PublisherConf publisherConf = topicEntry.getPublisherConf();
         int hSize = publisherConf.getNumPacketHistory();
         if ( ((long)hSize*conf.getDgramsize()) > Integer.MAX_VALUE-2*conf.getDgramsize() ) {
@@ -102,14 +106,13 @@ public class PacketSendBuffer implements FCPublisher {
             FCLog.get().warn("int overflow, degrading history size from "+hSize+" to "+newHist);
             hSize = newHist;
         }
-        history = packetAllocator.newArray(hSize, template);
+        history = offheapAllocator.newArray(hSize, template);
         FCLog.log("allocating send buffer for topic " + topicEntry.getTopicId() + " of " + history.getByteSize() / 1024 / 1024 + " MByte");
         historySize = history.size();
 
         setUnordered(topicEntry.isUnordered());
 
         initDropMsgPacket(nodeId);
-        initHeartbeatPacket(nodeId);
 
         DataPacket curP = getPacketAt(currentSequence);
         currentPacketBytePointer = curP.detach();
@@ -125,6 +128,8 @@ public class PacketSendBuffer implements FCPublisher {
         }
         pps = publisherConf.getPps()/publisherConf.getPpsWindow();
         ppsWindowNanos = (1000*1000*1000)/publisherConf.getPpsWindow();
+        heartbeat = new HeapBytez(new byte[]{ControlPacket.HEARTBEAT});
+        flush(); // enforce immediate heartbeat
     }
 
     public static List<Field> getAllFields(List<Field> fields, Class<?> type) {
@@ -155,12 +160,12 @@ public class PacketSendBuffer implements FCPublisher {
         capacity.setAccessible(true);
 
         MallocBytez base = (MallocBytez) history.getBase();
-        address.setLong(tmpSend, base.getBaseAdress()+history.getOffset() );
+        address.setLong(tmpSend, base.getBaseAdress() + history.getOffset());
         capacity.setInt(tmpSend, history.getByteSize());
     }
 
     private void moveBuff(DataPacket packet) {
-        tmpSend.limit((int) (packet.getOffset()+packet.getDGramSize()));
+        tmpSend.limit((int) (packet.getOffset() + packet.getDGramSize()));
         tmpSend.position((int) packet.getOffset());
     }
 
@@ -169,21 +174,11 @@ public class PacketSendBuffer implements FCPublisher {
         dropMsg.getSender().setString(nodeId);
         dropMsg.setTopic(topic);
         dropMsg.setType(ControlPacket.DROPPED);
-        dropMsg = packetAllocator.newStruct(dropMsg);
+        dropMsg = heapAllocator.newStruct(dropMsg);
     }
-
-    protected void initHeartbeatPacket(String nodeId) {
-        heartBeat = new ControlPacket();
-        heartBeat.getSender().setString(nodeId);
-        heartBeat.setTopic(topic);
-        heartBeat.setType(ControlPacket.HEARTBEAT);
-        heartBeat = packetAllocator.newStruct(heartBeat);
-        heartBeatDG = new DatagramPacket(heartBeat.getBase().toBytes((int) heartBeat.getOffset(), heartBeat.getByteSize()), 0, heartBeat.getByteSize());
-    }
-
 
     public void free() {
-        packetAllocator.free();
+        offheapAllocator.free();
     }
 
     public Topic getTopicEntry() {
@@ -426,7 +421,7 @@ public class PacketSendBuffer implements FCPublisher {
         if ( RETRANSDEBUG )
             System.out.println("received retrans request and add to Q " + copy);
         retransRequests.add(copy);
-        offer(null,0,0,true);
+        flush();
     }
 
     AtomicBoolean sendLock = new AtomicBoolean(false);
@@ -439,7 +434,7 @@ public class PacketSendBuffer implements FCPublisher {
         sendLock.set(false);
     }
     long hbInvtervalMS = 1000; // FIXME: use settings
-    long lastHB = System.nanoTime();
+    long lastHB = 0;
 
     public volatile long lastFlush = System.currentTimeMillis();
 
@@ -464,12 +459,8 @@ public class PacketSendBuffer implements FCPublisher {
         }
         if ( now-lastHB > hbInvtervalMS*1000*1000 ) {
             lastHB = now;
-            try {
-                packetCounter++;
-                trans.send(heartBeatDG);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            setReceiver(null);
+            return offerNoLock(heartbeat,0,1,true);
         }
         if ( doFlush ) {
             lastFlush = now;
@@ -557,6 +548,11 @@ public class PacketSendBuffer implements FCPublisher {
     @Override
     public int getPacketRateLimit() {
         return packetRateLimit;
+    }
+
+    @Override
+    public void flush() {
+        offer(null,0,0,true);
     }
 
 }

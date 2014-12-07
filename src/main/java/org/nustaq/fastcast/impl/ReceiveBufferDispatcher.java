@@ -6,6 +6,9 @@ import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /*
  * Created with IntelliJ IDEA.
@@ -21,7 +24,7 @@ import java.util.HashMap;
  */
 public class ReceiveBufferDispatcher {
 
-    HashMap<StructString,PacketReceiveBuffer> bufferMap = new HashMap<StructString, PacketReceiveBuffer>();
+    ConcurrentHashMap<StructString,PacketReceiveBuffer> bufferMap = new ConcurrentHashMap<StructString, PacketReceiveBuffer>();
 
     int packetSize;
     String nodeId;
@@ -84,6 +87,15 @@ public class ReceiveBufferDispatcher {
         for (int i = 0; i < keys.size(); i++) {
             String o =  keys.get(i);
             cleanup(o);
+        }
+    }
+
+    public void getTimedOutSenders(long now, long timeout, List<String> res) {
+        for (Iterator<PacketReceiveBuffer> iterator = bufferMap.values().iterator(); iterator.hasNext(); ) {
+            PacketReceiveBuffer next = iterator.next();
+            if ( now - next.getLastHBMillis() > timeout ) {
+                res.add(next.getReceivesFrom());
+            }
         }
     }
 }
