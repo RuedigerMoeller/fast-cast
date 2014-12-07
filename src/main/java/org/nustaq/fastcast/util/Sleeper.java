@@ -9,10 +9,9 @@ package org.nustaq.fastcast.util;
  */
 public class Sleeper {
 
-    private static final boolean DISABLED = false;
     int sleepcount = 0;
     public void sleepMicros(int micro) {
-        if ( micro <= 0 || DISABLED )
+        if ( micro <= 0 )
             return;
         sleepcount+=micro;
         try {

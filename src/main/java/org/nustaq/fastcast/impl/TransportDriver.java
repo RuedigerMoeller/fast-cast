@@ -117,7 +117,7 @@ public class TransportDriver {
                 for (int i = 0; i < sender.length; i++) {
                     PacketSendBuffer packetSendBuffer = sender[i];
                     if ( packetSendBuffer != null ) {
-                        long lastFlush = packetSendBuffer.lastFlush;
+                        long lastFlush = packetSendBuffer.lastMsgFlush;
                         if ( lastMsg[i] == 0 )
                             lastMsg[i] = lastFlush;
                         else if ( lastMsg[i] == lastFlush) {

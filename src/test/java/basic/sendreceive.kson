@@ -25,6 +25,7 @@ ClusterConf {
                 numPacketHistory: 500_000
                 pps: 20_000
                 ppsWindow: 100
+                heartbeatInterval: 10   # testing
             }
 
             sub: {
@@ -42,6 +43,7 @@ ClusterConf {
                 numPacketHistory: 100_000
                 pps: 20_000
                 ppsWindow: 100
+                heartbeatInterval: 10   # testing
             }
 
             sub: {
@@ -59,7 +61,8 @@ ClusterConf {
                 numPacketHistory: 100_000
                 pps: 20_000
                 ppsWindow: 100
-            }
+                heartbeatInterval: 10   # testing
+           }
 
             sub: {
                 receiveBufferPackets: 50_000

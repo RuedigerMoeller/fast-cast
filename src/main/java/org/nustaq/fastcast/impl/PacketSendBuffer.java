@@ -41,6 +41,7 @@ public class PacketSendBuffer implements FCPublisher {
     private static final int RETRANS_MEM = 10000; // retransrequest history to accumulate identical retrans requests
     private static final int TAG_BUFF = 4;
     private static final boolean DEBUG_LAT = false;
+    public static final String KEEP_SUBS_NODEID = "KEEPRECEIVER";
     final PhysicalTransport trans;
 
     FSTStructAllocator offheapAllocator;
@@ -434,12 +435,14 @@ public class PacketSendBuffer implements FCPublisher {
         sendLock.set(false);
     }
     long hbInvtervalMS = 1000; // FIXME: use settings
-    long lastHB = 0;
 
-    public volatile long lastFlush = System.currentTimeMillis();
+    public volatile long lastMsgFlush = System.currentTimeMillis();
 
-    protected boolean offerNoLock(ByteSource msg, long start, int len, boolean doFlush) {
+    protected boolean offerNoLock(String receiverNodeId, ByteSource msg, long start, int len, boolean doFlush) {
         long now = System.nanoTime();
+        if ( receiverNodeId != KEEP_SUBS_NODEID ) {
+            setReceiver(receiverNodeId);
+        }
         if ( now-lastPpsRateCheckNanos > ppsWindowNanos ) {
             packetCounter = Math.max(0,packetCounter-pps);
             lastPpsRateCheckNanos = now;
@@ -457,19 +460,24 @@ public class PacketSendBuffer implements FCPublisher {
         } else {
             res = putMessage(-1,msg,start,len, true);
         }
-        if ( now-lastHB > hbInvtervalMS*1000*1000 ) {
-            lastHB = now;
-            setReceiver(null);
-            return offerNoLock(heartbeat,0,1,true);
+        if ( now-lastMsgFlush > hbInvtervalMS*1000*1000 ) {
+            long prevFlush = lastMsgFlush;
+            lastMsgFlush = now;
+            if ( ! offerNoLock(null, heartbeat,0,1,false) ) {
+                lastMsgFlush = prevFlush;
+            }
+            return res;
         }
         if ( doFlush ) {
-            lastFlush = now;
-            fire();
+            if ( ! isCurrentPacketEmpty() ) {
+                lastMsgFlush = now;
+                fire();
+            }
         }
         try {
             if ( ! sendPendingRetrans() ) {
                 if ( sendPendingPackets() ) {
-                    lastFlush = now;
+                    lastMsgFlush = now;
                 }
             } else
                 res = false;
@@ -484,12 +492,12 @@ public class PacketSendBuffer implements FCPublisher {
     // publisher interface
     //
     @Override
-    public boolean offer(ByteSource msg, long start, int len, boolean doFlush) {
+    public boolean offer(String receiverNodeId, ByteSource msg, long start, int len, boolean doFlush) {
         try {
             lock();
 //            synchronized (this)
             {
-                return offerNoLock(msg, start, len, doFlush);
+                return offerNoLock(receiverNodeId, msg, start, len, doFlush);
             }
         } finally {
             unlock();
@@ -497,12 +505,12 @@ public class PacketSendBuffer implements FCPublisher {
     }
 
     @Override
-    public boolean offer(ByteSource msg, boolean doFlush) {
+    public boolean offer(String subscriberNodeId, ByteSource msg, boolean doFlush) {
         try {
             lock();
 //            synchronized (this)
             {
-                return offerNoLock(msg, 0, (int) msg.length(), doFlush);
+                return offerNoLock(subscriberNodeId, msg, 0, (int) msg.length(), doFlush);
             }
         } finally {
             unlock();
@@ -514,8 +522,7 @@ public class PacketSendBuffer implements FCPublisher {
         return topicEntry.getTopicId();
     }
 
-    @Override
-    public void setReceiver(String receiverNodeId) {
+    private void setReceiver(String receiverNodeId) {
         if ( receiverNodeId == null ) {
             if ( currentReceiver != null ) {
                 currentReceiver = null;
@@ -552,7 +559,7 @@ public class PacketSendBuffer implements FCPublisher {
 
     @Override
     public void flush() {
-        offer(null,0,0,true);
+        offer( KEEP_SUBS_NODEID, null, 0, 0, true );
     }
 
 }
