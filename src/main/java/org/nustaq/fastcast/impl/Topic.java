@@ -45,8 +45,7 @@ public class Topic {
         }
     }
 
-    public List<String> getTimedOutSenders(long now, long timeout) {
-        List<String> res = new ArrayList<String>();
+    public List<String> getTimedOutSenders(List<String> res, long now, long timeout) {
         ReceiveBufferDispatcher receiver = channelDispatcher.getReceiver(topicId);
         if ( receiver != null ) {
             receiver.getTimedOutSenders(now,timeout,res);

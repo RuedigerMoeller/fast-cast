@@ -33,7 +33,7 @@ ClusterConf {
        # for ping pong test. each topic gets its own transport, so same topic id's can be used
        {
             id: 1
-            name: ping
+            name: pingtopic
 
             pub: {
                 numPacketHistory: 500_000
@@ -51,7 +51,7 @@ ClusterConf {
 
        {
             id: 1
-            name: pong
+            name: pongtopic
 
             pub: {
                 numPacketHistory: 500_000

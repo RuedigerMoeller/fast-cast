@@ -55,7 +55,7 @@ public class FCPing {
     // no coordinated ommission, async
     public void pingClientAsnyc() throws InterruptedException {
         final FastCast fc = initFC("pclie", "pingponglat.kson");
-        final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("ping"));
+        final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("pingtopic"));
         final Executor ex = Executors.newSingleThreadExecutor();
         final Histogram histo = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
         fc.onTransport("pong").subscribe(fc.getSubscriberConf("pong"), new FCSubscriber() {
@@ -103,11 +103,11 @@ public class FCPing {
     // CO !
     public void runPingClientSync() throws InterruptedException {
         final FastCast fc = initFC("pclie", "pingponglat.kson");
-        final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("ping"));
+        final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("pingtopic"));
         final Executor ex = Executors.newSingleThreadExecutor();
         final AtomicInteger await = new AtomicInteger(0);
 
-        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pong"), new FCSubscriber() {
+        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
 
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
@@ -174,9 +174,9 @@ public class FCPing {
 
     public void runPongServer() throws InterruptedException {
         FastCast fc = initFC("pserv", "pingponglat.kson");
-        final FCPublisher echoresp = fc.onTransport("pong").publish(fc.getPublisherConf("pong"));
+        final FCPublisher echoresp = fc.onTransport("pong").publish(fc.getPublisherConf("pongtopic"));
 
-        fc.onTransport("ping").subscribe(fc.getSubscriberConf("ping"), new FCSubscriber() {
+        fc.onTransport("ping").subscribe(fc.getSubscriberConf("pingtopic"), new FCSubscriber() {
 
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {

@@ -13,6 +13,7 @@ import org.nustaq.offheap.structs.structtypes.StructString;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
@@ -62,7 +63,7 @@ public class TransportDriver {
             }
         };
         receiverThread.start();
-        houseKeeping = new Thread("trans houseKeeping"+ tconf.getName()) {
+        houseKeeping = new Thread("trans houseKeeping "+ tconf.getName()) {
             public void run() {
                 houseKeepingLoop();
             }
@@ -101,6 +102,7 @@ public class TransportDriver {
     }
 
     private void houseKeepingLoop() {
+        ArrayList<String> lostSenders = new ArrayList<>();
         while ( true ) {
             try {
                 long now = System.currentTimeMillis();
@@ -108,7 +110,8 @@ public class TransportDriver {
                     ReceiveBufferDispatcher receiveBufferDispatcher = receiver[i];
                     if ( receiveBufferDispatcher != null ) {
                         Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
-                        List<String> timedOutSenders = topicEntry.getTimedOutSenders(now, topicEntry.getHbTimeoutMS());
+                        lostSenders.clear();
+                        List<String> timedOutSenders = topicEntry.getTimedOutSenders(lostSenders,now, topicEntry.getHbTimeoutMS());
                         if ( timedOutSenders != null && timedOutSenders.size() > 0 ) {
                             cleanup(timedOutSenders, i);
                         }
@@ -246,7 +249,7 @@ public class TransportDriver {
 
     private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
         PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
-        DataPacket p = receivedPacket.cast().detach(); // FIXME: alloc
+        DataPacket p = receivedPacket.cast(); //.detach(); // FIXME: alloc
         RetransPacket retransPacket = buffer.receivePacket(p);
         if ( retransPacket != null ) {
             // packet is valid just in this thread
