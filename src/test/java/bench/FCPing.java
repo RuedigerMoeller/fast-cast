@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FCPing {
 
     public static final int PINGMSGLEN  = 256;
-    public static final int NUM_MSG     = 1_000_000;
+    public static final int NUM_MSG     = 10*1_000_000;
 
     public static class PingRequest extends FSTStruct {
         protected long nanoSendTime;
@@ -44,8 +44,8 @@ public class FCPing {
         try {
             FastCast fc = FastCast.getFastCast();
             fc.setNodeId(nodeId);
-//            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/bench/"+config);
-            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\bench\\"+config);
+            fc.loadConfig("./src/test/java/bench/"+config);
+//            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\bench\\"+config);
             return fc;
         } catch (Exception e) {
             e.printStackTrace();
