@@ -44,7 +44,8 @@ public class FCPing {
         try {
             FastCast fc = FastCast.getFastCast();
             fc.setNodeId(nodeId);
-            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/bench/"+config);
+//            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/bench/"+config);
+            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\bench\\"+config);
             return fc;
         } catch (Exception e) {
             e.printStackTrace();

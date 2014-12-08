@@ -59,7 +59,7 @@ public class PhysicalTransportConf {
     // number of idle receveive loops until spinlock is stopped to free CPU ressources
     int spinIdleLoopMax = 10_000_000;
     // how long receiving thread will be haltet once idle. (high values => higher latency after idle, lower values => more cpu burn)
-    int idleParkMicros = 1000;
+    int idleParkMicros = 500;
 
     public PhysicalTransportConf() {
     }

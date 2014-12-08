@@ -54,6 +54,7 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     @Override
     public void send(ByteBuffer b) throws IOException {
+//        long len = b.remaining();
         sendSocket.send(b, socketAddress);
     }
 

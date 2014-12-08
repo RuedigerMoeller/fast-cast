@@ -29,6 +29,7 @@ public class DataPacket extends Packet {
     public static final int HEADERLEN = 4;
 
     protected boolean isDecoded;
+    protected boolean dummyPadding;
     protected int bytesLeft;
     protected byte[] data = new byte[0];
 

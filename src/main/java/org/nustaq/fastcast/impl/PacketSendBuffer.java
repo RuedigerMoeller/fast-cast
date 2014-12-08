@@ -256,7 +256,7 @@ public class PacketSendBuffer implements FCPublisher {
             currentPacketBytePointer.setByte((byte) tag);
             currentPacketBytePointer.next(off);
         }
-        currentPacketBytePointer.setBytes(b, offset, len); // fixme memcpy optimization missing
+        currentPacketBytePointer.setBytes(b, offset, len);
         currentPacketBytePointer.next(len);
         currentAvail= currentAvail-(len+off+DataPacket.HEADERLEN);
     }
@@ -440,17 +440,20 @@ public class PacketSendBuffer implements FCPublisher {
 
     protected boolean offerNoLock(String receiverNodeId, ByteSource msg, long start, int len, boolean doFlush) {
         long now = System.nanoTime();
+        // if receiver changes, current packet must be fired
         if ( receiverNodeId != KEEP_SUBS_NODEID ) {
             setReceiver(receiverNodeId);
         }
+        // verify rate is kept
         if ( now-lastPpsRateCheckNanos > ppsWindowNanos ) {
             packetCounter = Math.max(0,packetCounter-pps);
             lastPpsRateCheckNanos = now;
         }
         if (msg != null ) {
+            // deny if sent packets > 2 * allowed packet per pps window
             if ( packetCounter > pps*2 )
                 return false;
-            else if (packetCounter > pps) {
+            else if (packetCounter > pps) { // else enforce batching
                 doFlush = false;
             }
         }
@@ -466,7 +469,7 @@ public class PacketSendBuffer implements FCPublisher {
             if ( ! offerNoLock(null, heartbeat,0,1,false) ) {
                 lastMsgFlush = prevFlush;
             }
-            return res;
+            return res; // recursion already has triggered flsh in case
         }
         if ( doFlush ) {
             if ( ! isCurrentPacketEmpty() ) {

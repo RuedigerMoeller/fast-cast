@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -30,7 +31,7 @@ public class TransportDriver {
     public static int MAX_NUM_TOPICS = 256;
 
     int spinIdleLoopMax = 1000*1000*10;
-    int idleParkMicros = 1000;
+    int idleParkMicros = 500;
 
     PhysicalTransport trans;
 
@@ -101,19 +102,23 @@ public class TransportDriver {
         return packetSendBuffer;
     }
 
+    long lastTimeoutCheck = System.currentTimeMillis();
     private void houseKeepingLoop() {
         ArrayList<String> lostSenders = new ArrayList<>();
         while ( true ) {
             try {
                 long now = System.currentTimeMillis();
-                for (int i = 0; i < receiver.length; i++) {
-                    ReceiveBufferDispatcher receiveBufferDispatcher = receiver[i];
-                    if ( receiveBufferDispatcher != null ) {
-                        Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
-                        lostSenders.clear();
-                        List<String> timedOutSenders = topicEntry.getTimedOutSenders(lostSenders,now, topicEntry.getHbTimeoutMS());
-                        if ( timedOutSenders != null && timedOutSenders.size() > 0 ) {
-                            cleanup(timedOutSenders, i);
+                if ( now - lastTimeoutCheck > 2000 ) { // timouts < 2 seconds not supported (and do not make sense ..)
+                    lastTimeoutCheck = now;
+                    for (int i = 0; i < receiver.length; i++) {
+                        ReceiveBufferDispatcher receiveBufferDispatcher = receiver[i];
+                        if (receiveBufferDispatcher != null) {
+                            Topic topicEntry = receiveBufferDispatcher.getTopicEntry();
+                            lostSenders.clear();
+                            List<String> timedOutSenders = topicEntry.getTimedOutSenders(lostSenders, now, topicEntry.getHbTimeoutMS());
+                            if (timedOutSenders != null && timedOutSenders.size() > 0) {
+                                cleanup(timedOutSenders, i);
+                            }
                         }
                     }
                 }
@@ -160,6 +165,11 @@ public class TransportDriver {
                     idleCount++;
                     if ( idleCount > spinIdleLoopMax) {
                         LockSupport.parkNanos(1000*idleParkMicros);
+                    }
+                    if ( (ThreadLocalRandom.current().nextInt()&1) == 0 ) {
+                        idleCount++;
+                    } else {
+                        idleCount--;
                     }
                 }
             } catch (IOException e) {
