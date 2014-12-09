@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FCPing {
 
     public static final int PINGMSGLEN  = 256;
-    public static final int NUM_MSG     = 10*1_000_000;
+    public static final int NUM_MSG     = 100000;//10*1_000_000;
 
     public static class PingRequest extends FSTStruct {
         protected long nanoSendTime;
@@ -54,12 +54,12 @@ public class FCPing {
     }
 
     // no coordinated ommission, async
-    public void pingClientAsnyc() throws InterruptedException {
+    public void runPingClientASync() throws InterruptedException {
         final FastCast fc = initFC("pclie", "pingponglat.kson");
         final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("pingtopic"));
         final Executor ex = Executors.newSingleThreadExecutor();
         final Histogram histo = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
-        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pong"), new FCSubscriber() {
+        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
             int msgCount;
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
@@ -95,12 +95,13 @@ public class FCPing {
         PingRequest pr = alloc.newStruct( new PingRequest() );
         Sleeper sl = new Sleeper();
         while( true ) {
-            sl.sleepMicros(100); // need rate limiting cause of async
+            sl.sleepMicros(200); // need rate limiting cause of async
             pr.setNanoSendTime(System.nanoTime());
             pingserver.offer( null, pr.getBase(), true); // can be sure off is 0, see (*)
         }
     }
 
+    long randomId = (byte) (Math.random()*200+1);
     // CO !
     public void runPingClientSync() throws InterruptedException {
         final FastCast fc = initFC("pclie", "pingponglat.kson");
@@ -109,9 +110,13 @@ public class FCPing {
         final AtomicInteger await = new AtomicInteger(0);
 
         fc.onTransport("pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
-
+            String pongName;
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
+//                PingRequest structWrapper = (PingRequest) FSTStructFactory.getInstance().createStructWrapper(b, off);
+//                if (structWrapper.getNanoSendTime() != randomId ) {
+//                    System.out.println("WOOT "+structWrapper.getNanoSendTime());
+//                }
                 await.decrementAndGet();
             }
 
@@ -130,6 +135,7 @@ public class FCPing {
             @Override
             public void senderBootstrapped(String receivesFrom, long seqNo) {
                 System.out.println("bootstrap "+receivesFrom);
+                pongName = receivesFrom;
             }
         });
 
@@ -138,13 +144,14 @@ public class FCPing {
         Histogram histo = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
 
         Thread.sleep(1000); // wait for at least one heartbeat
-        System.out.println("starting ping pong");
+        System.out.println("starting ping pong "+randomId);
         System.gc();
+        pr.setNanoSendTime(randomId);
         Sleeper sl = new Sleeper();
         while( true ) {
             await.set(0);
             for (int i= 0; i < NUM_MSG; i++ ) {
-//                sl.sleepMicros(50);
+//                sl.sleepMicros(100);
                 pingAndAwaitPong(pingserver, await, pr, histo, i);
             }
             histo.outputPercentileDistribution(System.out, 1000.0);
@@ -181,6 +188,7 @@ public class FCPing {
 
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
+//                System.out.println("snd:"+sender);
                 while( ! echoresp.offer( sender, b,off,len, true ) ) {
                     echoresp.flush(); // ensure retrans processing etc.
                 }

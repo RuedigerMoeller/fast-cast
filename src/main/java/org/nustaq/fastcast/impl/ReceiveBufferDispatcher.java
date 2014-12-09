@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 /**
- * receives messages of a topic and multiplexes messages of different publishers to their
+ * multiplexes messages of different publishers to their
  * associated PacketReceiveBuffer
  */
 public class ReceiveBufferDispatcher {

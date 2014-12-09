@@ -51,7 +51,7 @@ public class DataPacket extends Packet {
     }
 
     /**
-     * internal flag, anyway transmitted
+     * internal flag, anyway transmitted FIXME: most probably not required anymore (relict of FC 2.x) !
      * @return
      */
     public boolean isDecoded() {

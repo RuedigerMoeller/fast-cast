@@ -274,6 +274,7 @@ public class PacketReceiveBuffer {
         }
 
         if ( seqNo != maxOrderedSeq+1 && firstGapDetected > 0 && now - firstGapDetected >= maxDelayRetrans ) {
+            System.out.println("   trigger retrans "+"maxOrd "+maxOrderedSeq+" received"+seqNo);
             toReturn = computeRetransPacket(now);
         }
 
@@ -417,8 +418,12 @@ public class PacketReceiveBuffer {
         if ( receiver == null )
             return;
 
-        if ( isForeignPacket(packet) )
+        if ( isForeignPacket(packet) ) {
             return;
+        } else
+        {
+//            System.out.println("received "+packet.getReceiver());
+        }
 
         final long packetSeqNo = packet.getSeqNo();
 

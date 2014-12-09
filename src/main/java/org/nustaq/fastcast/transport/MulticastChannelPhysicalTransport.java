@@ -13,7 +13,8 @@ import java.nio.channels.*;
  * User: moelrue
  * Date: 06.06.13
  * Time: 13:45
- * To change this template use File | Settings | File Templates.
+ *
+ * ImMplements
  */
 public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
@@ -104,5 +105,23 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
     @Override
     public PhysicalTransportConf getConf() {
         return conf;
+    }
+
+    @Override
+    public void close() {
+        try {
+            if ( receiveSocket != null )
+                receiveSocket.close();
+            receiveSocket = null;
+        } catch (IOException e) {
+            FCLog.get().warn(e);
+        }
+        try {
+            if ( sendSocket != null )
+                sendSocket.close();
+            sendSocket = null;
+        } catch (IOException e) {
+            FCLog.get().warn(e);
+        }
     }
 }

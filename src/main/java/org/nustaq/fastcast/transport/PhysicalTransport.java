@@ -38,4 +38,5 @@ public interface PhysicalTransport {
     public void join() throws IOException;
     public PhysicalTransportConf getConf();
 
+    void close();
 }

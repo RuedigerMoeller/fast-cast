@@ -13,6 +13,7 @@ import org.nustaq.offheap.bytez.onheap.HeapBytez;
 import org.nustaq.offheap.structs.FSTStruct;
 import org.nustaq.offheap.structs.FSTStructAllocator;
 import org.nustaq.offheap.structs.structtypes.StructArray;
+import org.nustaq.serialization.util.FSTUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -133,14 +134,6 @@ public class PacketSendBuffer implements FCPublisher {
         flush(); // enforce immediate heartbeat
     }
 
-    public static List<Field> getAllFields(List<Field> fields, Class<?> type) {
-        fields.addAll(Arrays.asList(type.getDeclaredFields()));
-        if (type.getSuperclass() != null) {
-            fields = getAllFields(fields, type.getSuperclass());
-        }
-        return fields;
-    }
-
     private void initTmpBBuf() throws NoSuchFieldException, IllegalAccessException {
         // patch MallocBytes such that it points to a DirectByteBuffer (allows zerocopy using fst bytez utils)
         tmpSend = ByteBuffer.allocateDirect(0);
@@ -148,7 +141,7 @@ public class PacketSendBuffer implements FCPublisher {
         Field capacity = null;
 
         List<Field> fields = new ArrayList<>();
-        getAllFields(fields, tmpSend.getClass());
+        FSTUtil.getAllFields(fields, tmpSend.getClass());
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             if ( field.getName().equals("address") ) {

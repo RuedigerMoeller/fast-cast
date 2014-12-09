@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -33,7 +34,7 @@ public class TransportDriver {
     int spinIdleLoopMax = 1000*1000*10;
     int idleParkMicros = 500;
 
-    PhysicalTransport trans;
+    volatile PhysicalTransport trans;
 
     ReceiveBufferDispatcher receiver[];
     PacketSendBuffer sender[];
@@ -45,6 +46,9 @@ public class TransportDriver {
     FSTStructAllocator alloc = new FSTStructAllocator(1);
     long autoFlushMS;
     private ConcurrentHashMap<Integer,Topic> topics = new ConcurrentHashMap<>();
+
+    int termCounter = 0;
+    volatile int terminationCounter = 0;
 
     public TransportDriver(PhysicalTransport trans, String nodeId) {
         this.trans = trans;
@@ -105,7 +109,7 @@ public class TransportDriver {
     long lastTimeoutCheck = System.currentTimeMillis();
     private void houseKeepingLoop() {
         ArrayList<String> lostSenders = new ArrayList<>();
-        while ( true ) {
+        while (!isTerminated()) {
             try {
                 long now = System.currentTimeMillis();
                 if ( now - lastTimeoutCheck > 2000 ) { // timouts < 2 seconds not supported (and do not make sense ..)
@@ -117,7 +121,8 @@ public class TransportDriver {
                             lostSenders.clear();
                             List<String> timedOutSenders = topicEntry.getTimedOutSenders(lostSenders, now, topicEntry.getHbTimeoutMS());
                             if (timedOutSenders != null && timedOutSenders.size() > 0) {
-                                cleanup(timedOutSenders, i);
+                                if ( ! isTerminated() )
+                                    cleanup(timedOutSenders, i);
                             }
                         }
                     }
@@ -130,7 +135,8 @@ public class TransportDriver {
                             lastMsg[i] = lastFlush;
                         else if ( lastMsg[i] == lastFlush) {
                             // no flush since last turnaround, generate a flush
-                            packetSendBuffer.flush();
+                            if ( ! isTerminated() )
+                                packetSendBuffer.flush();
                         } else {
                             lastMsg[i] = lastFlush;
                         }
@@ -145,6 +151,11 @@ public class TransportDriver {
                 e.printStackTrace();
             }
         }
+        terminationCounter++;
+    }
+
+    private boolean isTerminated() {
+        return trans == emptyTransport;
     }
 
     Packet receivedPacket;
@@ -165,17 +176,40 @@ public class TransportDriver {
                     idleCount++;
                     if ( idleCount > spinIdleLoopMax) {
                         LockSupport.parkNanos(1000*idleParkMicros);
-                    }
-                    if ( (ThreadLocalRandom.current().nextInt()&1) == 0 ) {
-                        idleCount++;
                     } else {
-                        idleCount--;
+                        if ( (ThreadLocalRandom.current().nextInt()&1) == 0 ) {
+                            idleCount++;
+                        } else {
+                            idleCount--;
+                        }
+                    }
+                }
+                termCounter++;
+                if ( termCounter == 100000 || idleCount > spinIdleLoopMax ) {
+                    termCounter = 0;
+                    if ( isTerminated() ) {
+                        break;
                     }
                 }
             } catch (IOException e) {
                 FCLog.log(e);
             }
         }
+        while( termCounter < 1 ) { // wait for housekeeping to finish
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500));
+        }
+        alloc.free();
+        for (int i = 0; i < receiver.length; i++) {
+            ReceiveBufferDispatcher receiveBufferDispatcher = receiver[i];
+            if ( receiveBufferDispatcher != null )
+                receiveBufferDispatcher.cleanupTopic();
+        }
+    }
+
+    public void terminate() {
+        PhysicalTransport oldTrans = trans;
+        trans = emptyTransport;
+        oldTrans.close();
     }
 
     private boolean receiveDatagram(ByteBuffer p, byte wrappedArr[]) throws IOException {
@@ -257,14 +291,16 @@ public class TransportDriver {
         return receivedPacketReceiver != null && receivedPacketReceiver.getLen() > 0 && ! receivedPacketReceiver.equals(nodeId);
     }
 
+    DataPacket tmpP;
     private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
         PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
-        DataPacket p = receivedPacket.cast(); //.detach(); // FIXME: alloc
-        RetransPacket retransPacket = buffer.receivePacket(p);
+        tmpP = receivedPacket.cast().detachTo(tmpP); // avoid alloc
+        RetransPacket retransPacket = buffer.receivePacket(tmpP);
         if ( retransPacket != null ) {
             // packet is valid just in this thread
             if ( PacketSendBuffer.RETRANSDEBUG )
                 System.out.println("send retrans request " + retransPacket + " " + retransPacket.getClzId());
+            // FIXME: ALLOC
             trans.send(new DatagramPacket(retransPacket.getBase().toBytes(retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
         }
     }
@@ -315,4 +351,47 @@ public class TransportDriver {
     public ReceiveBufferDispatcher getReceiver(int topicId) {
         return receiver[topicId];
     }
+
+    PhysicalTransport emptyTransport = new PhysicalTransport() {
+        @Override
+        public boolean receive(ByteBuffer pack) throws IOException {
+            return false;
+        }
+
+        @Override
+        public boolean receive(DatagramPacket pack) throws IOException {
+            return false;
+        }
+
+        @Override
+        public void send(DatagramPacket pack) throws IOException {
+
+        }
+
+        @Override
+        public void send(byte[] bytes, int off, int len) throws IOException {
+
+        }
+
+        @Override
+        public void send(ByteBuffer b) throws IOException {
+
+        }
+
+        @Override
+        public void join() throws IOException {
+
+        }
+
+        @Override
+        public PhysicalTransportConf getConf() {
+            return null;
+        }
+
+        @Override
+        public void close() {
+
+        }
+    };
+
 }

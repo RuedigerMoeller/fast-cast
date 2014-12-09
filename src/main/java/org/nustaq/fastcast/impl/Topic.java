@@ -35,7 +35,7 @@ public class Topic {
 
     private FCSubscriber subscriber;
     int topicId = -1;
-    private long hbTimeoutMS = 3000; // dev
+    private long hbTimeoutMS = 3000;
 
     public Topic(SubscriberConf subscriberConf, PublisherConf publisherConf) {
         this.subscriberConf = subscriberConf;
