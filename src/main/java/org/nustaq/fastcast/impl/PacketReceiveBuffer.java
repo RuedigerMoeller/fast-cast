@@ -120,8 +120,8 @@ public class PacketReceiveBuffer {
 
     int retransCount = 0;
     long firstGapDetected = 0;
-    long maxDelayNextRetrans = 50;
-    long maxDelayRetrans = 10;
+    long maxDelayNextRetrans = 5;
+    long maxDelayRetrans = 0;
     boolean inInitialSync = true; // in case first packet is chained, stay in initial until complete msg is found
     Topic topicEntry;
 
@@ -274,7 +274,6 @@ public class PacketReceiveBuffer {
         }
 
         if ( seqNo != maxOrderedSeq+1 && firstGapDetected > 0 && now - firstGapDetected >= maxDelayRetrans ) {
-            System.out.println("   trigger retrans "+"maxOrd "+maxOrderedSeq+" received"+seqNo);
             toReturn = computeRetransPacket(now);
         }
 

@@ -16,6 +16,7 @@ public interface FCPublisher {
      * @param doFlush
      * @return
      */
+    public boolean offer(String receiverNodeId, byte b[], int start, int len, boolean doFlush);
     public boolean offer(String receiverNodeId, ByteSource msg, long start, int len, boolean doFlush);
     public boolean offer(String subscriberNodeId, ByteSource msg, boolean doFlush);
     public int getTopicId();

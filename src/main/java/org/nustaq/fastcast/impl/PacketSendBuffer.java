@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created with IntelliJ IDEA.
@@ -38,11 +39,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PacketSendBuffer implements FCPublisher {
 
+    // if more than this packets are sent in bulk (large messages), start checking packet rate and stall
+    public static long CHECK_PACKET_RATE_BULKSEND_THRESHOLD = 10;
+
     public static final boolean RETRANSDEBUG = true;
+    public static final String KEEP_SUBS_NODEID = "KEEPRECEIVER";
+
+    private static final boolean DEBUG_LAT = false;
     private static final int RETRANS_MEM = 10000; // retransrequest history to accumulate identical retrans requests
     private static final int TAG_BUFF = 4;
-    private static final boolean DEBUG_LAT = false;
-    public static final String KEEP_SUBS_NODEID = "KEEPRECEIVER";
+
     final PhysicalTransport trans;
 
     FSTStructAllocator offheapAllocator;
@@ -72,7 +78,11 @@ public class PacketSendBuffer implements FCPublisher {
 
     Topic topicEntry;
     boolean isUnordered;
+
+    // configured rate limits
     int packetRateLimit;
+    int packetRateLimitWindowDivisor;
+    // computed =>
     int pps;
     int ppsWindowNanos;
 
@@ -128,8 +138,8 @@ public class PacketSendBuffer implements FCPublisher {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
-        pps = publisherConf.getPps()/publisherConf.getPpsWindow();
-        ppsWindowNanos = (1000*1000*1000)/publisherConf.getPpsWindow();
+        packetRateLimitWindowDivisor = publisherConf.getPpsWindow();
+        setPacketRateLimit(publisherConf.getPps());
         heartbeat = new HeapBytez(new byte[]{ControlPacket.HEARTBEAT});
         flush(); // enforce immediate heartbeat
     }
@@ -332,22 +342,19 @@ public class PacketSendBuffer implements FCPublisher {
 
     private void mergeRetransmissions(ArrayList<RetransPacket> curRetrans) throws IOException {
         long now = System.currentTimeMillis();
+        long maxTo = 0;
         for (int i = 0; i < curRetrans.size(); i++) {
             RetransPacket retransPacket = curRetrans.get(i);
-            if ( retransPacket != null )
-                sendRetransmissionResponse(retransPacket, now);
+            if ( retransPacket != null ) {
+                maxTo = sendRetransmissionResponse(maxTo,retransPacket, now);
+            }
         }
     }
 
     int maxRetransAge = 0;
-    private void sendRetransmissionResponse(RetransPacket retransPacket, long now) throws IOException {
-        if ( RETRANSDEBUG )
-            FCLog.get().net("enter retrans " + retransPacket);
+    private long sendRetransmissionResponse(long maxTo, RetransPacket retransPacket, long now) throws IOException {
         for ( int ii = 0; ii < retransPacket.getRetransIndex(); ii++ ) {
             RetransEntry en = retransPacket.retransEntries(ii);
-            if ( RETRANSDEBUG ) {
-                FCLog.get().net( System.currentTimeMillis()+" retransmitting " + en);
-            }
             long fromSeqNo = getPacketAt(en.getFrom()).getSeqNo();
             // note 'from' is oldest, so if from exists, all following exist also !
             if (fromSeqNo != en.getFrom() ) // not in on heap history ?
@@ -365,14 +372,26 @@ public class PacketSendBuffer implements FCPublisher {
             } else {
                 long from = en.getFrom();
                 long to = en.getTo();
-                sendPackets(from, to, true, now);
+                if ( from >= maxTo ) {
+                    if ( RETRANSDEBUG ) {
+                        FCLog.get().net( System.currentTimeMillis()+" retransmitting " + en);
+                    }
+                    maxTo = Math.max(to,maxTo);
+                    sendPackets(from, to, true, now);
+                }
             }
         }
+        return maxTo;
     }
 
     int suppressedRetransCount = 0;
     ThreadLocal<byte[]> msgBytes = new ThreadLocal<>();
     private void sendPackets(long sendStart, long sendEnd, boolean retrans, long now /*only set for retrans !*/) throws IOException {
+        final long len = sendEnd - sendStart;
+        long nanosAtStart = 0;
+        if ( ! retrans && len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD ) {
+            nanosAtStart = System.nanoTime();
+        }
         for ( long i = sendStart; i < sendEnd; i++ ) {
             DataPacket dataPacket = getPacketAt(i);
             if ( retrans ) {
@@ -398,12 +417,20 @@ public class PacketSendBuffer implements FCPublisher {
                     } catch (InterruptedException e) {
                         FCLog.log(e);  //To change body of catch statement use File | Settings | File Templates.
                     }
-                    System.exit(1);
+                    System.exit(2);
                 }
             }
             moveBuff(dataPacket);
             packetCounter++;
             trans.send(tmpSend);
+//            if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) {
+//                long maxAllowedPackets = 4 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
+//                while ( i-sendStart > maxAllowedPackets) {
+//                    sendPendingRetrans();
+//                    Thread.yield();
+//                    maxAllowedPackets = 4 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
+//                }
+//            }
         }
         if ( ! retrans ) {
             nextSendMsg = sendEnd;
@@ -415,7 +442,7 @@ public class PacketSendBuffer implements FCPublisher {
         if ( RETRANSDEBUG )
             System.out.println("received retrans request and add to Q " + copy);
         retransRequests.add(copy);
-        flush();
+//        flush();
     }
 
     AtomicBoolean sendLock = new AtomicBoolean(false);
@@ -487,6 +514,14 @@ public class PacketSendBuffer implements FCPublisher {
     //
     // publisher interface
     //
+
+    HeapBytez hp = new HeapBytez(null,0,0);
+    @Override
+    public boolean offer(String receiverNodeId, byte[] b, int start, int len, boolean doFlush) {
+        hp.setBase(b,start,len);
+        return offer(receiverNodeId,hp,doFlush);
+    }
+
     @Override
     public boolean offer(String receiverNodeId, ByteSource msg, long start, int len, boolean doFlush) {
         try {
@@ -546,6 +581,8 @@ public class PacketSendBuffer implements FCPublisher {
     @Override
     public void setPacketRateLimit(int limit) {
         packetRateLimit = limit;
+        pps = packetRateLimit/packetRateLimitWindowDivisor;
+        ppsWindowNanos = (1000*1000*1000)/packetRateLimitWindowDivisor;
     }
 
     @Override
@@ -555,7 +592,7 @@ public class PacketSendBuffer implements FCPublisher {
 
     @Override
     public void flush() {
-        offer( KEEP_SUBS_NODEID, null, 0, 0, true );
+        offer( KEEP_SUBS_NODEID, (ByteSource)null, 0, 0, true );
     }
 
 }

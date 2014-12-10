@@ -4,14 +4,14 @@ ClusterConf {
         {
             name:      default
 
-            dgramsize: 1500
+            dgramsize: 4000
             ifacAdr:   127.0.0.1
             mcastAdr:  229.9.9.9
             port:      45555
 
             autoFlushMS:     1
-            spinIdleLoopMax: 10_000_000
-            idleParkMicros:  1000
+            spinIdleLoopMax: 10_000
+            idleParkMicros:  500
         }
     }
 
@@ -22,14 +22,14 @@ ClusterConf {
             name: test
 
             pub: {
-                numPacketHistory: 500_000
-                pps: 20_000
+                numPacketHistory: 30_000
+                pps: 5_000
                 ppsWindow: 100
-                heartbeatInterval: 10   # testing
+                heartbeatInterval: 1000
             }
 
             sub: {
-                receiveBufferPackets: 500_000
+                receiveBufferPackets: 20_000
                 # senderHBTimeout: 5000
                 senderHBTimeout: 500000 # avoid crashes during debug
             }
@@ -40,10 +40,10 @@ ClusterConf {
             name: echo
 
             pub: {
-                numPacketHistory: 100_000
-                pps: 20_000
+                numPacketHistory: 50_000
+                pps: 5_000
                 ppsWindow: 100
-                heartbeatInterval: 10   # testing
+                heartbeatInterval: 1000
             }
 
             sub: {
@@ -58,8 +58,8 @@ ClusterConf {
             name: echoresp
 
             pub: {
-                numPacketHistory: 100_000
-                pps: 20_000
+                numPacketHistory: 50_000
+                pps: 5_000
                 ppsWindow: 100
                 heartbeatInterval: 10   # testing
            }

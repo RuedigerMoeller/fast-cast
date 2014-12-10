@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FCPing {
 
     public static final int PINGMSGLEN  = 256;
-    public static final int NUM_MSG     = 100000;//10*1_000_000;
+    public static final int NUM_MSG     = 10_000_000;
 
     public static class PingRequest extends FSTStruct {
         protected long nanoSendTime;
@@ -113,10 +113,6 @@ public class FCPing {
             String pongName;
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
-//                PingRequest structWrapper = (PingRequest) FSTStructFactory.getInstance().createStructWrapper(b, off);
-//                if (structWrapper.getNanoSendTime() != randomId ) {
-//                    System.out.println("WOOT "+structWrapper.getNanoSendTime());
-//                }
                 await.decrementAndGet();
             }
 
