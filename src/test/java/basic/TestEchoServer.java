@@ -28,9 +28,10 @@ public class TestEchoServer {
                 responseExec.execute(new Runnable() {
                     @Override
                     public void run() {
-                        while( ! echoresp.offer( sender, bytes,0, bytes.length, false) ) {
+                        while( ! echoresp.offer( sender, bytes,0, bytes.length, true) ) {
                             echoresp.flush();
                         }
+                        System.out.println("sent response to "+sender);
                     }
                 });
             }

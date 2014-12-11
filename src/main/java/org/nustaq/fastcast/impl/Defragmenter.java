@@ -39,13 +39,15 @@ public class Defragmenter implements ByteArrayReceiver {
             case STATE_CHAIN:
                 if ( len+bufIndex >= buf.length ) {
                     byte old[] = buf;
-                    buf = new byte[Math.max(len+bufIndex,len*2)];
+                    buf = new byte[Math.max(len+bufIndex,buf.length*2)];
                     System.arraycopy(old,0,buf,0,bufIndex);
+//                    System.out.println("POK increase buffer to"+buf.length);
                 }
                 try {
                     if ( len > 0 ) {
                         //System.arraycopy(b,off,buf,bufIndex,len);
                         b.getArr(off,buf,bufIndex,len);
+//                        System.out.println("POK chain copy "+len);
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();

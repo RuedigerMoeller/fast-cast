@@ -283,9 +283,8 @@ public class PacketSendBuffer implements FCPublisher {
         newPack.dataPointer(currentPacketBytePointer);
         newPack.setSeqNo(newSeq);
         currentAvail = payMaxLen-TAG_BUFF; // safe to always put a tag
-
-        if ( currentReceiver != null )
-            newPack.getReceiver().setString(currentReceiver);
+        newPack.getReceiver().setString(currentReceiver);
+        newPack.setRetrans(false);
 
         currentSequence++; // publish packet
     }
@@ -423,8 +422,10 @@ public class PacketSendBuffer implements FCPublisher {
             }
             dataPacket.setRetrans(retrans);
             moveBuff(dataPacket);
-            if (!retrans)
+            if (!retrans) {
                 packetCounter++;
+//                System.out.println("send packet to '"+dataPacket.getReceiver()+"'");
+            }
             trans.send(tmpSend);
             if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) {
                 long maxAllowedPackets = 2 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);

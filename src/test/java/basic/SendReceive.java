@@ -49,6 +49,7 @@ public class SendReceive {
 
                 @Override
                 public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
+                    System.out.println( "received from "+sender);
                     response.set(new String(b.toBytes(off,len),0));
                 }
 
@@ -69,6 +70,11 @@ public class SendReceive {
                     System.out.println("bootstrap "+receivesFrom);
                 }
             });
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
         }
     }
@@ -83,8 +89,8 @@ public class SendReceive {
         }
         long tim = System.currentTimeMillis();
         while( response.get() == null ) {
-//            if ( System.currentTimeMillis()-tim > 3000 )
-//                return null;
+            if ( System.currentTimeMillis()-tim > 10000 )
+                return null;
         }
         return (String) response.get();
     }
@@ -101,6 +107,8 @@ public class SendReceive {
         for ( int i = 0; i < 15; i++ ) {
             long tim = System.currentTimeMillis();
             String response = sendReceiveSync(hello);
+            if ( response == null )
+                response ="";
             Assert.assertTrue(response.equals(hello));
             long dur = System.currentTimeMillis() - tim;
             System.out.println("duration for " + hello.length() + " " + dur + " rate:" + (hello.length() / dur) + " kb/s");
@@ -134,7 +142,7 @@ public class SendReceive {
         initFC();
         String hello = "hello";
         // make it a 160k string
-        while( hello.length() < 20*1_000_000 ) {
+        while( hello.length() < 40*1_000_000 ) {
             hello += hello;
         }
 
@@ -149,7 +157,7 @@ public class SendReceive {
         }
     }
 
-    @Test
+//    @Test
     public void echoSendFast() throws InterruptedException {
         initFC();
         for ( int i = 0; i < 1000; i++ ) {

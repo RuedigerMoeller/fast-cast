@@ -146,7 +146,7 @@ public class FastCast {
             throw new ConfigurationAlreadyDefinedException("transport "+tconf.getName()+" already initialized ");
         }
         try {
-            FCLog.log("Connecting transport " + tconf.getName());
+            FCLog.log("Connecting transport " + tconf.getName() + " as "+getNodeId());
             MulticastChannelPhysicalTransport tr = new MulticastChannelPhysicalTransport(tconf);
             tr.join();
             transports.put(tconf.getName(), tr);

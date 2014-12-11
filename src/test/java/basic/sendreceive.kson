@@ -41,7 +41,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 50_000
-                pps: 10_000
+                pps: 20_000
                 ppsWindow: 100
                 heartbeatInterval: 1000
             }
@@ -59,7 +59,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 50_000
-                pps: 10_000
+                pps: 20_000
                 ppsWindow: 100
                 heartbeatInterval: 10   # testing
            }
