@@ -372,10 +372,11 @@ public class PacketSendBuffer implements FCPublisher {
             } else {
                 long from = en.getFrom();
                 long to = en.getTo();
-                if ( from >= maxTo ) {
-                    if ( RETRANSDEBUG ) {
-                        FCLog.get().net( System.currentTimeMillis()+" retransmitting " + en);
-                    }
+                if ( from >= maxTo || to > maxTo ) {
+                    from = Math.max(from,maxTo);
+//                    if ( RETRANSDEBUG ) {
+//                        FCLog.get().net( System.currentTimeMillis()+" retransmitting " + en);
+//                    }
                     maxTo = Math.max(to,maxTo);
                     sendPackets(from, to, true, now);
                 }
@@ -420,17 +421,20 @@ public class PacketSendBuffer implements FCPublisher {
                     System.exit(2);
                 }
             }
+            dataPacket.setRetrans(retrans);
             moveBuff(dataPacket);
-            packetCounter++;
+            if (!retrans)
+                packetCounter++;
             trans.send(tmpSend);
-//            if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) {
-//                long maxAllowedPackets = 4 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
-//                while ( i-sendStart > maxAllowedPackets) {
-//                    sendPendingRetrans();
-//                    Thread.yield();
-//                    maxAllowedPackets = 4 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
-//                }
-//            }
+            if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) {
+                long maxAllowedPackets = 2 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
+                while ( i-sendStart > maxAllowedPackets)
+                {
+                    sendPendingRetrans();
+                    Thread.yield();
+                    maxAllowedPackets = 2 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
+                }
+            }
         }
         if ( ! retrans ) {
             nextSendMsg = sendEnd;
@@ -467,7 +471,7 @@ public class PacketSendBuffer implements FCPublisher {
         // verify rate is kept
         if ( now-lastPpsRateCheckNanos > ppsWindowNanos ) {
             packetCounter = Math.max(0,packetCounter-pps);
-            lastPpsRateCheckNanos = now;
+            lastPpsRateCheckNanos += ppsWindowNanos;
         }
         if (msg != null ) {
             // deny if sent packets > 2 * allowed packet per pps window
@@ -502,8 +506,9 @@ public class PacketSendBuffer implements FCPublisher {
                 if ( sendPendingPackets() ) {
                     lastMsgFlush = now;
                 }
-            } else
-                res = false;
+            }
+//            else //
+//                res = false;
         } catch (IOException e) {
             e.printStackTrace();
         }

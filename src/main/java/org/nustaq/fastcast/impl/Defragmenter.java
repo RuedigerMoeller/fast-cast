@@ -39,7 +39,7 @@ public class Defragmenter implements ByteArrayReceiver {
             case STATE_CHAIN:
                 if ( len+bufIndex >= buf.length ) {
                     byte old[] = buf;
-                    buf = new byte[len+bufIndex];
+                    buf = new byte[Math.max(len+bufIndex,len*2)];
                     System.arraycopy(old,0,buf,0,bufIndex);
                 }
                 try {

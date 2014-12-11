@@ -29,7 +29,7 @@ public class DataPacket extends Packet {
     public static final int HEADERLEN = 4;
 
     protected boolean isDecoded;
-    protected boolean dummyPadding;
+    protected boolean isRetrans = false;
     protected int bytesLeft;
     protected byte[] data = new byte[0];
 
@@ -71,6 +71,14 @@ public class DataPacket extends Packet {
         return null;
     }
 
+    public boolean isRetrans() {
+        return isRetrans;
+    }
+
+    public void setRetrans(boolean isRetrans) {
+        this.isRetrans = isRetrans;
+    }
+
     public int getBytesLeft() {
         return bytesLeft;
     }
@@ -93,6 +101,7 @@ public class DataPacket extends Packet {
     public String toString() {
         return "DataPacket{" +
                 "seqNo=" + seqNo +
+                ", retr=" + isRetrans +
                 ", topic=" + topic +
                 ", sender=" + sender +
                 ", receiver=" + receiver +

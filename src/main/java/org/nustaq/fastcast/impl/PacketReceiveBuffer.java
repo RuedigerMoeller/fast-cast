@@ -29,7 +29,6 @@ public class PacketReceiveBuffer {
     final StructArray<DataPacket> readBuffer;
 
     long maxOrderedSeq = 0; // highest ordered
-    long maxDeliveredSeq = 0;
     long highestSeq = 0; // highest sequence ever received
 
     String receivesFrom; // a receiveBuffer is responsible for a single sender only
@@ -247,7 +246,7 @@ public class PacketReceiveBuffer {
 
     long logBremse;
     public RetransPacket receivePacketOrdered(DataPacket packet) {
-        if ( retransCount > 1 ) {
+        if ( retransCount > 1 && PacketSendBuffer.RETRANSDEBUG ) {
             long now = System.currentTimeMillis();
             if ( now-logBremse > 1000 )
             {
@@ -271,15 +270,6 @@ public class PacketReceiveBuffer {
 
         if ( maxOrderedSeq == 0 ) {
             handleInitialSync(seqNo);
-        }
-
-        if ( seqNo != maxOrderedSeq+1 && firstGapDetected > 0 && now - firstGapDetected >= maxDelayRetrans ) {
-            toReturn = computeRetransPacket(now);
-        }
-
-        // queue full ?
-        if ( maxOrderedSeq-maxDeliveredSeq > readBuffer.size()-3 ) {
-            return toReturn;
         }
 
         if ( seqNo == maxOrderedSeq+1 ) {
@@ -327,28 +317,21 @@ public class PacketReceiveBuffer {
             // gap detected
             if ( firstGapDetected == 0 ) {
                 firstGapDetected = now;
+                toReturn = computeRetransPacket(now);
+            } else if ( firstGapDetected < now ) {
+                toReturn = computeRetransPacket(now);
             }
         }
 
         // at this point it is sure packet is future packet
-
-        // if previously stored message is delivered => store future packet
-        long prevSeq = readBuffer.get(index).getSeqNo();
-        if ( prevSeq < maxDeliveredSeq ) {
-            readBuffer.set(index, packet);
-        }
-        else {
-        }
-        if ( toReturn != null ) {
-//            System.out.println("returned retrans 2 "+toReturn);
-        }
+        // store future packet
+        readBuffer.set(index, packet);
         return toReturn;
     }
 
 
     private void handleInitialSync(long seqNo) {
         maxOrderedSeq = seqNo-1; // ok, init only
-        maxDeliveredSeq = seqNo-1; // ok, init only
         inInitialSync = true;
         FCLog.get().cluster("for sender "+receivesFrom+" bootstrap sequence "+getTopicEntry().getSubscriberConf().getTopicId()+" no "+seqNo);
         final FCSubscriber subscriber = getTopicEntry().getSubscriber();
@@ -358,8 +341,7 @@ public class PacketReceiveBuffer {
     }
 
     private RetransPacket computeRetransPacket(long now) {
-        RetransPacket toReturn = retrans;
-//        RetransPacket toReturn = (RetransPacket) retrans.createCopy();
+        RetransPacket toReturn = (RetransPacket) retrans.createCopy();
         toReturn.clear();
         long curSeq = maxOrderedSeq+1;
         boolean anotherGapNearCurrentGap = false;
@@ -372,15 +354,16 @@ public class PacketReceiveBuffer {
                     curSeq++;
                 }
                 anotherGapNearCurrentGap = false;
-                for ( long off = curSeq; off < curSeq+ MAX_NON_GAP_PACKET_SERIES_TO_JUSTIFY_NEW_RETRANS_ENTRY; off++ ) {
-                    if ( off < highestSeq && ! toReturn.isFull() && getPacket(off).getSeqNo() != off ) {
-                        anotherGapNearCurrentGap = true;
-                        curSeq = off;
-                        break;
-                    } else {
-
-                    }
-                }
+// fixme: at least keep < maxOrdered
+//                for ( long off = curSeq; off < curSeq+MAX_NON_GAP_PACKET_SERIES_TO_JUSTIFY_NEW_RETRANS_ENTRY; off++ ) {
+//                    if ( off < highestSeq && ! toReturn.isFull() && getPacket(off).getSeqNo() != off ) {
+//                        anotherGapNearCurrentGap = true;
+//                        curSeq = off;
+//                        break;
+//                    } else {
+//
+//                    }
+//                }
                 if ( ! anotherGapNearCurrentGap ) {
                     toReturn.current().setTo(curSeq);
                     toReturn.nextEntry();
@@ -393,7 +376,7 @@ public class PacketReceiveBuffer {
         if ( retransCount > 10 ) { // FIXME: give up at some point ?
             FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getSubscriberConf().getTopicId()+" retrans:"+retrans);
         }
-        firstGapDetected = maxDelayNextRetrans*Math.max(retransCount,100) + now;
+        firstGapDetected = maxDelayNextRetrans + now;
         return toReturn;
     }
 
@@ -452,7 +435,7 @@ public class PacketReceiveBuffer {
         while (true) {
             short code = currentPacketBytePointer.getShort();
             if (code > DataPacket.MAX_CODE || code < 0) {
-                FCLog.get().warn("foreign traffic or error assume delivered: " + maxDeliveredSeq + " maxOrdered " + maxOrderedSeq + " packseq " + packetSeqNo + " highest " + highestSeq);
+                FCLog.get().warn("foreign traffic or error, maxOrdered " + maxOrderedSeq + " packseq " + packetSeqNo + " highest " + highestSeq);
                 System.exit(1);
             }
             currentPacketBytePointer.next(2);
@@ -461,7 +444,6 @@ public class PacketReceiveBuffer {
                     tmpPacket.baseOn(dataPacketBase, packIndex);
                     tmpPacket.setDecoded(true);
                 }
-                maxDeliveredSeq = Math.max(maxDeliveredSeq, packetSeqNo);
                 return;
             } else {
                 short len = currentPacketBytePointer.getShort();
@@ -503,7 +485,6 @@ public class PacketReceiveBuffer {
      */
     public void resync() {
         maxOrderedSeq = 0;
-        maxDeliveredSeq = 0;
         startTime = 0;
         retransCount = 0;
         firstGapDetected = 0;

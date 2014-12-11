@@ -28,7 +28,7 @@ public class SendReceive {
         try {
             FastCast fc = FastCast.getFastCast();
             fc.setNodeId(nodeId);
-            fc.loadConfig("/home/ruedi/IdeaProjects/fast-cast/src/test/java/basic/"+config);
+            fc.loadConfig("./src/test/java/basic/"+config);
 //            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\basic\\sendreceive.kson");
             return fc;
         } catch (Exception e) {
@@ -98,7 +98,7 @@ public class SendReceive {
             hello += hello;
         }
 
-        for ( int i = 0; i < 5; i++ ) {
+        for ( int i = 0; i < 15; i++ ) {
             long tim = System.currentTimeMillis();
             String response = sendReceiveSync(hello);
             Assert.assertTrue(response.equals(hello));
@@ -138,7 +138,7 @@ public class SendReceive {
             hello += hello;
         }
 
-        for ( int i = 0; i < 3; i++ ) {
+        for ( int i = 0; i < 5; i++ ) {
             long tim = System.currentTimeMillis();
             String response = sendReceiveSync(hello);
             Assert.assertTrue(response.equals(hello));

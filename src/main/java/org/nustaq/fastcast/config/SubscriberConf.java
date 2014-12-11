@@ -29,9 +29,9 @@ public class SubscriberConf {
     ///////////////////////////////////////////////////////////////////////////////
 
     // time interval until a receiver sends a retransmission request after a gap
-    long maxDelayRetransMS = 1;
+    long maxDelayRetransMS = 0;
     // time until a retransrequest is sent again if sender does not fulfill
-    long maxDelayNextRetransMS = 3;
+    long maxDelayNextRetransMS = 20;
 
     // time until a sender is lost+deallocated if it stops sending heartbeats
     long senderHBTimeout = 5000;
