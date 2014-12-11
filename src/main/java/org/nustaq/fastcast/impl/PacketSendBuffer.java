@@ -447,7 +447,7 @@ public class PacketSendBuffer implements FCPublisher {
         if ( RETRANSDEBUG )
             System.out.println("received retrans request and add to Q " + copy);
         retransRequests.add(copy);
-//        flush();
+        flush();
     }
 
     AtomicBoolean sendLock = new AtomicBoolean(false);

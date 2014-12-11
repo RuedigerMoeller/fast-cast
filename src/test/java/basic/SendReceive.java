@@ -49,7 +49,7 @@ public class SendReceive {
 
                 @Override
                 public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
-                    System.out.println( "received from "+sender);
+//                    System.out.println( "received from "+sender);
                     response.set(new String(b.toBytes(off,len),0));
                 }
 
@@ -70,12 +70,6 @@ public class SendReceive {
                     System.out.println("bootstrap "+receivesFrom);
                 }
             });
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
         }
     }
 
@@ -89,7 +83,7 @@ public class SendReceive {
         }
         long tim = System.currentTimeMillis();
         while( response.get() == null ) {
-            if ( System.currentTimeMillis()-tim > 10000 )
+            if ( System.currentTimeMillis()-tim > 30_000 )
                 return null;
         }
         return (String) response.get();
@@ -121,7 +115,7 @@ public class SendReceive {
     public void echoSendFragmentingBig() throws InterruptedException {
         initFC();
         String hello = "hello";
-        // make it a 160k string
+        // make it a 5mb string
         while( hello.length() < 5*1_000_000 ) {
             hello += hello;
         }
@@ -131,7 +125,7 @@ public class SendReceive {
             String response = sendReceiveSync(hello);
             Assert.assertTrue(response.equals(hello));
             long dur = System.currentTimeMillis() - tim;
-            System.out.println("duration for "+hello.length()+" "+dur+" rate:"+(hello.length()/dur)+" kb/s");
+            System.out.println("******  duration for "+hello.length()+" "+dur+" rate:"+(hello.length()/dur)+" kb/s");
             System.out.println("***************************** yes **********************************");
             Thread.sleep(1000);
         }
@@ -141,7 +135,7 @@ public class SendReceive {
     public void echoSendFragmentingHuge() throws InterruptedException {
         initFC();
         String hello = "hello";
-        // make it a 160k string
+        // make it a 40mb string
         while( hello.length() < 40*1_000_000 ) {
             hello += hello;
         }
@@ -151,7 +145,27 @@ public class SendReceive {
             String response = sendReceiveSync(hello);
             Assert.assertTrue(response.equals(hello));
             long dur = System.currentTimeMillis() - tim;
-            System.out.println("duration for " + hello.length() + " " + dur + " rate:" + (hello.length() / dur) + " kb/s");
+            System.out.println("******  duration for " + hello.length() + " " + dur + " rate:" + (hello.length() / dur) + " kb/s");
+            System.out.println("***************************** yes **********************************");
+            Thread.sleep(1000);
+        }
+    }
+
+    @Test
+    public void echoSendFragmentingSuperDuperHuge() throws InterruptedException {
+        initFC();
+        String hello = "hello";
+        // make it a 100mb string
+        while( hello.length() < 100*1_000_000 ) { // should be ~half receivebuffer size and < sendbuffer size
+            hello += hello;
+        }
+
+        for ( int i = 0; i < 2; i++ ) {
+            long tim = System.currentTimeMillis();
+            String response = sendReceiveSync(hello);
+            Assert.assertTrue(response.equals(hello));
+            long dur = System.currentTimeMillis() - tim;
+            System.out.println("******  duration for " + hello.length() + " " + dur + " rate:" + (hello.length() / dur) + " kb/s");
             System.out.println("***************************** yes **********************************");
             Thread.sleep(1000);
         }
