@@ -31,7 +31,7 @@ public class TestEchoServer {
                         while( ! echoresp.offer( sender, bytes,0, bytes.length, false) ) {
 //                            echoresp.flush();
                         }
-                        System.out.println("sent response to "+sender);
+//                        System.out.println("sent response to "+sender);
                     }
                 });
             }
