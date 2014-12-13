@@ -15,33 +15,39 @@ public class TopicConf {
         return id;
     }
 
-    public void setId(int id) {
+    public TopicConf id(int id) {
         this.id = id;
         validateAfterRead();
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public TopicConf name(String name) {
         this.name = name;
+        return this;
     }
 
-    public PublisherConf getPub() {
+    public PublisherConf getPublisher() {
         return pub;
     }
 
-    public void setPub(PublisherConf pub) {
+    public TopicConf publisher(PublisherConf pub) {
         this.pub = pub;
+        validateAfterRead();
+        return this;
     }
 
     public SubscriberConf getSub() {
         return sub;
     }
 
-    public void setSub(SubscriberConf sub) {
+    public TopicConf subscriber(SubscriberConf sub) {
         this.sub = sub;
+        validateAfterRead();
+        return this;
     }
 
     public void validateAfterRead() {

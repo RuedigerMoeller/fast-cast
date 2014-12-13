@@ -38,9 +38,9 @@ public class PhysicalTransportConf {
     // use value near [MTU-100] for lowest latency (requires high end hardware), use 4k .. 16k for throughput (don't flush each msg then)
     int dgramsize = 1300;
     // interface used
-    String ifacAdr = "lo";
+    String interfaceAddr = "lo";
     // mcast address
-    String mcastAdr = "229.9.9.9";
+    String multicastAddr = "229.9.9.9";
     // port
     int port = 45555;
     // see scoket options
@@ -48,16 +48,16 @@ public class PhysicalTransportConf {
     // set to true in order to receive packets on other processes on the same system
     boolean loopBack = true;
     // see socket options
-    int ttl = 2;
+    int ttl = 8;
     // receive and sendbuffer sizes. Try to get large ones ..
     int socketReceiveBufferSize = 30_000_000;
-    int sendBufferSize = 8_000_000;
+    int socketSendBufferSize = 8_000_000;
 
     // time until a msg sent with flush=false is automatically flushed out
     // (batching for throughput)
     long autoFlushMS = 3;
     // number of idle receveive loops until spinlock is stopped to free CPU ressources
-    int spinIdleLoopMax = 10_000_000;
+    int spinLoopMicros = 10_000_000;
     // how long receiving thread will be haltet once idle. (high values => higher latency after idle, lower values => more cpu burn)
     int idleParkMicros = 500;
 
@@ -86,19 +86,19 @@ public class PhysicalTransportConf {
         return this;
     }
 
-    public String getIfacAdr() {
-        if ( ! Character.isDigit(ifacAdr.charAt(0)) ) {
+    public String getInterfaceAddr() {
+        if ( ! Character.isDigit(interfaceAddr.charAt(0)) ) {
             Enumeration<NetworkInterface> nets = null;
             try {
                 nets = NetworkInterface.getNetworkInterfaces();
                 for (NetworkInterface netint : Collections.list(nets)) {
-                    if ( netint.getDisplayName().equalsIgnoreCase(ifacAdr) ) {
+                    if ( netint.getDisplayName().equalsIgnoreCase(interfaceAddr) ) {
                         Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
                         if ( inetAddresses.hasMoreElements() ) {
-                            ifacAdr = inetAddresses.nextElement().getHostAddress();
+                            interfaceAddr = inetAddresses.nextElement().getHostAddress();
                             break;
                         } else {
-                            FCLog.get().warn("specified interface " + ifacAdr + " does not have an IP assigned");
+                            FCLog.get().warn("specified interface " + interfaceAddr + " does not have an IP assigned");
                         }
                     }
                 }
@@ -106,20 +106,20 @@ public class PhysicalTransportConf {
                 FCLog.log(e);  //To change body of catch statement use File | Settings | File Templates.
             }
         }
-        return ifacAdr;
+        return interfaceAddr;
     }
 
-    public PhysicalTransportConf setIfacAdr(String ifacAdr) {
-        this.ifacAdr = ifacAdr;
+    public PhysicalTransportConf interfaceAdr(String ifacAdr) {
+        this.interfaceAddr = ifacAdr;
         return this;
     }
 
-    public String getMcastAdr() {
-        return mcastAdr;
+    public String getMulticastAddr() {
+        return multicastAddr;
     }
 
-    public PhysicalTransportConf setMcastAdr(String mcastAdr) {
-        this.mcastAdr = mcastAdr;
+    public PhysicalTransportConf mulitcastAdr(String mcastAdr) {
+        this.multicastAddr = mcastAdr;
         return this;
     }
 
@@ -127,7 +127,7 @@ public class PhysicalTransportConf {
         return port;
     }
 
-    public PhysicalTransportConf setPort(int port) {
+    public PhysicalTransportConf port(int port) {
         this.port = port;
         return this;
     }
@@ -136,7 +136,7 @@ public class PhysicalTransportConf {
         return trafficClass;
     }
 
-    public PhysicalTransportConf setTrafficClass(int trafficClass) {
+    public PhysicalTransportConf trafficClass(int trafficClass) {
         this.trafficClass = trafficClass;
         return this;
     }
@@ -145,7 +145,7 @@ public class PhysicalTransportConf {
         return loopBack;
     }
 
-    public PhysicalTransportConf setLoopBack(boolean loopBack) {
+    public PhysicalTransportConf loopBack(boolean loopBack) {
         this.loopBack = loopBack;
         return this;
     }
@@ -154,7 +154,7 @@ public class PhysicalTransportConf {
         return ttl;
     }
 
-    public PhysicalTransportConf setTtl(int ttl) {
+    public PhysicalTransportConf ttl(int ttl) {
         this.ttl = ttl;
         return this;
     }
@@ -163,17 +163,17 @@ public class PhysicalTransportConf {
         return socketReceiveBufferSize;
     }
 
-    public PhysicalTransportConf setSocketReceiveBufferSize(int socketReceiveBufferSize) {
+    public PhysicalTransportConf socketReceiveBufferSize(int socketReceiveBufferSize) {
         this.socketReceiveBufferSize = socketReceiveBufferSize;
         return this;
     }
 
-    public int getSendBufferSize() {
-        return sendBufferSize;
+    public int getSocketSendBufferSize() {
+        return socketSendBufferSize;
     }
 
-    public PhysicalTransportConf setSendBufferSize(int sendBufferSize) {
-        this.sendBufferSize = sendBufferSize;
+    public PhysicalTransportConf socketSendBufferSize(int sendBufferSize) {
+        this.socketSendBufferSize = sendBufferSize;
         return this;
     }
 
@@ -185,22 +185,22 @@ public class PhysicalTransportConf {
         return idleParkMicros;
     }
 
-    public int getSpinIdleLoopMax() {
-        return spinIdleLoopMax;
+    public int getSpinLoopMicros() {
+        return spinLoopMicros;
     }
 
-    public PhysicalTransportConf setAutoFlushMS(long autoFlushMS) {
+    public PhysicalTransportConf autoFlushMS(long autoFlushMS) {
         this.autoFlushMS = autoFlushMS;
         return this;
     }
 
-    public PhysicalTransportConf setIdleParkMicros(int idleParkMicros) {
+    public PhysicalTransportConf idleParkMicros(int idleParkMicros) {
         this.idleParkMicros = idleParkMicros;
         return this;
     }
 
-    public PhysicalTransportConf setSpinIdleLoopMax(int spinIdleLoopMax) {
-        this.spinIdleLoopMax = spinIdleLoopMax;
+    public PhysicalTransportConf spinLoopMicros(int spinLoopMicros) {
+        this.spinLoopMicros = spinLoopMicros;
         return this;
     }
 }

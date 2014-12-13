@@ -5,7 +5,6 @@ import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +51,7 @@ public class ReceiveBufferDispatcher {
             int hSize = historySize;
             if ( ((long)hSize*packetSize) > Integer.MAX_VALUE-2*packetSize ) {
                 final int newHist = (Integer.MAX_VALUE - 2 * packetSize) / packetSize;
-                topicEntry.getSubscriberConf().setReceiveBufferPackets(newHist);
+                topicEntry.getSubscriberConf().receiveBufferPackets(newHist);
                 FCLog.get().warn("int overflow, degrading history size from "+hSize+" to "+newHist);
                 historySize = newHist;
             }

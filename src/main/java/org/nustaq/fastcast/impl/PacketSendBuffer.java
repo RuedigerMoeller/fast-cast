@@ -114,7 +114,7 @@ public class PacketSendBuffer implements FCPublisher {
         int hSize = publisherConf.getNumPacketHistory();
         if ( ((long)hSize*conf.getDgramsize()) > Integer.MAX_VALUE-2*conf.getDgramsize() ) {
             final int newHist = (Integer.MAX_VALUE - 2 * conf.getDgramsize()) / conf.getDgramsize();
-            publisherConf.setNumPacketHistory(newHist);
+            publisherConf.numPacketHistory(newHist);
             FCLog.get().warn("int overflow, degrading history size from "+hSize+" to "+newHist);
             hSize = newHist;
         }

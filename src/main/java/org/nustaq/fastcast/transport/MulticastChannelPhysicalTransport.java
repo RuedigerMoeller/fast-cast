@@ -69,16 +69,16 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     public void join() throws IOException {
         if ( address == null ) {
-            address = InetAddress.getByName(conf.getMcastAdr());
+            address = InetAddress.getByName(conf.getMulticastAddr());
         }
         socketAddress = new InetSocketAddress(address,conf.getPort());
-        if ( iface == null && conf.getIfacAdr() != null) {
-            iface =NetworkInterface.getByInetAddress(Inet4Address.getByName(conf.getIfacAdr() ));
+        if ( iface == null && conf.getInterfaceAddr() != null) {
+            iface =NetworkInterface.getByInetAddress(Inet4Address.getByName(conf.getInterfaceAddr() ));
             if ( iface == null ) {
-                iface = NetworkInterface.getByInetAddress( Inet4Address.getByName(conf.getIfacAdr() ));
+                iface = NetworkInterface.getByInetAddress( Inet4Address.getByName(conf.getInterfaceAddr() ));
             }
             if ( iface == null ) {
-                FCLog.log("Could not find a network interface named '" + conf.getIfacAdr() + "'");
+                FCLog.log("Could not find a network interface named '" + conf.getInterfaceAddr() + "'");
             }
         }
         receiveSocket = ceateSocket();

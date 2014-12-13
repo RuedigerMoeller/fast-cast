@@ -5,13 +5,13 @@ ClusterConf {
             name:      ping
 
             dgramsize: 1500
-            ifacAdr:   127.0.0.1
-            mcastAdr:  229.9.9.10
+            interfaceAddr:   127.0.0.1
+            multicastAddr:  229.9.9.10
             port:      45556
 
             autoFlushMS:     1
-            spinIdleLoopMax: 10_000_000
-            idleParkMicros:  1000
+            spinLoopMicros: 10_000
+            idleParkMicros:  500
         }
 
         {
@@ -23,7 +23,7 @@ ClusterConf {
             port:      45557
 
             autoFlushMS:     10
-            spinIdleLoopMax: 10_000_000
+            spinLoopMicros: 10_000_000
             idleParkMicros:  1000
         }
 

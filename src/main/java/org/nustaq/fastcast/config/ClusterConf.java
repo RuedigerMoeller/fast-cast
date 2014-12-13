@@ -14,6 +14,24 @@ public class ClusterConf {
     public PhysicalTransportConf transports[];
     public TopicConf topics[];
 
+    public PhysicalTransportConf[] getTransports() {
+        return transports;
+    }
+
+    public ClusterConf transports(PhysicalTransportConf ... transports) {
+        this.transports = transports;
+        return this;
+    }
+
+    public TopicConf[] getTopics() {
+        return topics;
+    }
+
+    public ClusterConf topics(TopicConf ... topics) {
+        this.topics = topics;
+        return this;
+    }
+
     public TopicConf getTopic(String name) {
         for (int i = 0; i < topics.length; i++) {
             TopicConf topic = topics[i];

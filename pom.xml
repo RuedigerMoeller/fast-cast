@@ -10,8 +10,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>2.12</version>
-    <description>a fast brokerless messaging library based on reliable UDP multicast networking</description>
+    <version>3.00</version>
+    <description>a fast brokerless messaging library based on reliable UDP multicast</description>
+
     <url>https://code.google.com/p/fast-cast/</url>
     <licenses>
         <license>
@@ -48,6 +49,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
                 <!--<configuration>-->
                     <!--<failOnError>false</failOnError>-->
                 <!--</configuration>-->

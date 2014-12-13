@@ -41,8 +41,9 @@ public class PublisherConf {
         return ppsWindow;
     }
 
-    public void setPpsWindow(int ppsWindow) {
+    public PublisherConf ppsWindow(int ppsWindow) {
         this.ppsWindow = ppsWindow;
+        return this;
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -55,31 +56,35 @@ public class PublisherConf {
         return numPacketHistory;
     }
 
-    public void setNumPacketHistory(int numPacketHistory) {
+    public PublisherConf numPacketHistory(int numPacketHistory) {
         this.numPacketHistory = numPacketHistory;
+        return this;
     }
 
     public int getTopicId() {
         return topicId;
     }
 
-    public void setTopicId(int topicId) {
+    public PublisherConf topicId(int topicId) {
         this.topicId = topicId;
+        return this;
     }
 
     public long getHeartbeatInterval() {
         return heartbeatInterval;
     }
 
-    public void setHeartbeatInterval(long heartbeatInterval) {
+    public PublisherConf heartbeatInterval(long heartbeatInterval) {
         this.heartbeatInterval = heartbeatInterval;
+        return this;
     }
 
     public int getPps() {
         return pps;
     }
 
-    public void setPps(int pps) {
+    public PublisherConf pps(int pps) {
         this.pps = pps;
+        return this;
     }
 }

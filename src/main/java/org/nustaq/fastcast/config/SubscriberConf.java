@@ -53,32 +53,36 @@ public class SubscriberConf {
         return topicId;
     }
 
-    public void setTopicId(int topicId) {
+    public SubscriberConf topicId(int topicId) {
         this.topicId = topicId;
+        return this;
     }
 
     public int getReceiveBufferPackets() {
         return receiveBufferPackets;
     }
 
-    public void setReceiveBufferPackets(int receiveBufferPackets) {
+    public SubscriberConf receiveBufferPackets(int receiveBufferPackets) {
         this.receiveBufferPackets = receiveBufferPackets;
+        return this;
     }
 
     public long getMaxDelayRetransMS() {
         return maxDelayRetransMS;
     }
 
-    public void setMaxDelayRetransMS(long maxDelyRetransMS) {
+    public SubscriberConf maxDelayRetransMS(long maxDelyRetransMS) {
         this.maxDelayRetransMS = maxDelyRetransMS;
+        return this;
     }
 
     public long getMaxDelayNextRetransMS() {
         return maxDelayNextRetransMS;
     }
 
-    public void setMaxDelayNextRetransMS(long maxDelayNextRetransMS) {
+    public SubscriberConf maxDelayNextRetransMS(long maxDelayNextRetransMS) {
         this.maxDelayNextRetransMS = maxDelayNextRetransMS;
+        return this;
     }
 
     public long getSenderHBTimeout() {

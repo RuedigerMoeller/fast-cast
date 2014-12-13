@@ -113,7 +113,7 @@ public class FastCast {
     public PublisherConf getPublisherConf(String name) {
         TopicConf topic = getConfig().getTopic(name);
         if ( topic != null )
-            return topic.getPub();
+            return topic.getPublisher();
         return null;
     }
 

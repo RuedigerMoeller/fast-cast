@@ -5,12 +5,12 @@ ClusterConf {
             name:      default
 
             dgramsize: 4000
-            ifacAdr:   127.0.0.1
-            mcastAdr:  229.9.9.9
+            interfaceAddr:   127.0.0.1
+            multicastAddr:  229.9.9.9
             port:      45555
 
             autoFlushMS:     1
-            spinIdleLoopMax: 10_000
+            spinLoopMicros: 1_000_000
             idleParkMicros:  500
         }
     }

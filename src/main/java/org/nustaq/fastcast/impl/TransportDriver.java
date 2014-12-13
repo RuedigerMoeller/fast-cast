@@ -1,6 +1,7 @@
 package org.nustaq.fastcast.impl;
 
 import org.nustaq.fastcast.api.FCPublisher;
+import org.nustaq.fastcast.api.FastCast;
 import org.nustaq.fastcast.config.PhysicalTransportConf;
 import org.nustaq.fastcast.config.PublisherConf;
 import org.nustaq.fastcast.config.SubscriberConf;
@@ -31,7 +32,7 @@ public class TransportDriver {
 
     public static int MAX_NUM_TOPICS = 256;
 
-    int spinIdleLoopMax = 1000*1000*10;
+    int spinIdleLoopMicros = 1000*1000*10;
     int idleParkMicros = 500;
 
     volatile PhysicalTransport trans;
@@ -55,7 +56,7 @@ public class TransportDriver {
         this.nodeId = alloc.newStruct( new StructString(nodeId) );
         final PhysicalTransportConf tconf = trans.getConf();
         this.autoFlushMS = tconf.getAutoFlushMS();
-        this.spinIdleLoopMax = tconf.getSpinIdleLoopMax();
+        this.spinIdleLoopMicros = tconf.getSpinLoopMicros();
         this.idleParkMicros = tconf.getIdleParkMicros();
 
         receiver = new ReceiveBufferDispatcher[MAX_NUM_TOPICS];
@@ -165,27 +166,29 @@ public class TransportDriver {
         DatagramPacket p = new DatagramPacket(receiveBuf,receiveBuf.length);
         ByteBuffer buff = ByteBuffer.wrap(p.getData(), p.getOffset(), p.getLength());
         receivedPacket = alloc.newStruct(new Packet());
-        int idleCount = 0;
+        long idleNanos = System.nanoTime();
         receivedPacket.baseOn(receiveBuf, 0);
         while(true) {
+            boolean idle = true;
             try {
                 buff.position(0);
                 if (receiveDatagram(buff, receiveBuf)) {
-                    idleCount = 0;
+                    idleNanos = System.nanoTime();
+                    idle = false;
                 } else {
-                    idleCount++;
-                    if ( idleCount > spinIdleLoopMax) {
+                    if ( System.nanoTime()-idleNanos > spinIdleLoopMicros*1000) {
                         LockSupport.parkNanos(1000*idleParkMicros);
                     } else {
+                        idle = false;
                         if ( (ThreadLocalRandom.current().nextInt()&1) == 0 ) {
-                            idleCount++;
+                            idleNanos++;
                         } else {
-                            idleCount--;
+                            idleNanos--;
                         }
                     }
                 }
                 termCounter++;
-                if ( termCounter == 100000 || idleCount > spinIdleLoopMax ) {
+                if ( termCounter == 100000 || idle ) {
                     termCounter = 0;
                     if ( isTerminated() ) {
                         break;
@@ -281,9 +284,11 @@ public class TransportDriver {
 //                        }
 //                    }
                 }
+                return true;
+            } else {
+                return false;
             }
-            return true;
-        } 
+        }
         return false;
     }
 
@@ -321,6 +326,10 @@ public class TransportDriver {
         }
     }
 
+    public void subscribe( String subsConf, FCSubscriber subscriber ) {
+        subscribe(FastCast.getFastCast().getSubscriberConf(subsConf),subscriber);
+    }
+
     public void subscribe( SubscriberConf subsConf, FCSubscriber subscriber ) {
         Topic topicEntry = topics.get(subsConf.getTopicId());
         if ( topicEntry == null )
@@ -332,6 +341,10 @@ public class TransportDriver {
         topicEntry.setChannelDispatcher(this);
         topicEntry.setSubscriber(subscriber);
         installReceiver(topicEntry, subscriber);
+    }
+
+    public FCPublisher publish( String pubConf ) {
+        return publish(FastCast.getFastCast().getPublisherConf(pubConf));
     }
 
     public FCPublisher publish( PublisherConf pubConf ) {
