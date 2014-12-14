@@ -4,9 +4,9 @@ fast-cast
 
 High performance low latency topic/stream based reliable UDP messaging ("event-bus").
 
-3.x is in the making. Old remote method layer has been abandonned (will be covered by konktraktor remote actors later on).
+**3.x** is in the making. Old remote method layer has been abandonned (will be covered by konktraktor remote actors later on).
 
-features:
+**3.0 features**:
 - all buffers are kept off heap to avoid GC pressure.
 - allocation free in the main path
 - supports both blocking IO (save CPU) and lock free poll mode (low latency, CPU/cores burned)
