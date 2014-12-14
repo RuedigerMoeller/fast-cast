@@ -7,16 +7,17 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 **3.x** is in the making. Old remote method layer has been abandonned (will be covered by konktraktor remote actors later on).
 
 **3.0 features**:
-- all buffers are kept off heap to avoid GC pressure.
-- allocation free in the main path
-- supports both blocking IO (save CPU) and lock free poll mode (low latency, CPU/cores burned)
+- all buffers are kept **off heap** to avoid GC pressure.
+- **allocation free** in the main path
+- supports both **blocking IO** (save CPU) and **lock free poll** mode (low latency, CPU/cores burned)
 - support for up to 256 topics per address/port.
-- transparent fragmentation and defragmentation of large messages (should not exceed 50-70% of publisher send history buffer and subscribers's receivebuffer. E.g. an 80 MB message is not an issue with appropriate sizing.
+- transparent fragmentation and defragmentation of **large messages** (should not exceed 50-70% of publisher send history buffer and subscribers's receivebuffer. E.g. an 80 MB message is not an issue with appropriate sizing.
 - add hoc unicast (publisher can address all subscribers or a single subscriber on a per message level). Eases request/response schemes. 
-- supports fully reliable as well as unreliable streams (and unordered streams coming soon)
-- optional ease of use fast-serialized sendObject/receiveObject utility
-- simple implementation + algorithm, flow control is based on static rate limiting for now
+- supports fully reliable as well as unreliable streams (unordered-reliable streams coming soon)
+- API exposes raw low-level zero copy interface as well as higher level ease of use fast-serialized sendObject/receiveObject utilities
+- simple implementation + algorithm, flow control is based on static rate limiting for now.
 - detailed throughput tests still open, expect >3 million 50 bytes msg/second on decent hardware with appropriate configuration.
+- designated for use in LAN clusters.
 
 check out examples folder and tests on how to use fc. Documentation pending .. this is beta software
 
