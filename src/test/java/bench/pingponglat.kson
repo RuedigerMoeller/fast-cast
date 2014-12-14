@@ -14,7 +14,7 @@ ClusterConf {
 
             autoFlushMS:     1
             # comment these 2 lines for lock based mode (also below (**) 2 lines)
-            spinLoopMicros: 10_000_000
+            spinLoopMicros: 3_000_000
             idleParkMicros:  300
         }
 
@@ -28,14 +28,14 @@ ClusterConf {
 
             autoFlushMS:     10
             # (**) see above
-            spinLoopMicros:  10_000_000
+            spinLoopMicros:  3_000_000
             idleParkMicros:  300
         }
 
     }
 
     topics: {
-       # for ping pong test. each topic gets its own transport, so same topic id's can be used
+       # for ping pong test.
        {
             id: 1
             name: pingtopic
@@ -55,7 +55,7 @@ ClusterConf {
         }
 
        {
-            id: 1
+            id: 2
             name: pongtopic
 
             pub: {

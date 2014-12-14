@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class FCPing {
 
+    static boolean PING_BACK_ON_SAME_TOPIC = false; // set to false for optimal latency, to true to save one core with still good latency
     public static final int PINGMSGLEN  = 256;
     public static final int NUM_MSG     = 10_000_000;
 
@@ -59,7 +60,7 @@ public class FCPing {
         final FCPublisher pingserver = fc.onTransport("ping").publish(fc.getPublisherConf("pingtopic"));
         final Executor ex = Executors.newSingleThreadExecutor();
         final Histogram histo = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
-        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
+        fc.onTransport(PING_BACK_ON_SAME_TOPIC?"ping":"pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
             int msgCount;
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
@@ -109,7 +110,7 @@ public class FCPing {
         final Executor ex = Executors.newSingleThreadExecutor();
         final AtomicInteger await = new AtomicInteger(0);
 
-        fc.onTransport("pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
+        fc.onTransport(PING_BACK_ON_SAME_TOPIC?"ping":"pong").subscribe(fc.getSubscriberConf("pongtopic"), new FCSubscriber() {
             String pongName;
             @Override
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
@@ -178,7 +179,7 @@ public class FCPing {
 
     public void runPongServer() throws InterruptedException {
         FastCast fc = initFC("pserv", "pingponglat.kson");
-        final FCPublisher echoresp = fc.onTransport("pong").publish(fc.getPublisherConf("pongtopic"));
+        final FCPublisher echoresp = fc.onTransport(PING_BACK_ON_SAME_TOPIC?"ping":"pong").publish(fc.getPublisherConf("pongtopic"));
 
         fc.onTransport("ping").subscribe(fc.getSubscriberConf("pingtopic"), new FCSubscriber() {
 
