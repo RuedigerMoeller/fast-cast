@@ -51,8 +51,4 @@ public class ClusterConf {
                .readObject(new File(filePath));
     }
 
-    public static void main(String a[]) throws Exception {
-        ClusterConf clusterConf = readFrom("/home/ruedi/IdeaProjects/fast-cast/src/main/conf/cluster.conf");
-        System.out.println(clusterConf);
-    }
 }

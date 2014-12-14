@@ -42,11 +42,11 @@ public class PacketSendBuffer implements FCPublisher {
     // if more than this packets are sent in bulk (large messages), start checking packet rate and stall
     public static long CHECK_PACKET_RATE_BULKSEND_THRESHOLD = 10;
 
-    public static final boolean RETRANSDEBUG = true;
+    public static boolean RETRANSDEBUG = false;
     public static final String KEEP_SUBS_NODEID = "KEEPRECEIVER";
 
-    private static final boolean DEBUG_LAT = false;
-    private static final int RETRANS_MEM = 10000; // retransrequest history to accumulate identical retrans requests
+    public static boolean DEBUG_LAT = false;
+    public static int RETRANS_MEM = 10000; // retransrequest history to accumulate identical retrans requests
     private static final int TAG_BUFF = 4;
 
     final PhysicalTransport trans;
@@ -269,7 +269,7 @@ public class PacketSendBuffer implements FCPublisher {
     // finishes current packet, and allocs a new one so packet can be sent
     private void fire() {
         if (DEBUG_LAT)
-            System.out.println("fire "+System.currentTimeMillis());
+            FCLog.get().debug("fire "+System.currentTimeMillis());
         if (isCurrentPacketEmpty()) // no message yet in packet
             return;
         currentPacketBytePointer.setShort(DataPacket.EOP);
@@ -423,12 +423,13 @@ public class PacketSendBuffer implements FCPublisher {
             }
             dataPacket.setRetrans(retrans);
             moveBuff(dataPacket);
-            if (!retrans) {
+//            if (!retrans)
+            {
                 packetCounter++;
 //                System.out.println("send packet to '"+dataPacket.getReceiver()+"'");
             }
             trans.send(tmpSend);
-            if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) {
+            if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) { // for large messages
                 long maxAllowedPackets = 2 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
                 while ( i-sendStart > maxAllowedPackets)
                 {
@@ -446,7 +447,7 @@ public class PacketSendBuffer implements FCPublisher {
     void addRetransmissionRequest(RetransPacket retransPacket, PhysicalTransport trans) throws IOException {
         RetransPacket copy = (RetransPacket) retransPacket.createCopy();
         if ( RETRANSDEBUG )
-            System.out.println("received retrans request and add to Q " + copy);
+            FCLog.get().info("received retrans request and add to Q " + copy);
         retransRequests.add(copy);
         flush();
     }
@@ -473,7 +474,7 @@ public class PacketSendBuffer implements FCPublisher {
         // verify rate is kept
         if ( now-lastPpsRateCheckNanos > ppsWindowNanos ) {
             packetCounter = Math.max(0,packetCounter-pps);
-            lastPpsRateCheckNanos += ppsWindowNanos;
+            lastPpsRateCheckNanos = now;
         }
         if (msg != null ) {
             // deny if sent packets > 2 * allowed packet per pps window

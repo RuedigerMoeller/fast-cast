@@ -77,7 +77,7 @@ public class ReceiveBufferDispatcher {
             }
         }
         else {
-            System.out.println("cannot find packetReceiver to terminate");
+            FCLog.get().warn("cannot find packetReceiver to terminate");
         }
     }
 

@@ -20,7 +20,7 @@ public class SubscriberConf {
     // in case of gaps, buffer that many received packets (=datagram in fastcast context).
     // KEPT PER SENDER PER TOPIC !. So value of 10 with 10 senders on 2 topics = 20000 = 160MB with 8kb packets
     // increase for high volume receivers causing retransmissions (the larger, the fewer retransmissions will be there)
-    int receiveBufferPackets = 500_000;
+    int receiveBufferPackets = 5000;
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -34,7 +34,9 @@ public class SubscriberConf {
     long maxDelayNextRetransMS = 20;
 
     // time until a sender is lost+deallocated if it stops sending heartbeats
-    long senderHBTimeout = 5000;
+    // on overload i had crashes from false overload induced timeouts and receive of packets after buffer dealloc
+    // pls report once you observe crashes !
+    long senderHBTimeout = 30000;
 
     ///////////////////////////////////////////////////////////////////////////////
     //

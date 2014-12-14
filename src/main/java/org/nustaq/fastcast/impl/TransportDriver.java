@@ -244,6 +244,9 @@ public class TransportDriver {
                 {
                     if ( sender[topic] == null )
                         return true;
+                    if (receivedPacketReceiver == null || ! receivedPacketReceiver.equals(nodeId)) {
+                        return true;
+                    }
                     dispatchRetransmissionRequest(receivedPacket, topic);
                 } else if (type == ControlPacket.class )
                 {
@@ -305,7 +308,7 @@ public class TransportDriver {
         if ( retransPacket != null ) {
             // packet is valid just in this thread
             if ( PacketSendBuffer.RETRANSDEBUG )
-                System.out.println("send retrans request " + retransPacket + " " + retransPacket.getClzId());
+                FCLog.get().info("send retrans request " + retransPacket + " " + retransPacket.getClzId());
             // FIXME: ALLOC
             trans.send(new DatagramPacket(retransPacket.getBase().toBytes(retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
         }
@@ -320,7 +323,8 @@ public class TransportDriver {
         for (int i = 0; i < timedOutSenders.size(); i++) {
             String s = timedOutSenders.get(i);
             ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
-            FCLog.get().cluster("stopped receiving heartbeats from "+s);
+            receiver[topic] = null;
+            FCLog.get().info("stopped receiving heartbeats from "+s);
             if ( receiveBufferDispatcher != null ) {
                 receiveBufferDispatcher.cleanup(s);
             }

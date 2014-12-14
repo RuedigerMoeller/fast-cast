@@ -33,7 +33,7 @@ public class FastCast {
                 return fc;
             }
             fc = new FastCast();
-            FCLog.get().internal_clusterListenerLog(
+            FCLog.get().info(
                     "____ ____ ____ ___ ____ ____ ____ ___\n" +
                     "|--- |--| ====  |  |___ |--| ====  |  \n" + "> v3"
             );

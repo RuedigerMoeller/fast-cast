@@ -250,9 +250,9 @@ public class PacketReceiveBuffer {
             long now = System.currentTimeMillis();
             if ( now-logBremse > 1000 )
             {
-                System.out.println("wait for retrans, received "+packet.getSeqNo()+" "+getTopicEntry().getSubscriberConf().getTopicId()+" waiting for "+(maxOrderedSeq+1));
+                FCLog.get().warn("wait for retrans, received " + packet.getSeqNo() + " " + getTopicEntry().getSubscriberConf().getTopicId() + " waiting for " + (maxOrderedSeq + 1));
                 if ( packet.getSeqNo() < maxOrderedSeq ) {
-                    System.out.println("   sent by "+packet.getSender());
+                    FCLog.get().warn("   sent by " + packet.getSender());
                 }
                 logBremse = now;
             }
@@ -333,7 +333,7 @@ public class PacketReceiveBuffer {
     private void handleInitialSync(long seqNo) {
         maxOrderedSeq = seqNo-1; // ok, init only
         inInitialSync = true;
-        FCLog.get().cluster("for sender "+receivesFrom+" bootstrap sequence "+getTopicEntry().getSubscriberConf().getTopicId()+" no "+seqNo);
+        FCLog.get().info("for sender "+receivesFrom+" bootstrap sequence "+getTopicEntry().getSubscriberConf().getTopicId()+" no "+seqNo);
         final FCSubscriber subscriber = getTopicEntry().getSubscriber();
         if ( subscriber != null ) {
             subscriber.senderBootstrapped(receivesFrom,seqNo);

@@ -19,8 +19,6 @@ public class FCLog {
     public static final int WARN = 2;
     public static final int SEVER = 3;
     public static final int FATAL = 4;
-    public static final int CLUSTER = 5;
-    public static final int CLUSTER_LISTENER = 6;
 
     static FCLog instance;
 
@@ -84,22 +82,6 @@ public class FCLog {
 
     public void warn( String msg ) {
         internal_out(WARN, msg, null);
-    }
-
-    /**
-     * used by listening node for clusterwide logging, don't use directly
-     * @param msg
-     */
-    public void internal_clusterListenerLog(String msg) {
-        internal_out(CLUSTER_LISTENER, msg, null);
-    }
-
-    /**
-     * log to cluster wide log (requires FCMemberShip topic service installed)
-     * @param msg
-     */
-    public void cluster(String msg) {
-        internal_out(CLUSTER, msg, null);
     }
 
     public void warn( String msg, Throwable e ) {

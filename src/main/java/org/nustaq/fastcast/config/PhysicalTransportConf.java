@@ -36,7 +36,7 @@ public class PhysicalTransportConf {
 
     // determines the max size of a datagram sent.
     // use value near [MTU-100] for lowest latency (requires high end hardware), use 4k .. 16k for throughput (don't flush each msg then)
-    int dgramsize = 1300;
+    int dgramsize = 3*1400-200;
     // interface used
     String interfaceAddr = "lo";
     // mcast address
@@ -50,7 +50,7 @@ public class PhysicalTransportConf {
     // see socket options
     int ttl = 8;
     // receive and sendbuffer sizes. Try to get large ones ..
-    int socketReceiveBufferSize = 30_000_000;
+    int socketReceiveBufferSize = 8_000_000;
     int socketSendBufferSize = 8_000_000;
 
     // time until a msg sent with flush=false is automatically flushed out
