@@ -22,3 +22,5 @@ initial release is available on maven.
     <version>3.02</version>
 </dependency>
 ```
+
+check out examples folder and testcases on how to use fc. Documentation pending ..
