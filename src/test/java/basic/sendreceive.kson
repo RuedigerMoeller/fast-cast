@@ -10,7 +10,7 @@ ClusterConf {
             port:      45555
 
             autoFlushMS:     1
-            # default is blocking, don't do latency tests with this configuration
+            # default is blocking IO, don't do latency tests with this configuration
             # uncomment below for spin looping
             # spinLoopMicros: 10_000_000
             # idleParkMicros: 1000

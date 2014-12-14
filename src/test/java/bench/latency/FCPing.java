@@ -1,4 +1,4 @@
-package bench;
+package bench.latency;
 
 import org.HdrHistogram.Histogram;
 import org.nustaq.fastcast.api.FCPublisher;

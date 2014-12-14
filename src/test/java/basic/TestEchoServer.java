@@ -15,6 +15,9 @@ import java.util.concurrent.Executors;
 
 /**
  * Created by ruedi on 10.12.14.
+ *
+ * Needs to be started before running tests. Uses very conservative rate limits, do not use for
+ * benchmarking
  */
 public class TestEchoServer {
 
@@ -111,17 +114,22 @@ public class TestEchoServer {
     public static void startUnreliableTopic(FastCast fc) {
         fc.onTransport("default").subscribe( "unreliable", new ObjectSubscriber() {
             long lastSequence = 0;
+            long gaps = 0;
             @Override
             protected void objectReceived(String sender, long sequence, Object msg) {
                 UnreliableMessage umsg = (UnreliableMessage) msg;
+                if ( umsg.getSequence() < lastSequence ) {
+                    lastSequence = 0;
+                    gaps = 0;
+                }
                 if (lastSequence > 0) {
                     if ( umsg.getSequence() != lastSequence+1 ) {
-                        System.out.println("gap detected s:"+lastSequence+" received:"+umsg.getSequence());
+                        gaps++;
                     }
                 }
                 lastSequence = umsg.getSequence();
                 if ( (lastSequence%100_000) == 0 ) {
-                    System.out.println("received unreliable "+lastSequence);
+                    System.out.println("received unreliable "+lastSequence+" gaps "+gaps);
                 }
             }
         });

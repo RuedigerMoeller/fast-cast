@@ -116,7 +116,7 @@ public class SendReceive {
     public void sendUnreliable() throws InterruptedException {
         initFC();
         final FCPublisher publish = fc.onTransport("default").publish("unreliable");
-        final ObjectPublisher objectPublisher = new ObjectPublisher(publish);
+        final ObjectPublisher objectPublisher = new ObjectPublisher(publish).batchOnLimit(false);
         for ( int i=0; i < 1_000_000; i++ ) {
             objectPublisher.sendObject(null,new TestEchoServer.UnreliableMessage(i),true);
         }

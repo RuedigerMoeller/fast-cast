@@ -2,7 +2,6 @@ package org.nustaq.fastcast.convenience;
 
 import org.nustaq.fastcast.api.FCSubscriber;
 import org.nustaq.offheap.bytez.Bytez;
-import org.nustaq.serialization.simpleapi.DefaultCoder;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -10,8 +9,9 @@ import java.util.concurrent.Executors;
 /**
  * Created by ruedi on 14.12.2014.
  *
- * subscriber implementation that handles conversion to byte array adn by default provides a dedicated thread for
- * message processing. Note this is not allocation free.
+ * subscriber implementation that handles conversion to byte array and by default provides a
+ * dedicated thread for message processing. Note this is *not* allocation free, so not well suited for
+ * low latency stuff.
  */
 public abstract class ByteArraySubscriber implements FCSubscriber {
 
@@ -27,22 +27,28 @@ public abstract class ByteArraySubscriber implements FCSubscriber {
         this(true);
     }
 
+    protected byte tmpBuf[] = new byte[0];
     @Override
     public void messageReceived(final String sender, final long sequence, Bytez b, long off, final int len) {
-        final byte[] bytes = b.toBytes(off, len); // fixme: copy is needed only in case of dedicated thread
         if ( executor != null ) {
+            final byte[] bytes = b.toBytes(off, len);
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    messageReceived(sender,sequence,bytes);
+                    messageReceived(sender,sequence,bytes, 0, len);
                 }
             });
         } else {
-            messageReceived(sender,sequence,bytes);
+            // directly decode. saves tmp byte array alloc for each message
+            if ( tmpBuf.length < len ) {
+                tmpBuf = new byte[len];
+            }
+            b.getArr(off, tmpBuf, 0, len);
+            messageReceived(sender,sequence,tmpBuf,0,len);
         }
     }
 
-    protected abstract void messageReceived(String sender, long sequence, byte[] msg);
+    protected abstract void messageReceived(String sender, long sequence, byte[] msg, int off, int len);
 
     @Override
     public boolean dropped() {

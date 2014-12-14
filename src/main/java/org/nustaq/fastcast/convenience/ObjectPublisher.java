@@ -32,4 +32,11 @@ public class ObjectPublisher {
     public FCPublisher getPub() {
         return pub;
     }
+
+    public ObjectPublisher batchOnLimit(boolean doBatch) {
+        pub.batchOnLimit(doBatch);
+        return this;
+    }
+
+
 }

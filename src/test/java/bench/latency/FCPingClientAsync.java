@@ -1,4 +1,4 @@
-package bench;
+package bench.latency;
 
 /**
  * Created by ruedi on 09.12.14.

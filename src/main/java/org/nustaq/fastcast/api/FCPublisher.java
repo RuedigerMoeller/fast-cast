@@ -28,4 +28,16 @@ public interface FCPublisher {
     public void setPacketRateLimit(int limit);
     public int getPacketRateLimit();
 
+    /**
+     * decides wether to start batching once rate limit is reached. Default is true.
+     * Note this must be set to false in case there are unreliable or unordered receivers amongst
+     * subscribers.
+     * Batching means to pack several small messages into one datagram packet.
+     *
+     * @param doBatch
+     * @return
+     */
+    public FCPublisher batchOnLimit(boolean doBatch);
+    public boolean isBatchOnLimit(boolean doBatch);
+
 }

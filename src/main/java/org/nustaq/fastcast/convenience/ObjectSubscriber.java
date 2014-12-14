@@ -1,14 +1,8 @@
 package org.nustaq.fastcast.convenience;
 
-import org.nustaq.fastcast.api.FCSubscriber;
 import org.nustaq.offheap.bytez.Bytez;
-import org.nustaq.offheap.bytez.onheap.HeapBytez;
-import org.nustaq.serialization.FSTConfiguration;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 import org.nustaq.serialization.simpleapi.FSTCoder;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * Created by ruedi on 13.12.14.
@@ -21,6 +15,7 @@ import java.util.concurrent.Executors;
 public abstract class ObjectSubscriber extends ByteArraySubscriber {
 
     protected FSTCoder coder;
+    protected boolean decodeInReceiver = false;
 
     public ObjectSubscriber( boolean dedicatedThread, Class ... preregister) {
         super(dedicatedThread);
@@ -39,9 +34,50 @@ public abstract class ObjectSubscriber extends ByteArraySubscriber {
         this(true);
     }
 
+    /**
+     * default is false. If true, deserialization is done directly inside the messaging thread
+     * saving a tmp byte array alloc for each incoming message. Downside is possible slowdown / packet loss
+     * in case of large messages coming in.
+     *
+     * @param b
+     * @return
+     */
+    public ObjectSubscriber decodeInReceiverThread(boolean b) {
+        decodeInReceiver = b;
+        return this;
+    }
+
     @Override
-    public void messageReceived(final String sender, final long sequence, byte bytes[]) {
-        Object msg = coder.toObject(bytes, 0, bytes.length);
+    public void messageReceived(final String sender, final long sequence, Bytez b, long off, int len) {
+        if ( ! decodeInReceiver && executor != null )
+            super.messageReceived(sender, sequence, b, off, len);
+        else {
+            // directly decode. saves tmp byte array alloc for each message
+            if ( tmpBuf.length < len ) {
+                tmpBuf = new byte[len];
+            }
+            b.getArr(off, tmpBuf, 0, len); // fixme: could be zerocopy using OffHeapCoder
+            final Object objectMessage = coder.toObject(tmpBuf, 0, tmpBuf.length);
+            if ( executor != null ) {
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        objectReceived(sender, sequence, objectMessage);
+                    }
+                });
+            } else {
+                objectReceived(sender, sequence, objectMessage);
+            }
+        }
+    }
+
+    /**
+     * note: this is not called in case decodeInReceiver is true or no dedicated thread is pressent.
+     * So take care when overriding
+     */
+    @Override
+    public void messageReceived(final String sender, final long sequence, byte bytes[], int off, int len) {
+        Object msg = coder.toObject(bytes, off, len);
         objectReceived(sender,sequence,msg);
     }
 

@@ -90,6 +90,7 @@ public class PacketSendBuffer implements FCPublisher {
     long lastPpsRateCheckNanos;
     String currentReceiver = null;
     Bytez heartbeat;
+    boolean batchOnLimit = true;
 
     public PacketSendBuffer(PhysicalTransport trans, String nodeId, Topic entry ) {
         this.trans = trans;
@@ -479,6 +480,8 @@ public class PacketSendBuffer implements FCPublisher {
             if ( packetCounter > pps*2 )
                 return false;
             else if (packetCounter > pps) { // else enforce batching
+                if ( ! batchOnLimit )
+                    return false;
                 doFlush = false;
             }
         }
@@ -594,6 +597,17 @@ public class PacketSendBuffer implements FCPublisher {
     @Override
     public int getPacketRateLimit() {
         return packetRateLimit;
+    }
+
+    @Override
+    public FCPublisher batchOnLimit(boolean doBatch) {
+        batchOnLimit = doBatch;
+        return this;
+    }
+
+    @Override
+    public boolean isBatchOnLimit(boolean doBatch) {
+        return doBatch;
     }
 
     @Override
