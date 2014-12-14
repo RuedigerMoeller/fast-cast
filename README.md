@@ -15,6 +15,7 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 - add hoc unicast (publisher can address all subscribers or a single subscriber on a per message level). Eases request/response schemes. 
 - supports **fully reliable** as well as unreliable streams (unordered-reliable streams coming soon)
 - API exposes raw **low-level zero copy** interface as well as **higher level** ease of use fast-serialized sendObject/receiveObject utilities
+- Low latency: very few outliers. Depending on hardware/OS RTT latencies of 12 micro seconds (mean),99.9% - 24 micros, 99.99% - 111 micros, 99.9999% - 126 micros. Regarding outliers fast-cast currently beats any message layer I have tested (both commercial and open source) by a good margin (in a clean network with rare packet loss + low latency hardware and OS setup). Testscenario is Ping-Pong RTT latency.
 - simple implementation + algorithm, flow control is based on static rate limiting for now.
 - detailed throughput tests still open, expect >3 million 50 bytes msg/second on decent hardware with appropriate configuration.
 - designated for **use in LAN clusters**.
@@ -34,7 +35,7 @@ Changes done from 2.x to 3.x:
 - removed remote method framework completely (will be replaced by kontraktor actors on top of fast-cast). This will  reduce exposure to bugs and also reduces impl complexity.
 - refurbished core NAK UDP streaming implementation. Renamed many classes to improve understandability
 - simplified API significantly
-- 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). Depending on hardware/OS I have seen RTT latencies of 12 micro seconds (mean),99.9% - 24 micros, 99.99% - 111 micros, 99.9999% - 126 micros. Regarding outliers fast-cast currently beats any message layer (both commercial and open source) by a good margin (in a clean network with rare packet loss + low latency hardware and OS setup).
+- 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). 
 - requires fast-serialization 2.17 branch build for struct support
 - allocation free under normal operation
 
