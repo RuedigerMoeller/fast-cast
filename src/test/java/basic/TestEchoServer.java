@@ -18,6 +18,19 @@ import java.util.concurrent.Executors;
  */
 public class TestEchoServer {
 
+    public static class UnreliableMessage implements Serializable {
+
+        long sequence;
+
+        public UnreliableMessage(long sequence) {
+            this.sequence = sequence;
+        }
+
+        public long getSequence() {
+            return sequence;
+        }
+    }
+
     public static class SampleBroadcast implements Serializable {
 
         String stringDate = new Date().toString();
@@ -51,8 +64,9 @@ public class TestEchoServer {
         final long startUpTime = (int) System.currentTimeMillis();
 
         startTestTopic(fc, startUpTime);
-
         startEchoTopic(fc, echoresp, responseExec);
+        startUnreliableTopic(fc);
+
         while( true ) {
             Thread.sleep(1000);
         }
@@ -90,6 +104,25 @@ public class TestEchoServer {
             @Override
             public void senderBootstrapped(String receivesFrom, long seqNo) {
                 System.out.println("bootstrap " + receivesFrom);
+            }
+        });
+    }
+
+    public static void startUnreliableTopic(FastCast fc) {
+        fc.onTransport("default").subscribe( "unreliable", new ObjectSubscriber() {
+            long lastSequence = 0;
+            @Override
+            protected void objectReceived(String sender, long sequence, Object msg) {
+                UnreliableMessage umsg = (UnreliableMessage) msg;
+                if (lastSequence > 0) {
+                    if ( umsg.getSequence() != lastSequence+1 ) {
+                        System.out.println("gap detected s:"+lastSequence+" received:"+umsg.getSequence());
+                    }
+                }
+                lastSequence = umsg.getSequence();
+                if ( (lastSequence%100_000) == 0 ) {
+                    System.out.println("received unreliable "+lastSequence);
+                }
             }
         });
     }

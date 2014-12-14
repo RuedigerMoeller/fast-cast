@@ -147,7 +147,7 @@ public class FastCast {
         }
         try {
             FCLog.log("Connecting transport " + tconf.getName() + " as "+getNodeId());
-            MulticastChannelPhysicalTransport tr = new MulticastChannelPhysicalTransport(tconf);
+            MulticastChannelPhysicalTransport tr = new MulticastChannelPhysicalTransport(tconf,tconf.getSpinLoopMicros()==0);
             tr.join();
             transports.put(tconf.getName(), tr);
         } catch (IOException e) {

@@ -39,4 +39,6 @@ public interface PhysicalTransport {
     public PhysicalTransportConf getConf();
 
     void close();
+
+    boolean isBlocking();
 }

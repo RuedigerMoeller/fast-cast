@@ -38,9 +38,12 @@ public class SubscriberConf {
 
     ///////////////////////////////////////////////////////////////////////////////
     //
-    // receiver misc (threading, locking
+    // receiver misc
     //
     ///////////////////////////////////////////////////////////////////////////////
+
+    // accept packet loss. don't send retransmissions. Note that this only works for messages < datagramsize (see transport conf)
+    boolean unreliable = false;
 
     public SubscriberConf() {
     }
@@ -87,5 +90,14 @@ public class SubscriberConf {
 
     public long getSenderHBTimeout() {
         return senderHBTimeout;
+    }
+
+    public boolean isUnreliable() {
+        return unreliable;
+    }
+
+    public SubscriberConf unreliable(boolean unreliable) {
+        this.unreliable = unreliable;
+        return this;
     }
 }

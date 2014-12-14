@@ -4,6 +4,7 @@ import junit.framework.Assert;
 import org.HdrHistogram.Histogram;
 import org.junit.Test;
 import org.nustaq.fastcast.api.*;
+import org.nustaq.fastcast.convenience.ObjectPublisher;
 import org.nustaq.fastcast.util.RateMeasure;
 import org.nustaq.fastcast.util.Sleeper;
 import org.nustaq.offheap.bytez.Bytez;
@@ -108,6 +109,16 @@ public class SendReceive {
             System.out.println("duration for " + hello.length() + " " + dur + " rate:" + (hello.length() / dur) + " kb/s");
             System.out.println("**yes**");
             Thread.sleep(1000);
+        }
+    }
+
+    @Test
+    public void sendUnreliable() throws InterruptedException {
+        initFC();
+        final FCPublisher publish = fc.onTransport("default").publish("unreliable");
+        final ObjectPublisher objectPublisher = new ObjectPublisher(publish);
+        for ( int i=0; i < 1_000_000; i++ ) {
+            objectPublisher.sendObject(null,new TestEchoServer.UnreliableMessage(i),true);
         }
     }
 

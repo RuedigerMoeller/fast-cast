@@ -18,6 +18,7 @@ import java.nio.channels.*;
  */
 public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
+    boolean blocking;
     DatagramChannel receiveSocket;
     DatagramChannel sendSocket;
     PhysicalTransportConf conf;
@@ -25,9 +26,10 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
     InetAddress address;
     InetSocketAddress socketAddress;
 
-    public MulticastChannelPhysicalTransport(PhysicalTransportConf conf) {
+    public MulticastChannelPhysicalTransport(PhysicalTransportConf conf, boolean blocking) {
         System.setProperty("java.net.preferIPv4Stack","true" );
         this.conf = conf;
+        this.blocking = blocking;
     }
 
     public boolean receive(DatagramPacket pack) throws IOException {
@@ -81,15 +83,15 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
                 FCLog.log("Could not find a network interface named '" + conf.getInterfaceAddr() + "'");
             }
         }
-        receiveSocket = ceateSocket();
-        sendSocket = ceateSocket();
+        receiveSocket = ceateSocket(blocking);
+        sendSocket = ceateSocket(false);
 
         MembershipKey key = receiveSocket.join(address, iface);
         FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.getPort()+" dgramsize:"+getConf().getDgramsize());
 
     }
 
-    private DatagramChannel ceateSocket() throws IOException {
+    private DatagramChannel ceateSocket(boolean block) throws IOException {
         DatagramChannel channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
                 .setOption(StandardSocketOptions.IP_MULTICAST_IF, iface)
@@ -98,7 +100,7 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
                 .setOption(StandardSocketOptions.IP_MULTICAST_LOOP, conf.isLoopBack())
                 .setOption(StandardSocketOptions.IP_MULTICAST_TTL, conf.getTtl())
                 .bind(new InetSocketAddress(conf.getPort()));
-        channel.configureBlocking(false);
+        channel.configureBlocking(block);
         return channel;
     }
 
@@ -123,5 +125,10 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
         } catch (IOException e) {
             FCLog.get().warn(e);
         }
+    }
+
+    @Override
+    public boolean isBlocking() {
+        return blocking;
     }
 }

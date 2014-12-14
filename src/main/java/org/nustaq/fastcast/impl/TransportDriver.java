@@ -48,7 +48,7 @@ public class TransportDriver {
     long autoFlushMS;
     private ConcurrentHashMap<Integer,Topic> topics = new ConcurrentHashMap<>();
 
-    int termCounter = 0;
+    int tCheckCounter = 0;
     volatile int terminationCounter = 0;
 
     public TransportDriver(PhysicalTransport trans, String nodeId) {
@@ -177,7 +177,8 @@ public class TransportDriver {
                     idle = false;
                 } else {
                     if ( System.nanoTime()-idleNanos > spinIdleLoopMicros*1000) {
-                        LockSupport.parkNanos(1000*idleParkMicros);
+                        if ( ! trans.isBlocking() && idleParkMicros > 0)
+                            LockSupport.parkNanos(1000*idleParkMicros);
                     } else {
                         idle = false;
                         if ( (ThreadLocalRandom.current().nextInt()&1) == 0 ) {
@@ -187,9 +188,9 @@ public class TransportDriver {
                         }
                     }
                 }
-                termCounter++;
-                if ( termCounter == 100000 || idle ) {
-                    termCounter = 0;
+                tCheckCounter++;
+                if ( tCheckCounter == 100000 || idle || spinIdleLoopMicros == 0 ) {
+                    tCheckCounter = 0;
                     if ( isTerminated() ) {
                         break;
                     }
@@ -198,7 +199,7 @@ public class TransportDriver {
                 FCLog.log(e);
             }
         }
-        while( termCounter < 1 ) { // wait for housekeeping to finish
+        while( terminationCounter < 1 ) { // wait for housekeeping to finish
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500));
         }
         alloc.free();
@@ -404,6 +405,11 @@ public class TransportDriver {
         @Override
         public void close() {
 
+        }
+
+        @Override
+        public boolean isBlocking() {
+            return false;
         }
     };
 

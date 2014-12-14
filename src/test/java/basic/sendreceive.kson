@@ -10,8 +10,10 @@ ClusterConf {
             port:      45555
 
             autoFlushMS:     1
-            spinLoopMicros: 1_000_000
-            idleParkMicros:  500
+            # default is blocking, don't do latency tests with this configuration
+            # uncomment below for spin looping
+            # spinLoopMicros: 10_000_000
+            # idleParkMicros: 1000
         }
     }
 
@@ -29,7 +31,7 @@ ClusterConf {
             }
 
             sub: {
-                receiveBufferPackets: 20_000
+                receiveBufferPackets: 10_000
                 # senderHBTimeout: 5000
                 senderHBTimeout: 500000 # avoid crashes during debug
             }
@@ -62,7 +64,7 @@ ClusterConf {
                 pps: 20_000
                 ppsWindow: 100
                 heartbeatInterval: 10   # testing
-           }
+            }
 
             sub: {
                 receiveBufferPackets: 50_000
@@ -70,6 +72,24 @@ ClusterConf {
                 senderHBTimeout: 500000 # avoid crashes during debug
             }
         }
-    }
+
+        {
+            id: 4
+            name: unreliable
+            pub: {
+                numPacketHistory: 1_000  # only smallish buffer required for unreliable
+                pps: 10_000
+                ppsWindow: 100
+                heartbeatInterval: 1000
+            }
+
+            sub: {
+                receiveBufferPackets: 1_000 # small buffer for unreliable
+                # senderHBTimeout: 5000
+                senderHBTimeout: 500000 # avoid crashes during debug
+                unreliable: true
+            }
+        }
+   }
 
 }

@@ -16,19 +16,15 @@ import java.util.concurrent.Executors;
  * A subscriber implementation receiving and automatically decoding serialized objects.
  * By default it uses a dedicated thread for delivery to avoid blocking the receiverThread
  * pulling data packets from the network.
- * Decoding is done 'inside' the messaging callback thread, though.
  *
  */
-public abstract class ObjectSubscriber implements FCSubscriber {
+public abstract class ObjectSubscriber extends ByteArraySubscriber {
 
     protected FSTCoder coder;
-    Executor executor;
 
     public ObjectSubscriber( boolean dedicatedThread, Class ... preregister) {
+        super(dedicatedThread);
         coder = new DefaultCoder(true,preregister);
-        if ( dedicatedThread ) {
-            executor = Executors.newSingleThreadExecutor();
-        }
     }
 
     public ObjectSubscriber( Class ... preregister) {
@@ -44,36 +40,11 @@ public abstract class ObjectSubscriber implements FCSubscriber {
     }
 
     @Override
-    public void messageReceived(final String sender, final long sequence, Bytez b, long off, final int len) {
-        final byte[] bytes = b.toBytes(off, len);
-        if ( executor != null ) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    Object msg = coder.toObject(bytes, 0, len);
-                    objectReceived(sender,sequence,msg);
-                }
-            });
-        } else {
-            objectReceived(sender,sequence,coder.toObject(bytes, 0, len));
-        }
+    public void messageReceived(final String sender, final long sequence, byte bytes[]) {
+        Object msg = coder.toObject(bytes, 0, bytes.length);
+        objectReceived(sender,sequence,msg);
     }
 
     protected abstract void objectReceived(String sender, long sequence, Object msg);
-
-    @Override
-    public boolean dropped() {
-        return true; // resync
-    }
-
-    @Override
-    public void senderTerminated(String senderNodeId) {
-        // do nothing
-    }
-
-    @Override
-    public void senderBootstrapped(String receivesFrom, long seqNo) {
-        // do nothing
-    }
 
 }

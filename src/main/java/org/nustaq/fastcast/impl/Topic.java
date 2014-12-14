@@ -30,9 +30,6 @@ public class Topic {
     TransportDriver channelDispatcher;
     PacketSendBuffer sender;
 
-    boolean isUnordered = false;
-    boolean isUnreliable = false;
-
     private FCSubscriber subscriber;
     int topicId = -1;
     private long hbTimeoutMS = 3000;
@@ -69,7 +66,9 @@ public class Topic {
     }
 
     public boolean isUnordered() {
-        return isUnordered;
+//        if (subscriberConf != null )
+//            return subscriberConf.isUnreliable();
+        return false;
     }
 
     public TransportDriver getChannelDispatcher() {
@@ -81,11 +80,9 @@ public class Topic {
     }
 
     public boolean isUnreliable() {
-        return isUnreliable;
-    }
-
-    public void setUnreliable(boolean unreliable) {
-        isUnreliable = unreliable;
+        if (subscriberConf != null )
+            return subscriberConf.isUnreliable();
+        return false;
     }
 
     public FCSubscriber getSubscriber() {

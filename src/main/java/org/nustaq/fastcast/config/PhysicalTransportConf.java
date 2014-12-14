@@ -57,9 +57,11 @@ public class PhysicalTransportConf {
     // (batching for throughput)
     long autoFlushMS = 3;
     // number of idle receveive loops until spinlock is stopped to free CPU ressources
-    int spinLoopMicros = 10_000_000;
+    // zero => us blocking mode to avoid burning cpu
+    int spinLoopMicros = 0;
     // how long receiving thread will be haltet once idle. (high values => higher latency after idle, lower values => more cpu burn)
-    int idleParkMicros = 500;
+    // this option is valid only if spinLoopMicors > 0
+    int idleParkMicros = 300;
 
     public PhysicalTransportConf() {
     }
