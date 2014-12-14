@@ -7,11 +7,13 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 3.x is in the making. Old remote method layer has been abandonned (will be covered by konktraktor remote actors later on).
 
 features:
-- all buffers are kept off heap to avoid increasing GC pressure.
+- all buffers are kept off heap to avoid GC pressure.
 - allocation free in the main path
 - supports both blocking IO (save CPU) and lock free poll mode (low latency, CPU/cores burned)
 - support for up to 256 topics per address/port.
-- supports fully reliable, unreliable streams (and unordered streams coming soon)
+- transparent fragmentation and defragmentation of large messages (should not exceed 50-70% of publisher send history buffer and subscribers's receivebuffer. E.g. an 80 MB message is not an issue with appropriate sizing.
+- add hoc unicast (publisher can address all subscribers or a single subscriber on a per message level). Eases request/response schemes. 
+- supports fully reliable as well as unreliable streams (and unordered streams coming soon)
 - optional ease of use fast-serialized sendObject/receiveObject utility
 - simple implementation + algorithm, flow control is based on static rate limiting for now
 - detailed throughput tests still open, expect >3 million 50 bytes msg/second on decent hardware with appropriate configuration.
@@ -26,7 +28,6 @@ initial release is available on maven.
     <version>3.02</version>
 </dependency>
 ```
-
 
 Changes done from 2.x to 3.x:
 - removed remote method framework completely (will be replaced by kontraktor actors on top of fast-cast). This will  reduce exposure to bugs and also reduces impl complexity.
