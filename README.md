@@ -7,12 +7,12 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 **3.x** is in the making. Old remote method layer has been abandonned (will be covered by konktraktor remote actors later on).
 
 **3.0 features**:
-- measured 7 million 70 bytes msg/second on localhost Intel i7 or new XEONS. Similar rates can be achieved using 10GBit high end networks (see examples, structencoding).
+- Throughput **7 million 70 bytes msg/second** on localhost (Intel i7 or newer XEONS). Similar rates can be achieved using 10GBit high end networks (see examples, structencoding).
 - **reliable low latency with extraordinary few outliers**. E.g. XEON 3Ghz, CentOS 6.5 RT Linux: RTT latency mean:12 micros, 99.9% - 24 micros, 99.99% - 111 micros, 99.9999% - 126 micros. Testscenario was Ping-Pong RTT latency.
 - transparent fragmentation and defragmentation of **large messages** (should not exceed 50-70% of publisher  history buffer and subscribers's receive buffer).
-- support for up to 256 topics per address/port.
 - **add hoc unicast** (publisher can address all subscribers or a single subscriber on a per message level). Eases request/response schemes. 
 - **bidirectional** a process can both send and receive on a topic if required.
+- support for up to 256 **topics** per address/port.
 - supports **fully reliable** as well as unreliable streams (unordered-reliable streams coming soon)
 - API exposes raw **low-level zero copy** interface as well as **higher level** fast-serialized sendObject/receiveObject utilities
 - supports both **blocking IO** (saves CPU) and **lock free poll** mode (low latency, CPU/cores burned)
