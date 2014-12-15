@@ -12,6 +12,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by moelrue on 12/15/14.
+ *
+ * Demonstrates high throughput (up to 7 million msg/second) allocation free messaging
+ * using struct encoding.
+ *
  */
 public class StructPublisher {
 
@@ -63,9 +67,10 @@ public class StructPublisher {
                         .interfaceAdr("127.0.0.1")  // define the interface
                         .port(42043)                // port is more important than address as some OS only test for ports ('crosstalking')
                         .mulitcastAdr("229.9.9.9")  // ip4 multicast address
-                        .setDgramsize(64_000)         // datagram size. Small sizes => lower latency, large sizes => better throughput
+                        .setDgramsize(64_000)         // datagram size. Small sizes => lower latency, large sizes => better throughput [range 1200 to 64_000 bytes]
                         .socketReceiveBufferSize(4_000_000) // as large as possible .. however avoid hitting system limits in example
                         .socketSendBufferSize(2_000_000)
+                        // uncomment this to enable spin looping. Will increase throughput once datagram size is lowered below 8kb or so
 //                        .idleParkMicros(1)
 //                        .spinLoopMicros(100_000)
         );

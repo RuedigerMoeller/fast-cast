@@ -101,7 +101,7 @@ public class Protocol {
         PriceUpdateStruct template = new PriceUpdateStruct();
         FSTStructAllocator onHeapAlloc = new FSTStructAllocator(0);
 
-        template = onHeapAlloc.newStruct(template); // speed up instantiation
+        template = onHeapAlloc.newStruct(template); // speed up instantiation by moving template also off heap
 
         PriceUpdateStruct newStruct = onHeapAlloc.newStruct(template);
         int sizeOf = newStruct.getByteSize();
