@@ -18,7 +18,7 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 - all buffers are kept **off heap** to avoid GC pressure.
 - **allocation free** in the main path
 - simple implementation + algorithm, flow control is based on static rate limiting for now.
-- detailed throughput tests still open, expect >3 million 50 bytes msg/second on decent hardware with appropriate configuration.
+- detailed throughput tests still open, measured 7 million 70 bytes msg/second on localhost Intel i7 or new XEONS. Similar rates can be achieved using 10GBit high end networks (see examples, structencoding).
 - designated for **use in LAN clusters**.
 
 check out examples folder and tests on how to use fc. Documentation pending .. this is beta software
