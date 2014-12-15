@@ -20,6 +20,7 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 - **allocation free** in the main path
 - designed for **use in LAN clusters**.
 - simple implementation + algorithm, flow control is based on static rate limiting for now.
+- requires JDK 1.7 or higher
 
 check out examples folder and tests on how to use fc. Documentation pending .. this is beta software
 
