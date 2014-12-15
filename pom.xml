@@ -16,8 +16,8 @@
     <url>https://code.google.com/p/fast-cast/</url>
     <licenses>
         <license>
-            <name>LGPL 2.1</name>
-            <url>http://www.gnu.org/licenses/lgpl.html</url>
+            <name>Apache 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
