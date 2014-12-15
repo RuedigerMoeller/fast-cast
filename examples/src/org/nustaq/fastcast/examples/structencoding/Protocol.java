@@ -106,6 +106,8 @@ public class Protocol {
         PriceUpdateStruct newStruct = onHeapAlloc.newStruct(template);
         int sizeOf = newStruct.getByteSize();
 
+        // demonstrates that theoretical send rate is >20 millions messages per second on
+        // an I7 box
         byte networkBuffer[] = new byte[template.getByteSize()];
 
         while ( true ) {

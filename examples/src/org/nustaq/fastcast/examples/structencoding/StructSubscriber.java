@@ -17,10 +17,10 @@ public class StructSubscriber {
 
         FastCast.getFastCast().setNodeId("SUB"); // 5 chars MAX !!
         StructPublisher.configureFastCast();
-        RateMeasure rateMeasure = new RateMeasure("receive rate");
+        final RateMeasure rateMeasure = new RateMeasure("receive rate");
 
         FastCast.getFastCast().onTransport("default").subscribe(
-            new SubscriberConf(1).receiveBufferPackets(40000),
+            new SubscriberConf(1).receiveBufferPackets(33_000),
             new FCSubscriber() {
 
                 Protocol.PriceUpdateStruct msg = FSTStructFactory.getInstance().createEmptyStructPointer(Protocol.PriceUpdateStruct.class);

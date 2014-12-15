@@ -22,9 +22,9 @@ public class StructPublisher {
 
         FCPublisher pub = FastCast.getFastCast().onTransport("default").publish(
                 new PublisherConf(1)            // unique-per-transport topic id
-                    .numPacketHistory(80_000)   // how long packets are kept for retransmission requests
+                    .numPacketHistory(33_000)   // how long packets are kept for retransmission requests
                             // beware: memory usage (kept offheap) = dgramsize * history = 2500*40000 = 100MB (GC safe for 8 seconds)
-                    .pps(30000)                  // packets per second rate limit. So max traffic for topic = 5000*2500 = 12.5 MB/second
+                    .pps(15_000)                  // packets per second rate limit. So max traffic for topic = 5000*2500 = 12.5 MB/second
         );
 
         Protocol.initStructFactory();
@@ -63,9 +63,11 @@ public class StructPublisher {
                         .interfaceAdr("127.0.0.1")  // define the interface
                         .port(42043)                // port is more important than address as some OS only test for ports ('crosstalking')
                         .mulitcastAdr("229.9.9.9")  // ip4 multicast address
-                        .setDgramsize(16000)         // datagram size. Small sizes => lower latency, large sizes => better throughput
+                        .setDgramsize(64_000)         // datagram size. Small sizes => lower latency, large sizes => better throughput
                         .socketReceiveBufferSize(4_000_000) // as large as possible .. however avoid hitting system limits in example
                         .socketSendBufferSize(2_000_000)
+//                        .idleParkMicros(1)
+//                        .spinLoopMicros(100_000)
         );
 
     }
