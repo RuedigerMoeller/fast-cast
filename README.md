@@ -31,8 +31,8 @@ initial release is available on maven.
 
 Changes done from 2.x to 3.x:
 - removed remote method framework completely (will be replaced by kontraktor actors on top of fast-cast). This will  reduce exposure to bugs and also reduces impl complexity.
-- refurbished core NAK UDP streaming implementation. Renamed many classes to improve understandability
-- simplified API significantly
+- refurbished+refactored core NAK UDP streaming implementation.
+- simplified API
 - 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). 
 - requires fast-serialization 2.17 branch build for struct support
 - allocation free under normal operation
