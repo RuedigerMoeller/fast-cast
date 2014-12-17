@@ -82,16 +82,24 @@ public class Protocol {
         }
     }
 
-    public static void initStructFactory() {
-        FSTStructFactory.getInstance().registerClz(InstrumentStruct.class,PriceUpdateStruct.class);
+    public static void do20Millions(byte[] networkBuffer, PriceUpdateStruct msg, int sizeOf) {
+        long tim = System.currentTimeMillis();
+        for ( int i = 0; i < 20_000_000; i++ ) {
+
+            InstrumentStruct instrument = msg.getInstrument();
+            instrument.getMnemonic().setString("BMW");
+            instrument.setInstrumentId(13);
+            msg.setPrc(99.0);
+            msg.setQty(100);
+
+            // emulate network sending by copying to buffer
+            msg.getBase().getArr(msg.getOffset(),networkBuffer,0,sizeOf);
+        }
+        System.out.println("tim: "+(System.currentTimeMillis()-tim));
     }
 
-    private static void fillStruct(PriceUpdateStruct msg) {
-        InstrumentStruct instrument = msg.getInstrument();
-        instrument.getMnemonic().setString("BMW");
-        instrument.setInstrumentId(13);
-        msg.setPrc(99.0);
-        msg.setQty(100);
+    public static void initStructFactory() {
+        FSTStructFactory.getInstance().registerClz(InstrumentStruct.class,PriceUpdateStruct.class);
     }
 
     public static void main(String s[]) {
@@ -103,26 +111,20 @@ public class Protocol {
 
         template = onHeapAlloc.newStruct(template); // speed up instantiation by moving template also off heap
 
-        PriceUpdateStruct newStruct = onHeapAlloc.newStruct(template);
-        int sizeOf = newStruct.getByteSize();
 
         // demonstrates that theoretical send rate is >20 millions messages per second on
         // an I7 box
         byte networkBuffer[] = new byte[template.getByteSize()];
-
+        PriceUpdateStruct msg = onHeapAlloc.newStruct(template);
+        int sizeOf = msg.getByteSize();
         while ( true ) {
-            long tim = System.currentTimeMillis();
-            for ( int i = 0; i < 20_000_000; i++ ) {
-                fillStruct(newStruct);
-                // emulate network sending by copying to buffer
-                newStruct.getBase().getArr(newStruct.getOffset(),networkBuffer,0,sizeOf);
-            }
-            System.out.println("tim: "+(System.currentTimeMillis()-tim));
+            do20Millions(networkBuffer, msg, sizeOf);
         }
 
-//        System.out.println(newStruct);
-//        System.out.println("size:" + newStruct.getByteSize());
+//        System.out.println(msg);
+//        System.out.println("size:" + msg.getByteSize());
 
     }
+
 
 }

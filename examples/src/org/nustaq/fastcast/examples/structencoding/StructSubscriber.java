@@ -29,6 +29,8 @@ public class StructSubscriber {
                 public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
                     msg.baseOn(b, (int) off);
                     rateMeasure.count();
+                    // instanceof'ing in case of various messages
+                    // Class msgStruct = msg.getPointedClass(); otherStructClass = msg.detachTo(otherStructClass);
                 }
 
                 @Override
