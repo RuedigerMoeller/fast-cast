@@ -3,10 +3,9 @@ package basic;
 import org.nustaq.fastcast.api.FCPublisher;
 import org.nustaq.fastcast.api.FCSubscriber;
 import org.nustaq.fastcast.api.FastCast;
-import org.nustaq.fastcast.convenience.ObjectPublisher;
-import org.nustaq.fastcast.convenience.ObjectSubscriber;
+import org.nustaq.fastcast.api.util.ObjectPublisher;
+import org.nustaq.fastcast.api.util.ObjectSubscriber;
 import org.nustaq.offheap.bytez.Bytez;
-import org.nustaq.offheap.bytez.bytesource.AsciiStringByteSource;
 
 import java.io.Serializable;
 import java.util.Date;

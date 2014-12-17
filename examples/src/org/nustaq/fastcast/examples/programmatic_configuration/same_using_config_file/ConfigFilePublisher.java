@@ -2,8 +2,7 @@ package org.nustaq.fastcast.examples.programmatic_configuration.same_using_confi
 
 import org.nustaq.fastcast.api.FCPublisher;
 import org.nustaq.fastcast.api.FastCast;
-import org.nustaq.fastcast.config.PublisherConf;
-import org.nustaq.fastcast.convenience.ObjectPublisher;
+import org.nustaq.fastcast.api.util.ObjectPublisher;
 import org.nustaq.fastcast.util.RateMeasure;
 
 /**

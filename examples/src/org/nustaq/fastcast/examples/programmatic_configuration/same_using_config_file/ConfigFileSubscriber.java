@@ -1,9 +1,7 @@
 package org.nustaq.fastcast.examples.programmatic_configuration.same_using_config_file;
 
 import org.nustaq.fastcast.api.FastCast;
-import org.nustaq.fastcast.config.SubscriberConf;
-import org.nustaq.fastcast.convenience.ObjectSubscriber;
-import org.nustaq.fastcast.examples.programmatic_configuration.ProgrammaticConfiguredPublisher;
+import org.nustaq.fastcast.api.util.ObjectSubscriber;
 
 /**
  * Created by ruedi on 15.12.14.

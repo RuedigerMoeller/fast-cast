@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nustaq.fastcast.convenience;
+package org.nustaq.fastcast.api.util;
 
 import org.nustaq.offheap.bytez.Bytez;
 import org.nustaq.serialization.simpleapi.DefaultCoder;

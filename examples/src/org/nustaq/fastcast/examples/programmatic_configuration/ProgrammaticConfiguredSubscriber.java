@@ -2,7 +2,7 @@ package org.nustaq.fastcast.examples.programmatic_configuration;
 
 import org.nustaq.fastcast.api.FastCast;
 import org.nustaq.fastcast.config.SubscriberConf;
-import org.nustaq.fastcast.convenience.ObjectSubscriber;
+import org.nustaq.fastcast.api.util.ObjectSubscriber;
 
 /**
  * Created by ruedi on 14.12.14.
