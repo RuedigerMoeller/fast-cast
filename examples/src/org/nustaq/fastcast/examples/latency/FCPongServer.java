@@ -1,4 +1,4 @@
-package bench.latency;
+package org.nustaq.fastcast.examples.latency;
 
 /**
  * Created by ruedi on 07.12.14.

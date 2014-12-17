@@ -1,4 +1,4 @@
-package bench.latency;
+package org.nustaq.fastcast.examples.latency;
 
 import org.HdrHistogram.Histogram;
 import org.nustaq.fastcast.api.FCPublisher;
@@ -45,7 +45,7 @@ public class FCPing {
         try {
             FastCast fc = FastCast.getFastCast();
             fc.setNodeId(nodeId);
-            fc.loadConfig("./src/test/java/bench/"+config);
+            fc.loadConfig("./examples/src/org/nustaq/fastcast/examples/latency/"+config);
 //            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\bench\\"+config);
             return fc;
         } catch (Exception e) {

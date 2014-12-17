@@ -26,9 +26,8 @@ public class StructPublisher {
 
         FCPublisher pub = FastCast.getFastCast().onTransport("default").publish(
                 new PublisherConf(1)            // unique-per-transport topic id
-                    .numPacketHistory(33_000)   // how long packets are kept for retransmission requests
-                            // beware: memory usage (kept offheap) = dgramsize * history = 2500*40000 = 100MB (GC safe for 8 seconds)
-                    .pps(15_000)                  // packets per second rate limit. So max traffic for topic = 5000*2500 = 12.5 MB/second
+                    .numPacketHistory(33_000)   // how many packets are kept for retransmission requests
+                    .pps(15_000)                // packets per second rate limit.
         );
 
         Protocol.initStructFactory();
