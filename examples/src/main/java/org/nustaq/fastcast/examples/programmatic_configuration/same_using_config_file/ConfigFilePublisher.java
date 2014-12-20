@@ -10,7 +10,7 @@ import org.nustaq.fastcast.util.RateMeasure;
  */
 public class ConfigFilePublisher {
 
-    public static final String CFG_FILE = "examples/src/org/nustaq/fastcast/examples/programmatic_configuration/same_using_config_file/config.kson";
+    public static final String CFG_FILE = "./src/main/java/org/nustaq/fastcast/examples/programmatic_configuration/same_using_config_file/config.kson";
 
     public static void main( String arg[] ) throws Exception {
         FastCast.getFastCast().setNodeId("CPUB"); // max 5 chars !

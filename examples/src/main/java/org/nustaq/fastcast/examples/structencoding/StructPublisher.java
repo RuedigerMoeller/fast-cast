@@ -27,7 +27,7 @@ public class StructPublisher {
         FCPublisher pub = FastCast.getFastCast().onTransport("default").publish(
                 new PublisherConf(1)            // unique-per-transport topic id
                     .numPacketHistory(33_000)   // how many packets are kept for retransmission requests
-                    .pps(15_000)                // packets per second rate limit.
+                    .pps(10_000)                // packets per second rate limit.
         );
 
         Protocol.initStructFactory();

@@ -22,7 +22,7 @@ public class FCPing {
 
     static boolean PING_BACK_ON_SAME_TOPIC = false; // set to false for optimal latency, to true to save one core with still good latency
     public static final int PINGMSGLEN  = 256;
-    public static final int NUM_MSG     = 10_000_000;
+    public static final int NUM_MSG     = 100_000;//_000;
 
     public static class PingRequest extends FSTStruct {
         protected long nanoSendTime;
@@ -45,7 +45,7 @@ public class FCPing {
         try {
             FastCast fc = FastCast.getFastCast();
             fc.setNodeId(nodeId);
-            fc.loadConfig("./examples/src/org/nustaq/fastcast/examples/latency/"+config);
+            fc.loadConfig("./src/main/java/org/nustaq/fastcast/examples/latency/"+config);
 //            fc.loadConfig("C:\\work\\GitHub\\fast-cast\\src\\test\\java\\bench\\"+config);
             return fc;
         } catch (Exception e) {
@@ -66,10 +66,10 @@ public class FCPing {
             public void messageReceived(String sender, long sequence, Bytez b, long off, int len) {
                 // decode bounced back ping request
                 PingRequest received = FSTStructFactory.getInstance().getStructPointer(b, off).cast();
-                if ( msgCount > 100_000) // filter out pressure of printing histogram
+                if ( msgCount > 10_000) // filter out pressure of printing histogram
                     histo.recordValue(System.nanoTime()-received.getNanoSendTime());
                 msgCount++;
-                if ( msgCount > 1_100_000 ) {
+                if ( msgCount > NUM_MSG+10_000 ) {
                     histo.outputPercentileDistribution(System.out, 1000.0);
                     histo.reset();
                     msgCount = 0;
