@@ -9,10 +9,9 @@ High performance low latency topic/stream based reliable UDP messaging ("event-b
 **3.0 features**:
 - Throughput up to **7 million 70 bytes msg/second** (on localhost device, Intel i7 or newer XEONS). Similar rates can be achieved using 10GBit high end networks (see examples, structencoding).
 - **reliable low latency with extraordinary few outliers**. E.g. XEON 3Ghz, CentOS 6.5 RT Linux: RTT latency mean:12 micros, 99.9% - 24 micros, 99.99% - 111 micros, 99.9999% - 126 micros. Testscenario: Ping-Pong RTT latency.
-- transparent fragmentation and defragmentation of **large messages** (should not exceed 50-70% of publisher  history buffer and subscribers's receive buffer).
+- transparent fragmentation and defragmentation of **large messages** (should not exceed 50% of publisher  history buffer and not exceed subscribers's receive buffer).
 - **add hoc unicast** (publisher can address all subscribers or a single subscriber on a per message level). Eases request/response schemes. 
 - supports **fully reliable** as well as unreliable streams (unordered-reliable streams coming soon)
-- API exposes raw **low-level zero copy** interface as well as **higher level** fast-serialized sendObject/receiveObject utilities
 - supports both **blocking IO** (saves CPU) and **lock free poll** mode (low latency, CPU/cores burned)
 - all buffers are kept **off heap** to avoid GC pressure.
 - **allocation free** in the main path
@@ -25,7 +24,7 @@ initial release is available on maven.
 <dependency>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>3.02</version>
+    <version>3.03</version>
 </dependency>
 ```
 
