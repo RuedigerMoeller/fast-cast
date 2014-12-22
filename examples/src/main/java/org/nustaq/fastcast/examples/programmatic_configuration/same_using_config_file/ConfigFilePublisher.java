@@ -5,16 +5,21 @@ import org.nustaq.fastcast.api.FastCast;
 import org.nustaq.fastcast.api.util.ObjectPublisher;
 import org.nustaq.fastcast.util.RateMeasure;
 
+import java.io.File;
+
 /**
  * Created by ruedi on 15.12.14.
  */
 public class ConfigFilePublisher {
 
-    public static final String CFG_FILE = "./src/main/java/org/nustaq/fastcast/examples/programmatic_configuration/same_using_config_file/config.kson";
+    public static String CFG_FILE = "./src/main/java/org/nustaq/fastcast/examples/programmatic_configuration/same_using_config_file/config.kson";
 
     public static void main( String arg[] ) throws Exception {
         FastCast.getFastCast().setNodeId("CPUB"); // max 5 chars !
         // note this configuration is far below possible limits regarding throughput and rate
+        if ( ! new File(CFG_FILE).exists() ) {
+            CFG_FILE = "./examples/"+CFG_FILE;
+        }
         FastCast fc = FastCast.getFastCast().loadConfig(CFG_FILE);
 
         FCPublisher pub = FastCast.getFastCast().onTransport("default").publish("oneAndOnlyTopic");
