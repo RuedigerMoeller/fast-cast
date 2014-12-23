@@ -48,21 +48,22 @@ With increasingily defensive configuration defaults, getting multicast to run on
 * rp_filter of linux kernel (reverse filtering fails because multicast packet can have weird sender address). E.g. RH7
 * firewall defaults
 * disabled at network adapter level
-* traffic shaping switches defaulting to allow limited bandwidth for multicast traffic
+* traffic shaping switches defaults: limited bandwidth for multicast traffic
 * complex network setups with slow network segments attached might backpressure multicast traffic accross the whole network. E.g. an attached 100MBit or wireless lan segment might cause multicast traffic in the 1GBit lan to slow down to wireless network speed.
+* IGMP behaviour, buggy IGMP implementations (first message not correctly routed, ..).
 
 ethtool, tcpdump, and netstat are your diagnostic helpers ..
 
 **Reliability Algorithm used by fast-cast**
 
-Fastcast employs pure NAK. A ublisher keeps a history of packets sent. A sender keeps a sequence for packets sent. A subscriber keeps a sequence per publisher (so multiple publishers on same topic/adddr:port are supported) and a receive buffer per publisher.
-Once the publisher detects a gap it waits a short time if the gap fills (e.g. just reordered packet). If it does not get filled it sends a retransmission broadcast (targeted to the sender id). The sender then resends the missing packet(s). Once the receiver can close the gap, receiving can be continued. Packets received while retransmission request is in flight, are buffered, so in case the missing packet arrives, buffered packets usually allow for further processing without new gaps.
+Fastcast employs pure NAK. A *publisher* keeps a sequence and history for packets sent. A *subscriber* keeps a last-received-sequence (so multiple publishers on same topic/adddr:port are supported) and a *receive buffer* per publisher.
+Once the *subscriber* detects a gap it waits a short time if the gap fills (e.g. just reordered packet). If it does not get filled it sends a retransmission broadcast (targeted to the sender id). The *publisher* then resends the missing packet(s). Once the *subscriber* can close the gap, processing can be continued with buffered packets. To clearify: Packets received while retransmission request is in flight, are buffered in the *receive buffer*, so in case the missing packet arrives, buffered packets usually allow for further processing without new gaps.
 So two buffer sizes are important:
-- history buffer (num_datagrams) of publisher
-- receive buffer (num_datagrams) of subscriber
-The higher the throughput and the higher you expect processes to stall (e.g. GC) the larger the publisher history buffer must be sized.
-The higher the thorughput and the higher the latency of your network, the higher the receive buffer must be sized (receive buffer should be able to buffer number of packets sent while a retransmission request/response is in flight). As retransmission requests implicitely lower the send rate of publisher, a slightly too low setting of receive buffers maight hamper throughput in case packet loss occurs, its not that critical for overall stability.
-Once a publisher overruns a subscriber such that the subscriber wants a retransmission on packet which is already out of the senders history ring buffer, the subscriber gets a signal (see subscriber interfac) that it cannot recover the requested messages. Message loss has happened.
+- history buffer (num_datagrams) of *publisher*
+- receive buffer (num_datagrams) of *subscriber*
+The higher the throughput and the longer you expect processes to stall (e.g. GC) the larger the publisher history buffer must be sized.
+The higher the throughput and the higher the latency of your network, the higher the receive buffer must be sized (receive buffer should be able to buffer number of packets sent while a retransmission request/response is in flight). As retransmission requests implicitely lower the send rate of a publisher, a too low setting of receive buffers might hamper throughput in case packet loss occurs, but its not that critical for overall stability.
+Once a publisher overruns a subscriber such that the subscriber wants a retransmission on an old packet which is already out of the senders history ring buffer, the subscriber gets a signal (see FCSubscriber interface) informing it cannot recover the requested messages. Message loss has happened. A Subscriber might rejoin (=reinit) or exit then.
 
 **Flow control**
 
