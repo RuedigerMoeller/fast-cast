@@ -97,4 +97,4 @@ A 'Transport' is a multicast address+port. A transport can be divided into up to
 
 **NodeId, Unicast**
 
-Each node is assigned a unique id. If null is provided as a receiver in the offer method, all subscribers will receive the message sent. If a nodeid is provided, only the specific node will receive the packet. Note that if one alternates quickly in between receiverIds or 'null' then 'nodeId', batching might suffer, as the receiver id is set on packet level, not message level.
+Each node is assigned a unique id. If null is provided as a receiver in the offer method, all subscribers will receive the message sent. If a nodeid is provided, only the specific node will receive the packet. Note that if one alternates quickly in between receiverIds or 'null', batching might suffer, as the receiver id is set+filtered on packet level, not message level.
