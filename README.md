@@ -41,7 +41,7 @@ Short Documentation
 
 **Multicast**
 
-Fastcast uses ip4 multicast. This means a publisher sends packet once, which is then received by all subscribers (scales). This can be advantageous e.g. for high avaiability or broadcasting of common state changes across a cluster of processes. Multicast networking scales better compared to connection based tcp clusters, as messages don't have to be sent twice on several connections (e.g. for HA, broadcast).
+Fastcast uses ip4 multicast. This means a publisher sends a packet once, which is then received by all subscribers. This can be advantageous e.g. for high avaiability or broadcasting of common state changes across a cluster of processes. Multicast networking scales better compared to connection based tcp clusters, as messages don't have to be sent twice on several connections (e.g. for HA, broadcast).
 
 Multicast addresses start at 224.0.0.0, however its recommended to use addresses > 225.0.0.0. Do not on rely on address, its more important which port is chosen (avoid "crosstalking").
 With increasingily defensive configuration defaults, getting multicast to run on a network can be pretty time consuming. The following things are usually problematic:
