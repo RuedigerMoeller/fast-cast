@@ -71,11 +71,11 @@ Fast cast is configured by plain limit rating (number of "packets" [datagrams] p
 
 **Batching**
 
-The message send call ("offer") has flag determining wether the data should be sent immediately (flush) or if batching should be applied. If  'flush' is choosen and no further message is offered, an automatic flush will be triggered after (setting) some milliseconds. If 'flush' is set to true and the publisher is near its packet rate limit, batching will be applied. This way one can achieve that low rate traffic is sent with low latency, however once traffic bursts occur, batching will avoid backpressure onto publisher.
+The message send call ("offer") has flag determining wether the data should be sent immediately (flush) or if batching should be applied. If  'no flush' is choosen and no further message is offered, an automatic flush will be triggered after (setting) some milliseconds. If 'flush' is set to true and the publisher is near its packet rate limit, batching will be applied. This way one can achieve that low rate traffic is sent with low latency, however once traffic bursts occur, batching will avoid backpressure onto publishing thread as long bursts are moderate.
 
 **Packet size**
 
-With packet actually a fast-cast 'datagram' size is meant. For lowest latency choose a packet size slightly lower than netork MTU. For high throughput choose larger packet sizes (up to 65k). Downside of large packet sizes is, that a packet gap has worse effects (because e.g. 64k need to be retransmitted instead of just 1k). As history and receive buffers reserve N*full packet size number of bytes, large packets also increase required memory to hold buffers. Its good practice to choose multiples of MTU for packet sizes, though its not that significant. Usual values are 1.5k, 3k, 8k, 16k . 64k are also a possible setting (but large buffers).
+With 'packet' actually a fast-cast level 'datagram' is meant. For lowest latency choose a packet size slightly lower than netork MTU. For high throughput choose larger packet sizes (up to 65k). Downside of large packet sizes is, that a packet gap has worse effects (because e.g. 64k need to be retransmitted instead of just 1k). As history and receive buffers reserve N*full packet size number of bytes, large packets also increase required memory to hold buffers. Its good practice to choose multiples of MTU for packet sizes, though its not that significant. Usual values are 1.5k, 3k, 8k, 16k . 64k are also a possible setting (but large buffers).
 
 **large messages**
 
