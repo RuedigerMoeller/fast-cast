@@ -56,7 +56,7 @@ ethtool, tcpdump, and netstat are your diagnostic helpers ..
 
 **Reliability Algorithm used by fast-cast**
 
-Fastcast employs pure NAK. A *publisher* keeps a sequence and history for packets sent. A *subscriber* keeps a last-received-sequence (so multiple publishers on same topic/adddr:port are supported) and a *receive buffer* per publisher.
+Fastcast employs pure NAK. A *publisher* keeps a sequence and history for packets sent. A *subscriber* keeps a last-received-sequence and a *receive buffer* per publisher (so multiple publishers on same topic/adddr:port are supported).
 Once the *subscriber* detects a gap it waits a short time if the gap fills (e.g. just reordered packet). If it does not get filled it sends a retransmission broadcast (targeted to the sender id). The *publisher* then resends the missing packet(s). Once the *subscriber* can close the gap, processing can be continued with buffered packets. To clearify: Packets received while retransmission request is in flight, are buffered in the *receive buffer*, so in case the missing packet arrives, buffered packets usually allow for further processing without new gaps.
 So two buffer sizes are important:
 - history buffer (num_datagrams) of *publisher*
