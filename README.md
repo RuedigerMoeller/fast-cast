@@ -71,7 +71,7 @@ Fast cast is configured by plain limit rating (number of "packets" [datagrams] p
 
 **Batching**
 
-The message send call ("offer") has flag determining wether the data should be sent immediately (flush) or if batching should be applied. If  'no flush' is choosen and no further message is offered, an automatic flush will be triggered after (setting) some milliseconds. If 'flush' is set to true and the publisher is near its packet rate limit, batching will be applied. This way one can achieve that low rate traffic is sent with low latency, however once traffic bursts occur, batching will avoid backpressure onto publishing thread as long bursts are moderate.
+The message send call ("offer") has flag determining wether the data should be sent immediately (flush) or if batching should be applied. If  'no flush' is choosen and no further message is offered, an automatic flush will be triggered after (setting) some milliseconds. If 'flush' is set to true and the publisher is near its packet rate limit, batching will be applied regardless of 'flush' flag. This way one can achieve that low rate traffic is sent with low latency, however once traffic bursts occur, batching will avoid backpressure onto publishing thread as long bursts are moderate.
 
 **Packet size**
 
