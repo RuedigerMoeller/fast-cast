@@ -116,7 +116,7 @@ for ultimate low latency:
 Additionally be fast enough to get proccessing done inside receiver thread or use a fast+allocation free multithreading framework like disruptor for message processing. JDK's executor framework is not that well suited.
 * choose a small datagram size (size of MTU)
 * use busy spin for receiver thread (configurable)
-* use busy spin for sender thread
+* use busy spin for sender thread (that's your app)
 * pin threads to cores
 * always set 'flush' flag to true when calling offer
 
