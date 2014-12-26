@@ -36,7 +36,8 @@ ____ ____ ____ ___ ____ ____ ____ ___
 |--- |--| ====  |  |___ |--| ====  |  
 > v2</pre>
 
-<p>High performance topic based reliable brokerless UDP messaging ("event-bus"). Up to <strong>12 million</strong> remote calls per <strong>second</strong>. Buffers required to implement NAK protocol are kept offheap, so there is little impact on GC.
+<p>High performance topic based reliable brokerless UDP messaging ("event-bus"). Up to <strong>7 million</strong> 70 byte messages per <strong>second</strong>. Buffers required to implement NAK protocol are kept offheap, so there is little impact on GC. 
+Reliable, bounded Low Latency if configured according.
 </p>
 
 <p>See <a href="https://github.com/RuedigerMoeller/fast-cast">https://github.com/RuedigerMoeller/fast-cast</a></p>
