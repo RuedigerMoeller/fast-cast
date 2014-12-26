@@ -117,6 +117,7 @@ Additionally be fast enough to get proccessing done inside receiver thread or us
 * choose a small datagram size (size of MTU)
 * use busy spin for receiver thread (configurable)
 * use busy spin for sender thread
+* pin threads to cores
 * always set 'flush' flag to true when calling offer
 
 Note that the biggest challenge is to get your OS configured for low latency. E.g. stock CentOS 7 has like 400 micros RTT even on local host, stock ubuntu 14.04 like 20 microseconds. A well configured machine can have like 10-11 micros RTT latency on localhost, high end network hardware can have even better RTT times in case.
