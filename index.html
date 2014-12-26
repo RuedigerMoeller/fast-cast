@@ -36,38 +36,12 @@ ____ ____ ____ ___ ____ ____ ____ ___
 |--- |--| ====  |  |___ |--| ====  |  
 > v2</pre>
 
-<p>High performance topic based reliable brokerless UDP messaging ("event-bus") backed by 1:N remote-method metaphor. Up to <strong>12 million</strong> remote calls per <strong>second</strong>. Buffers required to implement NAK protocol are kept offheap, so there is little impact on GC.
-(just moved from gcode, some docs still missing)</p>
+<p>High performance topic based reliable brokerless UDP messaging ("event-bus"). Up to <strong>12 million</strong> remote calls per <strong>second</strong>. Buffers required to implement NAK protocol are kept offheap, so there is little impact on GC.
+</p>
 
-<h3>download</h3>
-<p>non-maven release (fat jar):</p>
+<p>See <a href="https://github.com/RuedigerMoeller/fast-cast">https://github.com/RuedigerMoeller/fast-cast</a></p>
 
-<p><a href="https://github.com/RuedigerMoeller/fast-cast/releases">https://github.com/RuedigerMoeller/fast-cast/releases</a></p>
-
-<h3>maven</h3>
-
-<div class="highlight highlight-xml"><pre><span class="nt">&lt;dependency&gt;</span>
-    <span class="nt">&lt;groupId&gt;</span>de.ruedigermoeller<span class="nt">&lt;/groupId&gt;</span>
-    <span class="nt">&lt;artifactId&gt;</span>fast-cast<span class="nt">&lt;/artifactId&gt;</span>
-    <span class="nt">&lt;version&gt;</span>LATEST<span class="nt">&lt;/version&gt;</span>
-<span class="nt">&lt;/dependency&gt;</span>
-</pre></div>
-
-<h3>examples</h3>
-
-<p><a href="https://github.com/RuedigerMoeller/fastcast-sample">
-<strong>KeyValue Server</strong></a>
-multicasting all changes done on the hashmap (no degrade when scaling as multicast is used).</p>
-
-<p><a href="https://github.com/RuedigerMoeller/fast-cast/tree/master/src/test/java/de/ruedigermoeller/fastcast/samples/topicservice">
-<strong>Simple Sender/Receiver</strong>
-</a></p>
-
-<h3>documentation</h3>
-
-<p><a href="https://github.com/RuedigerMoeller/fast-cast/wiki/Documentation">
-https://github.com/RuedigerMoeller/fast-cast/wiki/Documentation
-</a></p>
+</p>
       </section>
     </div>
 
