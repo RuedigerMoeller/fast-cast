@@ -99,7 +99,7 @@ A 'Transport' is a multicast address+port. A transport can be divided into up to
 
 Each node is assigned a unique id. If null is provided as a receiver in the offer method, all subscribers will receive the message sent. If a nodeid is provided, only the specific node will receive the packet. Note that if one alternates quickly in between receiverIds or 'null', batching might suffer, as the receiver id is set+filtered on packet level, not message level.
 
-** Multithreading **
+**Multithreading**
 
 Fast-cast has one receiver thread per 'transport'. The receive callback called on the subscriber is called directly in this thread, so its very important to either process extremely quick or delegate processing to another thread (see org...fastcast.api.util for examples).
 Note that the byte's of a message given in subscriber callback are valid only until the calback finishes. If message processing should be done in a secondary thread, the bytes need to copied. This way its possible to filter out messages without the need to allocate and copy byte arrays.
@@ -109,7 +109,7 @@ If the offer on the FCPublisher is called to send messages, the sending happens 
 
 The most common error is to block the receiver thread by decoding and processing the message *and* send to other topics inside the receiver thread. Once send is blocked, the receiver threads get blocked and packet loss + retransmission occurs. So take care when doing cascaded network calls (B receives from A => sends to C in message receiver thread)
 
-** Low Latency **
+**Low Latency**
 
 for ultimate low latency:
 * use allocation free encoding/decoding (e.g. structs as shown in https://github.com/RuedigerMoeller/fast-cast/tree/3.0/examples/src/main/java/org/nustaq/fastcast/examples/multiplestructs).
