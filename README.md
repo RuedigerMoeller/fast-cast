@@ -102,8 +102,8 @@ Each node is assigned a unique id. If null is provided as a receiver in the offe
 **Multithreading**
 
 Fast-cast has one receiver thread per 'transport'. The receive callback called on the subscriber is called directly in this thread, so its very important to either process extremely quick or delegate processing to another thread (see org...fastcast.api.util for examples).
-Note that the byte's of a message given in subscriber callback are valid only until the calback finishes. If message processing should be done in a secondary thread, the bytes need to copied. This way its possible to filter out messages without the need to allocate and copy byte arrays.
-Additionally there is a housekeeping thread responsibel for heartbeating and 'auto-flushing'.
+Note that the byte's of a message given in subscriber callback are valid only until the callback finishes. If message processing should be done in a secondary thread, the bytes need to get copied. This way its possible to filter out messages without the need to allocate and copy byte arrays.
+Additionally there is a housekeeping thread responsible for heartbeating and 'auto-flushing'.
 
 If the offer on the FCPublisher is called to send messages, the sending happens directly using the calling thread. Though offer is threadsafe, its not recommended to send at high rate from different threads (no protection against contention).
 
