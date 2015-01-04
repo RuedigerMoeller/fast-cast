@@ -85,8 +85,7 @@ Expect serious throughput hiccups with very large messages (>40MB and higher), e
 **configuration recommendation**
 
 start with low packet rate and moderate packet size (e.g. 8k). History buffer should cover at least 3-5 seconds (java JIT hiccups on newly joining processes, GC). E.g. packet send rate = 5000, 8k buffers => history for 5 seconds = 5*5000 = 25000 = (multiplied with packet size) 200MB. Receivebuffer ~1-2 seconds of traffic = 10_000 packets.
-
-**Ensure subscribers do not block the receiving thread.**
+**Ensure subscribers do not block the receiving thread !!!!!!!**  (**!!!!**)
 
 **API**
 
