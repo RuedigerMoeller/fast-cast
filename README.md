@@ -4,7 +4,7 @@ fast-cast
 
 High performance low latency topic/stream based reliable UDP messaging ("event-bus").
 
-Note: 2.x Old remote method layer has been abandonned (will be covered by future konktraktor releases)
+Note: 2.x Old remote method layer has been abandonned (will be covered by future kontraktor releases)
 
 **3.0 features**:
 - Throughput up to **7 million 70 bytes msg/second** (Intel i7 or newer XEONS, 10Gb network or localhost).
