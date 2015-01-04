@@ -17,7 +17,7 @@ Note: 2.x Old remote method layer has been abandonned (will be covered by future
 - **allocation free** in the main path
 - requires **JDK 1.7** or higher
 
-check out examples folder and tests on how to use fc. Documentation pending .. this is beta software
+check out examples folder and tests on how to use fc. This is beta software
 
 initial release is available on maven.
 ```
