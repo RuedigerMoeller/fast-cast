@@ -90,7 +90,7 @@ start with low packet rate and moderate packet size (e.g. 8k). History buffer sh
 
 **API**
 
-see API package + examples project directory.
+see org.nustaq.fastcast.api (.util) package + examples project directory.
 
 **Terminology**
 
