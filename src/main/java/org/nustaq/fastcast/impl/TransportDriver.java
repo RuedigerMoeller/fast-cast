@@ -217,7 +217,7 @@ public class TransportDriver {
                         break;
                     }
                 }
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 FCLog.log(e);
             }
         }
