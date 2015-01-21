@@ -345,7 +345,7 @@ public class TransportDriver {
         for (int i = 0; i < timedOutSenders.size(); i++) {
             String s = timedOutSenders.get(i);
             ReceiveBufferDispatcher receiveBufferDispatcher = receiver[topic];
-            receiver[topic] = null;
+//            receiver[topic] = null; wrong: disallows reconnect
             FCLog.get().info("stopped receiving heartbeats from "+s);
             if ( receiveBufferDispatcher != null ) {
                 receiveBufferDispatcher.cleanup(s);

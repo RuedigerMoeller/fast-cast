@@ -72,7 +72,7 @@ public class PacketReceiveBuffer {
 
     private boolean isUnordered = false;
     private boolean isUnreliable = false;
-    private boolean terminated = false;
+    private volatile boolean terminated = false;
     int dGramSize;
 
     RetransPacket retransTemplate;
@@ -150,6 +150,8 @@ public class PacketReceiveBuffer {
 
 
     public RetransPacket receivePacket(DataPacket packet) {
+        if (terminated)
+            return null;
         updateHeartBeat(System.currentTimeMillis());
         if ( maxOrderedSeq == 0 ) {
             if ( startTime == 0 ) {
