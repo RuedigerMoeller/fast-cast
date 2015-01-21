@@ -15,8 +15,9 @@ ClusterConf {
             socketReceiveBufferSize: 4_000_000
             socketSendBufferSize:    2_000_000
             interfaceAddr:  127.0.0.1
-            multicastAddr:  229.9.9.10
+            multicastAddr:  239.9.9.9
             port:      46789
+            ttl: 1
 
             # default is blocking IO, don't do latency tests with this configuration
             # uncomment below for spin looping
@@ -34,7 +35,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 30_000
-                pps: 5_000
+                pps: 10000
             }
             sub: {
                 receiveBufferPackets: 10_000
