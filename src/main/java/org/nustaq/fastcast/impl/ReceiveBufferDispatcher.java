@@ -27,6 +27,7 @@ import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.offheap.structs.structtypes.StructString;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -115,6 +116,7 @@ public class ReceiveBufferDispatcher {
         for (Iterator<PacketReceiveBuffer> iterator = bufferMap.values().iterator(); iterator.hasNext(); ) {
             PacketReceiveBuffer next = iterator.next();
             if ( now - next.getLastHBMillis() > timeout ) {
+                System.out.println("timeout "+new Date(now)+" last:"+new Date(next.getLastHBMillis()));
                 res.add(next.getReceivesFrom());
             }
         }
