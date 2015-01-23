@@ -46,11 +46,11 @@ public class RetransPacket extends Packet {
         null,null,null,null,null,
         null,null,null,null,null,
 
-        null,null,null,null,null,
-        null,null,null,null,null,
-
-        null,null,null,null,null,
-        null,null,null,null,null,
+//        null,null,null,null,null,
+//        null,null,null,null,null,
+//
+//        null,null,null,null,null,
+//        null,null,null,null,null,
     };
 
     protected int retransIndex;

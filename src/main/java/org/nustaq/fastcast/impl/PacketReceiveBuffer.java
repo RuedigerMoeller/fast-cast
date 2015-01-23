@@ -107,6 +107,8 @@ public class PacketReceiveBuffer {
             FCLog.log("allocating read buffer for topic '"+topicEntry.getTopicId()+"' of "+(readBuffer.getByteSize()/1024)+" KByte");
         }
         retrans = packetAllocator.newStruct(retransTemplate);
+        if ( dGramSize < retrans.getByteSize()+10 )
+            throw new RuntimeException("datagram size must not be smaller than "+retrans.getByteSize()+10 );
 
         this.receivesFrom = receivesFrom;
         isUnordered = topicEntry.isUnordered();
