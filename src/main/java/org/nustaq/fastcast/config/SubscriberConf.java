@@ -58,7 +58,7 @@ public class SubscriberConf {
     // time until a sender is lost+deallocated if it stops sending heartbeats
     // on overload i had crashes from false overload induced timeouts and receive of packets after buffer dealloc
     // pls report once you observe crashes !
-    long senderHBTimeout = 30000;
+    long senderHBTimeout = 10000;
 
     ///////////////////////////////////////////////////////////////////////////////
     //

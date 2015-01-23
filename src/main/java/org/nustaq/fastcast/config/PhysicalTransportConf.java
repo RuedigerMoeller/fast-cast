@@ -53,11 +53,11 @@ public class PhysicalTransportConf {
     int ttl = 8;
     // receive and sendbuffer sizes. Try to get large ones ..
     int socketReceiveBufferSize = 8_000_000;
-    int socketSendBufferSize = 8_000_000;
+    int socketSendBufferSize = 1_000_000;
 
     // time until a msg sent with flush=false is automatically flushed out
     // (batching for throughput)
-    long autoFlushMS = 3;
+    long autoFlushMS = 1;
     // number of idle receveive loops until spinlock is stopped to free CPU ressources
     // zero => us blocking mode to avoid burning cpu
     int spinLoopMicros = 0;

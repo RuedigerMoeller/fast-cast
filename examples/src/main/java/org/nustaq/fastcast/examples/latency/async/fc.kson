@@ -1,0 +1,82 @@
+#
+# note: this file structure directly maps to the ClusterConf class structure defined in org/nustaq/fastcast/config
+#       check these classes for avaiable parameters and documenation
+#
+
+ClusterConf {
+
+    # hard limited configuration (only 12.5 MByte per second)
+
+    transports: {
+        {
+            name:      default
+
+            dgramsize: 1400
+            socketReceiveBufferSize: 8_000_000
+            socketSendBufferSize:    1_000_000
+
+            interfaceAddr:  lo
+
+            multicastAddr:  229.9.9.10
+            port:      46789
+            ttl: 1
+
+            # default is blocking IO, don't do latency tests with this configuration
+            # uncomment below for spin looping
+             spinLoopMicros: 10_000_000
+             idleParkMicros: 1000
+        }
+
+        {
+            name:      back
+
+            dgramsize: 1400
+            socketReceiveBufferSize: 8_000_000
+            socketSendBufferSize:    1_000_000
+
+            interfaceAddr:  lo
+            ttl: 1
+
+            multicastAddr:  229.10.10.11
+            port:      47789
+
+            # default is blocking IO, don't do latency tests with this configuration
+            # uncomment below for spin looping
+             spinLoopMicros: 10_000_000
+             idleParkMicros: 1000
+        }
+
+        # .. next transport goes here ..
+    }
+
+    topics: {
+        {
+            id: 1
+            name: stream
+
+            pub: {
+                numPacketHistory: 400_000
+                pps: 50_000
+            }
+            sub: {
+                receiveBufferPackets: 100_000
+                senderHBTimeout: 5000
+            }
+        }
+
+        {
+            id: 2
+            name: back
+
+            pub: {
+                numPacketHistory: 400_000
+                pps: 50_000
+            }
+            sub: {
+                receiveBufferPackets: 100_000
+                senderHBTimeout: 5000
+            }
+        }
+   }
+
+}
