@@ -400,7 +400,7 @@ public class PacketReceiveBuffer {
         }
         retransCount++;
         if ( retransCount > 10 ) { // FIXME: give up at some point ?
-            FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getSubscriberConf().getTopicId()+" retrans:"+retrans);
+            FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getSubscriberConf().getTopicId()+" retrans:"+toReturn);
         }
         firstGapDetected = maxDelayNextRetrans + now;
         return toReturn;
