@@ -22,6 +22,8 @@
  */
 package org.nustaq.fastcast.util;
 
+import java.util.Date;
+
 /**
  * Created with IntelliJ IDEA.
  * User: ruedi
@@ -71,7 +73,7 @@ public class RateMeasure {
      * @param lastRatePersecond
      */
     protected void statsUpdated(long lastRatePersecond) {
-        System.out.println("***** Stats for "+name+":   "+lastRatePersecond+"   per second *********");
+        System.out.println( new Date()+" ***** Stats for "+name+":   "+lastRatePersecond+"   per second *********");
     }
 
 

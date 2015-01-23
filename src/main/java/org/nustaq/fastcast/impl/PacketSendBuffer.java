@@ -367,7 +367,7 @@ public class PacketSendBuffer implements FCPublisher {
         long maxTo = 0;
         for (int i = 0; i < curRetrans.size(); i++) {
             RetransPacket retransPacket = curRetrans.get(i);
-            if ( retransPacket != null ) {
+            if ( retransPacket != null && retransPacket.retransEntriesLen() > 0) {
                 maxTo = sendRetransmissionResponse(maxTo,retransPacket, now);
             }
         }
@@ -377,30 +377,34 @@ public class PacketSendBuffer implements FCPublisher {
     private long sendRetransmissionResponse(long maxTo, RetransPacket retransPacket, long now) throws IOException {
         for ( int ii = 0; ii < retransPacket.getRetransIndex(); ii++ ) {
             RetransEntry en = retransPacket.retransEntries(ii);
-            long fromSeqNo = getPacketAt(en.getFrom()).getSeqNo();
-            // note 'from' is oldest, so if from exists, all following exist also !
-            if (fromSeqNo != en.getFrom() ) // not in on heap history ?
-            {
-                fromSeqNo = en.getFrom();
-                if ( currentSequence-fromSeqNo > maxRetransAge ) {
-                    maxRetransAge = (int) (currentSequence-fromSeqNo);
-                    FCLog.get().warn("old retransmission from " + retransPacket.getSender() + " age " + maxRetransAge + " requested:" + fromSeqNo + " curseq " + currentSequence + " topic " + topicEntry.getTopicId());
-                }
-                dropMsg.setReceiver(retransPacket.getSender());
-                dropMsg.setSeqNo(en.getFrom());
-                FCLog.get().warn("Sending Drop " + dropMsg + " requestedSeq " + fromSeqNo + " on service " + getTopicEntry().getTopicId() + " currentSeq " + currentSequence + " age: " + (currentSequence - en.getFrom()));
-                packetCounter++;
-                trans.send(new DatagramPacket(dropMsg.getBase().toBytes((int) dropMsg.getOffset(), dropMsg.getByteSize()), 0,dropMsg.getByteSize()));
+            if ( en == null ) {
+                System.out.println("unexpected empty retrans entry");
             } else {
-                long from = en.getFrom();
-                long to = en.getTo();
-                if ( from >= maxTo || to > maxTo ) {
-                    from = Math.max(from,maxTo);
-//                    if ( RETRANSDEBUG ) {
-//                        FCLog.get().net( System.currentTimeMillis()+" retransmitting " + en);
-//                    }
-                    maxTo = Math.max(to,maxTo);
-                    sendPackets(from, to, true, now);
+                long fromSeqNo = getPacketAt(en.getFrom()).getSeqNo();
+                // note 'from' is oldest, so if from exists, all following exist also !
+                if (fromSeqNo != en.getFrom()) // not in on heap history ?
+                {
+                    fromSeqNo = en.getFrom();
+                    if (currentSequence - fromSeqNo > maxRetransAge) {
+                        maxRetransAge = (int) (currentSequence - fromSeqNo);
+                        FCLog.get().warn("old retransmission from " + retransPacket.getSender() + " age " + maxRetransAge + " requested:" + fromSeqNo + " curseq " + currentSequence + " topic " + topicEntry.getTopicId());
+                    }
+                    dropMsg.setReceiver(retransPacket.getSender());
+                    dropMsg.setSeqNo(en.getFrom());
+                    FCLog.get().warn("Sending Drop " + dropMsg + " requestedSeq " + fromSeqNo + " on service " + getTopicEntry().getTopicId() + " currentSeq " + currentSequence + " age: " + (currentSequence - en.getFrom()));
+                    packetCounter++;
+                    trans.send(new DatagramPacket(dropMsg.getBase().toBytes((int) dropMsg.getOffset(), dropMsg.getByteSize()), 0, dropMsg.getByteSize()));
+                } else {
+                    long from = en.getFrom();
+                    long to = en.getTo();
+                    if (from >= maxTo || to > maxTo) {
+                        from = Math.max(from, maxTo);
+                        //                    if ( RETRANSDEBUG ) {
+                        //                        FCLog.get().net( System.currentTimeMillis()+" retransmitting " + en);
+                        //                    }
+                        maxTo = Math.max(to, maxTo);
+                        sendPackets(from, to, true, now);
+                    }
                 }
             }
         }

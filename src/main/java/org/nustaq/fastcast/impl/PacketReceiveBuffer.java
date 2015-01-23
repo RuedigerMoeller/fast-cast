@@ -141,7 +141,7 @@ public class PacketReceiveBuffer {
 
     int retransCount = 0;
     long firstGapDetected = 0;
-    long maxDelayNextRetrans = 5;
+    long maxDelayNextRetrans = 15;
     long maxDelayRetrans = 0;
     boolean inInitialSync = true; // in case first packet is chained, stay in initial until complete msg is found
     Topic topicEntry;
