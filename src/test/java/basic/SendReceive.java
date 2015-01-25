@@ -201,14 +201,13 @@ public class SendReceive {
         FCPublisher sender = fc.onTransport("default").publish(fc.getPublisherConf("test"));
 
         toSend.getString().setString("H");
-        Sleeper sl = new Sleeper();
         RateMeasure measure = new RateMeasure("msg send "+toSend.getByteSize());
         final Bytez base = toSend.getBase();
         final int byteSize = toSend.getByteSize();
         final long offset = toSend.getOffset();
         long tim = System.currentTimeMillis();
         while( true ) {
-            sl.sleepMicros(50);
+            Sleeper.spinMicros(50);
             toSend.setTimeNanos(System.nanoTime());
             while ( ! sender.offer( null, base, offset, byteSize, true) ) {
 //                System.out.println("offer rejected !");
@@ -225,7 +224,7 @@ public class SendReceive {
         RateMeasure rm = new RateMeasure("ticks ps");
         Sleeper sl = new Sleeper();
         while( true ) {
-            sl.sleepMicros(80);
+            sl.spinMicros(80);
             rm.count();
         }
     }

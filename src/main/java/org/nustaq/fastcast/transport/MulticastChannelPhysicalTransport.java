@@ -106,7 +106,7 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
             }
         }
         receiveSocket = ceateSocket(blocking);
-        sendSocket = ceateSocket(false);
+        sendSocket = ceateSocket(true);
 
         MembershipKey key = receiveSocket.join(address, iface);
         FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.getPort()+" dgramsize:"+getConf().getDgramsize());

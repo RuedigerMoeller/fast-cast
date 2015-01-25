@@ -50,6 +50,7 @@ public class PublisherConf {
     long heartbeatInterval = 500;    // sent per topicId, ms. detects senderTimeoutMillis
 
     int pps = 10_000_000; // rate limit datagram per second
+    // unused, deprecated
     int ppsWindow = 1000;   // time window rate limit is checked. e.g. ppsWindow = 10 => 1 sec/10 = 100ms another: ppsWindow = 1000 => 1 ms
 
     public PublisherConf() {
@@ -59,6 +60,7 @@ public class PublisherConf {
         this.topicId = topicId;
     }
 
+    @Deprecated
     public int getPpsWindow() {
         return ppsWindow;
     }

@@ -61,8 +61,6 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class PacketSendBuffer implements FCPublisher {
 
-    // if more than this packets are sent in bulk (large messages), start checking packet rate and stall
-    public static long CHECK_PACKET_RATE_BULKSEND_THRESHOLD = 10;
 
     public static boolean RETRANSDEBUG = false;
     public static final String KEEP_SUBS_NODEID = "KEEPRECEIVER";
@@ -101,18 +99,11 @@ public class PacketSendBuffer implements FCPublisher {
     Topic topicEntry;
     boolean isUnordered;
 
-    // configured rate limits
-    int packetRateLimit;
-    int packetRateLimitWindowDivisor;
-    // computed =>
-    int pps;
-    int ppsWindowNanos;
+    BatchingController batchController;
 
-    int packetCounter;
-    long lastPpsRateCheckNanos;
     String currentReceiver = null;
     Bytez heartbeat;
-    boolean batchOnLimit = true;
+    boolean batchOnLimit = true; // if packet rate limit is reached, should batching be applied ?
 
     public PacketSendBuffer(PhysicalTransport trans, String nodeId, Topic entry ) {
         this.trans = trans;
@@ -161,7 +152,6 @@ public class PacketSendBuffer implements FCPublisher {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
-        packetRateLimitWindowDivisor = publisherConf.getPpsWindow();
         setPacketRateLimit(publisherConf.getPps());
         heartbeat = new HeapBytez(new byte[]{ControlPacket.HEARTBEAT});
         flush(); // enforce immediate heartbeat
@@ -392,7 +382,7 @@ public class PacketSendBuffer implements FCPublisher {
                     dropMsg.setReceiver(retransPacket.getSender());
                     dropMsg.setSeqNo(en.getFrom());
                     FCLog.get().warn("Sending Drop " + dropMsg + " requestedSeq " + fromSeqNo + " on service " + getTopicEntry().getTopicId() + " currentSeq " + currentSequence + " age: " + (currentSequence - en.getFrom()));
-                    packetCounter++;
+                    batchController.countPacket();
                     trans.send(new DatagramPacket(dropMsg.getBase().toBytes((int) dropMsg.getOffset(), dropMsg.getByteSize()), 0, dropMsg.getByteSize()));
                 } else {
                     long from = en.getFrom();
@@ -415,20 +405,10 @@ public class PacketSendBuffer implements FCPublisher {
     ThreadLocal<byte[]> msgBytes = new ThreadLocal<>();
     private void sendPackets(long sendStart, long sendEnd, boolean retrans, long now /*only set for retrans !*/) throws IOException {
         final long len = sendEnd - sendStart;
-        long nanosAtStart = 0;
-        if ( ! retrans && len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD ) {
-            nanosAtStart = System.nanoTime();
-        }
         for ( long i = sendStart; i < sendEnd; i++ ) {
             DataPacket dataPacket = getPacketAt(i);
             if ( retrans ) {
-//                if ( now - getLastRetransmitted(i) < MaxRetransRepeatIntervalMS ) {
-//                    suppressedRetransCount++;
-//                    continue;
-//                } else
-                {
-                    putRetransSent(i,now);
-                }
+                putRetransSent(i,now);
             } else {
                 if ( dataPacket.getSeqNo() != i )
                 {
@@ -449,20 +429,11 @@ public class PacketSendBuffer implements FCPublisher {
             }
             dataPacket.setRetrans(retrans);
             moveBuff(dataPacket);
-//            if (!retrans)
-            {
-                packetCounter++;
-//                System.out.println("send packet to '"+dataPacket.getReceiver()+"'");
-            }
+            batchController.countPacket();
             trans.send(tmpSend);
-            if ( len > CHECK_PACKET_RATE_BULKSEND_THRESHOLD && ! retrans ) { // for large messages
-                long maxAllowedPackets = 2 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
-                while ( i-sendStart > maxAllowedPackets)
-                {
-                    sendPendingRetrans();
-                    Thread.yield();
-                    maxAllowedPackets = 2 * pps * ((System.nanoTime() - nanosAtStart) / ppsWindowNanos);
-                }
+            while ( batchController.getAction() == BatchingController.Action.BLOCK )
+            {
+                // spin for large messages
             }
         }
         if ( ! retrans ) {
@@ -497,21 +468,21 @@ public class PacketSendBuffer implements FCPublisher {
         if ( receiverNodeId != KEEP_SUBS_NODEID ) {
             setReceiver(receiverNodeId);
         }
-        // verify rate is kept
-        if ( now-lastPpsRateCheckNanos > ppsWindowNanos ) {
-            packetCounter = Math.max(0,packetCounter-pps);
-            lastPpsRateCheckNanos = now;
-        }
         if (msg != null ) {
+            BatchingController.Action action = batchController.getAction();
             // deny if sent packets > 2 * allowed packet per pps window
-            if ( packetCounter > pps*2 )
+            if ( action == BatchingController.Action.BLOCK )
                 return false;
-            else if (packetCounter > pps) { // else enforce batching
+            else if ( action == BatchingController.Action.BATCH ) { // else enforce batching
                 if ( ! batchOnLimit )
                     return false;
                 doFlush = false;
-            }
+            } else if ( action == BatchingController.Action.NONE ) {
+                // proceed
+            } else
+                throw new RuntimeException("unexpected batchcontroller state");
         }
+
         boolean res;
         if ( msg == null ) {
             res = true;
@@ -523,6 +494,10 @@ public class PacketSendBuffer implements FCPublisher {
             lastMsgFlush = now;
             if ( ! offerNoLock(null, heartbeat,0,1,false) ) {
                 lastMsgFlush = prevFlush;
+            }
+            if ( ! res )
+            {
+                int debug = 0;
             }
             return res; // recursion already has triggered flsh in case
         }
@@ -542,6 +517,10 @@ public class PacketSendBuffer implements FCPublisher {
 //                res = false;
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        if ( ! res )
+        {
+            int debug = 0;
         }
         return res;
     }
@@ -616,14 +595,12 @@ public class PacketSendBuffer implements FCPublisher {
 
     @Override
     public void setPacketRateLimit(int limit) {
-        packetRateLimit = limit;
-        pps = packetRateLimit/packetRateLimitWindowDivisor;
-        ppsWindowNanos = (1000*1000*1000)/packetRateLimitWindowDivisor;
+        batchController = new BatchingController(limit);
     }
 
     @Override
     public int getPacketRateLimit() {
-        return packetRateLimit;
+        return batchController.getRatePerSecond();
     }
 
     @Override

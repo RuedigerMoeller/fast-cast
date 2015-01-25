@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>3.04</version>
+    <version>3.05</version>
     <description>a fast brokerless messaging library based on reliable UDP multicast</description>
 
     <url>https://code.google.com/p/fast-cast/</url>

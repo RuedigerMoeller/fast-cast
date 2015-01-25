@@ -33,11 +33,15 @@ import java.util.concurrent.TimeUnit;
  * Note that this test uses fast-serialization for en/decoding. Using fst-structs will probably yield significant
  * better results (especially reduce GC related outliers)
  *
- * note: in order to test this on localhost, reduce the localhost mtu to 1550 bytes, else latency might be very high
+ * note: in order to test this on localhost, reduce the localhost mtu to 1550 bytes, else latency might get very high
  *
  * $ sudo ifconfig lo mtu 1550
  *
  * yields 25 microseconds rtt at 30k events per second
+ *
+ * note 1: pps setting determines the point batching starts. On a decent system/OS a pps of 50_000 is not a problem,
+ * however many systems have built in limits (e.g. some windows cap at 25k on localhost). As batching trades latency for throughput
+ * the higher pps, the lower the latency but also troughput
  *
  */
 public class AsyncLatPublisher {
@@ -46,7 +50,7 @@ public class AsyncLatPublisher {
 
     FastCast fastCast;
     ObjectPublisher pub;
-    Histogram hi = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
+    Histogram hi = new Histogram(TimeUnit.SECONDS.toNanos(20),3);
     Executor dumper = Executors.newCachedThreadPool();
 
     public void initFastCast() throws Exception {
@@ -65,7 +69,7 @@ public class AsyncLatPublisher {
                     protected void objectReceived(String s, long l, Object o) {
                         if ( "END".equals(o) ) {
                             final Histogram oldHi = hi;
-                            hi = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
+                            hi = new Histogram(TimeUnit.SECONDS.toNanos(20),3);
                             // no lambdas to stay 1.7 compatible
                             // move printing out of the receiving thread
                             dumper.execute(new Runnable() {
@@ -92,6 +96,7 @@ public class AsyncLatPublisher {
     public void run( int pauseNanos, int numEvents ) throws Throwable {
         RateMeasure report = new RateMeasure("send rate");
         AsyncLatMessage event = new AsyncLatMessage(System.nanoTime(), 0, 0+1, 10, 110);
+//        int msgCount = 0;
         for ( int i = 0; i < numEvents; i++ ) {
             double bidPrc = Math.random() * 10;
             event.setBidPrc(bidPrc);
@@ -103,6 +108,10 @@ public class AsyncLatPublisher {
             while( System.nanoTime() - time < pauseNanos ) {
                 // spin
             }
+//            msgCount++;
+//            if ( (msgCount%10000) == 0 ) {
+//                System.out.println("count "+msgCount);
+//            }
         }
         pub.sendObject(null,"END", true);
     }
@@ -112,7 +121,7 @@ public class AsyncLatPublisher {
 
         pub.initFastCast();
         while (true)
-            pub.run( 1, 1_000_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
+            pub.run( 30000, 100_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
 
     }
 }

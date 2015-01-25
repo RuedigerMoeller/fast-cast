@@ -46,9 +46,15 @@ public class ObjectPublisher {
 
     public void sendObject( String receiverNodeIdOrNull, Object toSend, boolean flush ) {
         byte[] bytes = coder.toByteArray(toSend);// fixme: performance. Need zerocopy variant in DefaultCoder
+//        long tim = 0;
         while( ! pub.offer(receiverNodeIdOrNull,bytes,0,bytes.length,flush) ) {
             // spin
+//            if ( tim == 0 )
+//                tim = System.nanoTime();
         }
+//        long dur = System.nanoTime()-tim;
+//        if ( tim != 0 && dur > 1000 )
+//            System.out.println("spinned "+dur);
     }
 
     public FCPublisher getPub() {

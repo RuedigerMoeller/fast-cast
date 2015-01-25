@@ -30,7 +30,7 @@ package org.nustaq.fastcast.util;
  */
 public class Sleeper {
 
-    public void sleepMicros(int micro) {
+    public static void spinMicros(int micro) {
         if ( micro <= 0 )
             return;
         long now = System.nanoTime();

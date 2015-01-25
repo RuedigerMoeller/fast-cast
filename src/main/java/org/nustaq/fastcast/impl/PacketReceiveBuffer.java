@@ -495,8 +495,8 @@ public class PacketReceiveBuffer {
     }
 
     public void terminate() {
-        freeImmediate();
         terminated = true;
+        freeImmediate();
     }
 
     private void freeImmediate() {

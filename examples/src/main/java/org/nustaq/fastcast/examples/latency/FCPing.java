@@ -96,7 +96,7 @@ public class FCPing {
         PingRequest pr = alloc.newStruct( new PingRequest() );
         Sleeper sl = new Sleeper();
         while( true ) {
-            sl.sleepMicros(200); // need rate limiting cause of async
+            sl.spinMicros(200); // need rate limiting cause of async
             pr.setNanoSendTime(System.nanoTime());
             pingserver.offer( null, pr.getBase(), true); // can be sure off is 0, see (*)
         }

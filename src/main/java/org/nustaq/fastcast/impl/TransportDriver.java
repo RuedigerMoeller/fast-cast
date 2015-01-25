@@ -242,8 +242,14 @@ public class TransportDriver {
         if ( trans.receive(p) ) {
 
             boolean selfSent = receivedPacket.getSender().equals(nodeId);
-
             if ( ! selfSent) {
+                // debug
+                Class debugtype = receivedPacket.getPointedClass();
+                if ( debugtype == RetransPacket.class ) {
+                    RetransPacket retransPacket = receivedPacket.cast().detach();
+                    System.out.println("retrans received "+retransPacket);
+                }
+                //
 
                 int topic = receivedPacket.getTopic();
 
@@ -269,6 +275,7 @@ public class TransportDriver {
                     if (receivedPacketReceiver == null || ! receivedPacketReceiver.equals(nodeId)) {
                         return true;
                     }
+                    System.out.println("retrans dispatched ");
                     dispatchRetransmissionRequest(receivedPacket, topic);
                 } else if (type == ControlPacket.class )
                 {

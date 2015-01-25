@@ -93,11 +93,13 @@ public class ReceiveBufferDispatcher {
         PacketReceiveBuffer packetReceiveBuffer = bufferMap.get(struct);
         bufferMap.remove(struct);
         if ( packetReceiveBuffer != null ) {
-            packetReceiveBuffer.terminate();
             FCSubscriber subscriber = packetReceiveBuffer.getTopicEntry().getSubscriber();
             if ( subscriber != null ) {
                 subscriber.senderTerminated(senderName);
+            } else {
+                FCLog.get().severe("no subscriber for stopped sender", null);
             }
+            packetReceiveBuffer.terminate();
         }
         else {
             FCLog.get().warn("cannot find packetReceiver to terminate");
