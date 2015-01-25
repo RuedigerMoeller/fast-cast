@@ -52,6 +52,7 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class TransportDriver {
 
+    private static final boolean RETRANS_DEBUG = false;
     public static int MAX_NUM_TOPICS = 256;
 
     int spinIdleLoopMicros = 1000*1000*10;
@@ -244,10 +245,12 @@ public class TransportDriver {
             boolean selfSent = receivedPacket.getSender().equals(nodeId);
             if ( ! selfSent) {
                 // debug
-                Class debugtype = receivedPacket.getPointedClass();
-                if ( debugtype == RetransPacket.class ) {
-                    RetransPacket retransPacket = receivedPacket.cast().detach();
-                    System.out.println("retrans received "+retransPacket);
+                if ( RETRANS_DEBUG ) {
+                    Class debugtype = receivedPacket.getPointedClass();
+                    if (debugtype == RetransPacket.class) {
+                        RetransPacket retransPacket = receivedPacket.cast().detach();
+                        System.out.println("retrans received " + retransPacket);
+                    }
                 }
                 //
 
@@ -275,7 +278,8 @@ public class TransportDriver {
                     if (receivedPacketReceiver == null || ! receivedPacketReceiver.equals(nodeId)) {
                         return true;
                     }
-                    System.out.println("retrans dispatched ");
+                    if (RETRANS_DEBUG)
+                        System.out.println("retrans dispatched ");
                     dispatchRetransmissionRequest(receivedPacket, topic);
                 } else if (type == ControlPacket.class )
                 {

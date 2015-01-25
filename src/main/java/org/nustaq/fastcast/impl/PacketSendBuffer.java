@@ -495,10 +495,6 @@ public class PacketSendBuffer implements FCPublisher {
             if ( ! offerNoLock(null, heartbeat,0,1,false) ) {
                 lastMsgFlush = prevFlush;
             }
-            if ( ! res )
-            {
-                int debug = 0;
-            }
             return res; // recursion already has triggered flsh in case
         }
         if ( doFlush ) {
@@ -517,10 +513,6 @@ public class PacketSendBuffer implements FCPublisher {
 //                res = false;
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        if ( ! res )
-        {
-            int debug = 0;
         }
         return res;
     }
