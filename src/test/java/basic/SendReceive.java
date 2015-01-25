@@ -114,7 +114,7 @@ public class SendReceive {
         initFC();
         final FCPublisher publish = fc.onTransport("default").publish("unreliable");
         final ObjectPublisher objectPublisher = new ObjectPublisher(publish).batchOnLimit(false);
-        for ( int i=0; i < 1_000_000; i++ ) {
+        for ( int i=0; i < 100_000; i++ ) {
             objectPublisher.sendObject(null,new TestEchoServer.UnreliableMessage(i),true);
         }
     }
