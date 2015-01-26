@@ -25,10 +25,24 @@ package org.nustaq.fastcast.api;
 import org.nustaq.offheap.bytez.Bytez;
 
 /**
+ * interface to be implemented by a subscriber to a topic. Note there is a serialization based util implementation ObjectSubscriber.
+ *
  * Created by ruedi on 29.11.2014.
  */
 public interface FCSubscriber {
 
+    /**
+     * a message has been defragmented and received. This method is called directly in the packet receiving
+     * thread, so processing should be delegated to a worker or be extremely quick. else packet loss might occur.
+     *
+     * one can use 'Bytez.getArr(off, tmpBuf, 0, len);' to copy the message contents to a byte array 'tmpBuf'.
+     *
+     * @param sender - nodeId of sending process
+     * @param sequence - internal sequence number (of interest for unreliable variants)
+     * @param b - bytesource containing the message at off and with len
+     * @param off - offset of message
+     * @param len - len of message
+     */
     public void messageReceived(String sender, long sequence, Bytez b, long off, int len);
 
     /**

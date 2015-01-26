@@ -25,22 +25,51 @@ package org.nustaq.fastcast.api;
 import org.nustaq.offheap.bytez.ByteSource;
 
 /**
+ * interface used to send messages. obtained like 'fastCast.onTransport("default").publish("stream");'
+ *
  * Created by ruedi on 29.11.2014.
  */
 public interface FCPublisher {
 
     /**
+     * send a byte[] message
      *
-     * @param receiverNodeId - null for all subscribers of topic, a nodeId for a specific subscriber (unicast)
-     * @param msg
-     * @param start
-     * @param len
-     * @param doFlush
-     * @return
+     * @param receiverNodeId - null to send to all subscribers, aNodeId to target a specific node
+     * @param b - bytes to send
+     * @param start - start offset
+     * @param len - number of bytes to send
+     * @param doFlush - if true, the currently written packet is sent immediately EXCEPT your send rate is > pps limit (packets per second)
+     *                only set to true if you care mostly about latency instead of throughput. fast cast automatically flushes after one ms. So a
+     *                value of true only makes sense if you care about micros.
+     * @return true if the message has been sent, false if limits/buffers are full.
      */
     public boolean offer(String receiverNodeId, byte b[], int start, int len, boolean doFlush);
+    /**
+     * send a byte[] message
+     *
+     * @param receiverNodeId - null to send to all subscribers, aNodeId to target a specific node
+     * @param msg - byte source containing the message bytes
+     * @param start - start offset
+     * @param len - number of bytes to send
+     * @param doFlush - if true, the currently written packet is sent immediately EXCEPT your send rate is > pps limit (packets per second)
+     *                only set to true if you care mostly about latency instead of throughput. fast cast automatically flushes after one ms. So a
+     *                value of true only makes sense if you care about micros.
+     * @return true if the message has been sent, false if limits/buffers are full.
+     */
     public boolean offer(String receiverNodeId, ByteSource msg, long start, int len, boolean doFlush);
-    public boolean offer(String subscriberNodeId, ByteSource msg, boolean doFlush);
+
+    /**
+     * send a byte[] message
+     *
+     * @param receiverNodeId - null to send to all subscribers, aNodeId to target a specific node
+     * @param msg - byte source containing the message bytes.
+     * @param doFlush - if true, the currently written packet is sent immediately EXCEPT your send rate is > pps limit (packets per second)
+     *                only set to true if you care mostly about latency instead of throughput. fast cast automatically flushes after one ms. So a
+     *                value of true only makes sense if you care about micros.
+     * @return true if the message has been sent, false if limits/buffers are full.
+     */
+    public boolean offer(String receiverNodeId, ByteSource msg, boolean doFlush);
+
     public int getTopicId();
     public void flush();
 
