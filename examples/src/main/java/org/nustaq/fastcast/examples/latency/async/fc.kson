@@ -19,8 +19,7 @@ ClusterConf {
             port:      46789
             ttl: 1
 
-            # default is blocking IO, don't do latency tests with this configuration
-            # uncomment below for spin looping
+            # spin looping
             spinLoopMicros: 10_000_000
             idleParkMicros: 1000
         }
@@ -36,8 +35,7 @@ ClusterConf {
             multicastAddr:  230.10.10.11
             port:      57789
 
-            # default is blocking IO, don't do latency tests with this configuration
-            # uncomment below for spin looping
+            # spin looping
             spinLoopMicros: 10_000_000
             idleParkMicros: 1000
         }
@@ -52,7 +50,10 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 400_000
-                pps: 10_000
+
+                # try increasing this to 20k .. 50k to reduce latency on high end network cards + kernel bypass (10GBit low lat)
+                # if you get lat in the millis (caused by retransmissions) => reduce to 10k [*must* also adjust pps below for bounce back topic]
+                pps: 20_000 #windowze: 10k
             }
             sub: {
                 receiveBufferPackets: 100_000
@@ -66,7 +67,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 400_000
-                pps: 10_000
+                pps: 20_000 #windowze: 10k
             }
             sub: {
                 receiveBufferPackets: 100_000

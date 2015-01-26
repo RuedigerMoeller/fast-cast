@@ -35,11 +35,8 @@ public class AsyncLatReceiver {
                     protected void objectReceived(String s, long l, Object o) {
                         if ( "END".equals(o) ) {
                             backPub.sendObject(null,o,true);
-//                        hi.outputPercentileDistribution(System.out,1000.0);
-//                        hi.reset();
                             return;
                         }
-//                    hi.recordValue(System.nanoTime() - ((MeasuredEvent) o).getSendTimeStampNanos());
                         AsyncLatReceiver.this.objectReceived(s,l,o);
                         backPub.sendObject(null,o,true);
                         measure.count();
@@ -63,4 +60,5 @@ public class AsyncLatReceiver {
         while( true )
             Thread.sleep(10_000_000l);
 
-    }}
+    }
+}
