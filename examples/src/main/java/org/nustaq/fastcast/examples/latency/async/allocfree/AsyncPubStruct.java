@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ruedi on 26/01/15.
+ * same as async test but using structs instead of serialization and some moderate memory reuse to reduce
+ * allocation rate
  */
 public class AsyncPubStruct {
 
