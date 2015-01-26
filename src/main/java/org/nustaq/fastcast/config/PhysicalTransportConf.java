@@ -52,7 +52,7 @@ public class PhysicalTransportConf {
     // see socket options
     int ttl = 8;
     // receive and sendbuffer sizes. Don't make them too large as this queues up retransmission requests !!
-    int socketReceiveBufferSize = 128_000;
+    int socketReceiveBufferSize = 512_000;
     int socketSendBufferSize = 128_000;
 
     // time until a msg sent with flush=false is automatically flushed out
