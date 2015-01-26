@@ -12,8 +12,6 @@ ClusterConf {
             name:      default
 
             dgramsize: 1400
-            socketReceiveBufferSize: 8_000_000
-            socketSendBufferSize:    4_000_000
 
             interfaceAddr:  127.0.0.1
 
@@ -31,8 +29,6 @@ ClusterConf {
             name:      back
 
             dgramsize: 1400
-            socketReceiveBufferSize: 8_000_000
-            socketSendBufferSize:    4_000_000
 
             interfaceAddr:  127.0.0.1
             ttl: 1
@@ -56,7 +52,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 400_000
-                pps: 20_000
+                pps: 10_000
             }
             sub: {
                 receiveBufferPackets: 100_000
@@ -70,7 +66,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 400_000
-                pps: 20_000
+                pps: 10_000
             }
             sub: {
                 receiveBufferPackets: 100_000

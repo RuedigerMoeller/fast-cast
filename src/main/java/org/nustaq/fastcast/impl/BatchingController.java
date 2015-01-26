@@ -1,5 +1,6 @@
 package org.nustaq.fastcast.impl;
 
+import org.nustaq.fastcast.util.FCLog;
 import org.nustaq.fastcast.util.RateMeasure;
 
 /**
@@ -41,6 +42,7 @@ public class BatchingController {
                 nanosPerTick *=2;
             }
         } while ( packetsPerTick < RATE_PRECISION );
+        FCLog.get().info("rate limiting in window "+4*nanosPerTick+" ns ("+(4*nanosPerTick)/1000+" micros) ("+(4*nanosPerTick)/1000/1000+" millis)");
     }
 
     public int getRatePerSecond() {

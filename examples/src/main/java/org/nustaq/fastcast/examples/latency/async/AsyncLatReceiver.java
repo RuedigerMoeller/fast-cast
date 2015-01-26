@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class AsyncLatReceiver {
     FastCast fastCast;
-    Histogram hi = new Histogram(TimeUnit.SECONDS.toNanos(10),3);
     private ObjectPublisher backPub; // pong for rtt measurement
 
     public void initFastCast() throws Exception {

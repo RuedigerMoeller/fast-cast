@@ -50,7 +50,7 @@ public class AsyncLatPublisher {
 
     FastCast fastCast;
     ObjectPublisher pub;
-    Histogram hi = new Histogram(TimeUnit.SECONDS.toNanos(20),3);
+    Histogram hi = new Histogram(TimeUnit.SECONDS.toNanos(2),3);
     Executor dumper = Executors.newCachedThreadPool();
 
     public void initFastCast() throws Exception {
@@ -69,19 +69,21 @@ public class AsyncLatPublisher {
                     protected void objectReceived(String s, long l, Object o) {
                         if ( "END".equals(o) ) {
                             final Histogram oldHi = hi;
-                            hi = new Histogram(TimeUnit.SECONDS.toNanos(20),3);
+                            hi = new Histogram(TimeUnit.SECONDS.toNanos(2),3);
                             // no lambdas to stay 1.7 compatible
                             // move printing out of the receiving thread
                             dumper.execute(new Runnable() {
                                 @Override
                                 public void run() {
-                                    oldHi.outputPercentileDistribution(System.out,1000.0);
+                                oldHi.outputPercentileDistribution(System.out,1000.0);
                                 }
                             });
 //                        hi.reset();
                             return;
                         }
-                        hi.recordValue(System.nanoTime()-((AsyncLatMessage)o).getSendTimeStampNanos());
+                        final long value = System.nanoTime() - ((AsyncLatMessage) o).getSendTimeStampNanos();
+                        if ( value < 1_000_000_000 )
+                            hi.recordValue(value);
                     }
 
                     @Override
@@ -121,7 +123,7 @@ public class AsyncLatPublisher {
 
         pub.initFastCast();
         while (true)
-            pub.run( 30000, 100_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
+            pub.run( 60_000, 1_000_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
 
     }
 }

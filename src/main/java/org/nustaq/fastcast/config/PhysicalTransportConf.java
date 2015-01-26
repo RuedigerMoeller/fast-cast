@@ -51,9 +51,9 @@ public class PhysicalTransportConf {
     boolean loopBack = true;
     // see socket options
     int ttl = 8;
-    // receive and sendbuffer sizes. Try to get large ones ..
-    int socketReceiveBufferSize = 8_000_000;
-    int socketSendBufferSize = 1_000_000;
+    // receive and sendbuffer sizes. Don't make them too large as this queues up retransmission requests !!
+    int socketReceiveBufferSize = 128_000;
+    int socketSendBufferSize = 128_000;
 
     // time until a msg sent with flush=false is automatically flushed out
     // (batching for throughput)

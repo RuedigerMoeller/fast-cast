@@ -12,8 +12,6 @@ ClusterConf {
             name:      default
 
             dgramsize: 2500
-            socketReceiveBufferSize: 4_000_000
-            socketSendBufferSize:    2_000_000
             interfaceAddr:  127.0.0.1
             multicastAddr:  239.9.9.9
             port:      46789
