@@ -399,10 +399,11 @@ public class PacketReceiveBuffer {
             }
         }
         retransCount++;
-        if ( retransCount > 10 ) { // FIXME: give up at some point ?
-            FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getSubscriberConf().getTopicId()+" retrans:"+toReturn);
+        long delay = maxDelayNextRetrans * (1+(retransCount/5));
+        if ( retransCount > 5 ) { // FIXME: give up at some point ?
+            FCLog.get().warn("retransmission retrial at " + maxOrderedSeq + " count " + retransCount + " highest " + highestSeq + " stream " + getTopicEntry().getSubscriberConf().getTopicId()+" retrans:"+toReturn+" delay:"+ delay);
         }
-        firstGapDetected = maxDelayNextRetrans + now;
+        firstGapDetected = delay + now;
         return toReturn;
     }
 
@@ -496,7 +497,18 @@ public class PacketReceiveBuffer {
 
     public void terminate() {
         terminated = true;
-        freeImmediate();
+        // avoid late packets to crash system
+        new Thread("freedom") {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                freeImmediate();
+            }
+        }.start();
     }
 
     private void freeImmediate() {

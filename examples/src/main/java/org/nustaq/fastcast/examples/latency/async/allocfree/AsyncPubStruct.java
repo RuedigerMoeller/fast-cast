@@ -74,6 +74,8 @@ public class AsyncPubStruct {
 
             @Override
             public boolean dropped() {
+                System.out.println("DROPPED");
+                System.exit(-1);
                 return false;
             }
 
@@ -119,7 +121,7 @@ public class AsyncPubStruct {
 
         pub.initFastCast();
         while (true)
-            pub.run( 2000, 5_000_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
+            pub.run( 2000, 1_000_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
 
     }
 

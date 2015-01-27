@@ -51,9 +51,9 @@ public class SubscriberConf {
     ///////////////////////////////////////////////////////////////////////////////
 
     // time interval until a receiver sends a retransmission request after a gap
-    long maxDelayRetransMS = 0;
+    long maxDelayRetransMS = 1;
     // time until a retransrequest is sent again if sender does not fulfill
-    long maxDelayNextRetransMS = 20;
+    long maxDelayNextRetransMS = 5;
 
     // time until a sender is lost+deallocated if it stops sending heartbeats
     // on overload i had crashes from false overload induced timeouts and receive of packets after buffer dealloc

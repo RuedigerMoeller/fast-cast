@@ -431,9 +431,10 @@ public class PacketSendBuffer implements FCPublisher {
             moveBuff(dataPacket);
             batchController.countPacket();
             trans.send(tmpSend);
-            while ( batchController.getAction() == BatchingController.Action.BLOCK )
-            {
-                // spin for large messages
+            if ( ! retrans ) {
+                while (batchController.getAction() == BatchingController.Action.BLOCK) {
+                    // spin
+                }
             }
         }
         if ( ! retrans ) {

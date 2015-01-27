@@ -107,10 +107,10 @@ public class ReceiveBufferDispatcher {
     }
 
     public void cleanupTopic() {
-        ArrayList<String> keys = new ArrayList(bufferMap.keySet());
+        ArrayList<StructString> keys = new ArrayList(bufferMap.keySet());
         for (int i = 0; i < keys.size(); i++) {
-            String o =  keys.get(i);
-            cleanup(o);
+            StructString o =  keys.get(i);
+            cleanup(o.toString());
         }
     }
 

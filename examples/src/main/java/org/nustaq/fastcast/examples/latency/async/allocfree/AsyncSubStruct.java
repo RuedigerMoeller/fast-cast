@@ -32,7 +32,7 @@ public class AsyncSubStruct {
     FastCast fastCast;
     private FCPublisher backPub; // pong for rtt measurement
 
-    StupidPool pool = new StupidPool(16384);
+    StupidPool pool = new StupidPool(1024);
     Executor bounceBackExec = Executors.newSingleThreadExecutor();
 
     public void initFastCast() throws Exception {

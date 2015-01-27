@@ -49,14 +49,14 @@ ClusterConf {
             name: stream
 
             pub: {
-                numPacketHistory: 400_000
+                numPacketHistory: 800_000
 
                 # try increasing this to 20k .. 50k to reduce latency on high end network cards + kernel bypass (10GBit low lat)
                 # if you get lat in the millis (caused by retransmissions) => reduce to 10k [*must* also adjust pps below for bounce back topic]
-                pps: 10_000
+                pps: 30_000
             }
             sub: {
-                receiveBufferPackets: 100_000
+                receiveBufferPackets: 300_000
                 senderHBTimeout: 5000
             }
         }
@@ -66,11 +66,11 @@ ClusterConf {
             name: back
 
             pub: {
-                numPacketHistory: 400_000
-                pps: 10_000
+                numPacketHistory: 800_000
+                pps: 30_000
             }
             sub: {
-                receiveBufferPackets: 100_000
+                receiveBufferPackets: 300_000
                 senderHBTimeout: 5000
             }
         }
