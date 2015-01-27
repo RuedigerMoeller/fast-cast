@@ -71,20 +71,22 @@ Fast cast is configured by plain limit rating (number of "packets" [datagrams] p
 
 **Batching**
 
-The message send call ("offer") has flag determining wether the data should be sent immediately (flush) or if batching should be applied. If  'no flush' is choosen and no further message is offered, an automatic flush will be triggered after (setting) some milliseconds. If 'flush' is set to true and the publisher is near its packet rate limit, batching will be applied regardless of 'flush' flag. This way one can achieve that low rate traffic is sent with low latency, however once traffic bursts occur, batching will avoid backpressure onto publishing thread as long bursts can be compensated by batching.
+The message send call ("offer") has flag determining wether the data should be sent immediately (flush) or if batching should be applied. If  'no flush' is choosen and no further message is offered, an automatic flush will be triggered after (configurable) one millisecond. If 'flush' is set to true and the publisher is near its configured packet rate limit, batching will be applied regardless of 'flush' flag. This way one can achieve that low rate traffic is sent with low latency, however once traffic bursts occur, batching will avoid backpressure onto publishing thread as long bursts can be compensated by batching.
+Its recommended to always set this flag to false except there are microsecond level latency requirements.
 
 **Packet size**
 
-With 'packet' actually a fast-cast level 'datagram' is meant. For lowest latency choose a packet size slightly lower than netork MTU. For high throughput choose larger packet sizes (up to 65k). Downside of large packet sizes is, that a packet gap has worse effects (because e.g. 64k need to be retransmitted instead of just 1k). As history and receive buffers reserve N*full packet size number of bytes, large packets also increase required memory to hold buffers. Its good practice to choose multiples of MTU for packet sizes, though its not that significant. Usual values are 1.5k, 3k, 8k, 16k . 64k are also a possible setting (but large buffers).
+With 'packet' actually a fast-cast level 'datagram' is meant. For lowest latency choose a packet size slightly lower than netork MTU. For high throughput choose larger packet sizes (up to 65k). Downside of large packet sizes is, that a packet gap has worse effects (because e.g. 64k need to be retransmitted instead of just 1k). As history and receive buffers reserve N*full packet size number of bytes, large packets also increase required memory to hold buffers. Its good practice to choose multiples of MTU for packet sizes, though its not that significant. Usual values are 1.5k, 3k, 8k, 16k . 64k are also a possible setting (but large buffers). Recommendation is 4k to 8k. For low latency requirements set small mtu sizes on your network adapter and a packet size fitting into a single mtu size.
 
 **large messages**
 
 Large messages are automatically fragmented/defragmented. A message cannot be larger than a subscribers receive buffer, and not larger than a publishers send history (give at least 10%-20% headrooom).
-Expect serious throughput hiccups with very large messages (>40MB and higher), especially if processes have been started and are not yet warmed up (JIT optimization hasn't kicked in yet). Once hotspot has warmed up code, even 80MB messages might pass smoothly.
+Expect serious throughput hiccups with very large messages (>40MB and higher), especially if processes have been started and are not yet warmed up (JIT optimization hasn't kicked in yet). Once hotspot has warmed up code, even large (>80MB) messages should pass smoothly.
 
 **configuration recommendation**
 
-start with low packet rate and moderate packet size (e.g. 8k). History buffer should cover at least 3-5 seconds (java JIT hiccups on newly joining processes, GC). E.g. packet send rate = 5000, 8k buffers => history for 5 seconds = 5*5000 = 25000 = (multiplied with packet size) 200MB. Receivebuffer ~1-2 seconds of traffic = 10_000 packets. 
+start with low packet per second rate (5000 to 10000) and moderate packet size (e.g. 4..8k). History buffer should cover at least 3-5 seconds (java JIT hiccups on newly joining processes, GC). E.g. packet send rate = 5000, 8k buffers => history for 5 seconds = 5*5000 = 25000 = (multiplied with packet size) 200MB. Receivebuffer ~1-2 seconds of traffic = 10_000 packets. For lowest latency try to push packets per second to the limit of your setup (network, CPU, OS). The more packets can be sent, the better the latency even for high message rates. Typically not more than 10000 packets @1400 packet size are processed. On high end hardware+OS I could run with up to 50k PPS setting (1400 packet size).
+Ensure your PPS * packet size does not exceed your network bandwidth. If latency is of little interest, choose large packets 4 to 16k) using a low rate limit (like 5000..10000):
 
  *Ensure subscribers do not block the receiving thread !!!!!!!*  (**!!!!**)
 
@@ -116,6 +118,7 @@ for ultimate low latency:
 * use allocation free encoding/decoding (e.g. structs as shown in https://github.com/RuedigerMoeller/fast-cast/tree/3.0/examples/src/main/java/org/nustaq/fastcast/examples/multiplestructs).
 Additionally be fast enough to get proccessing done inside receiver thread or use a fast+allocation free multithreading framework like disruptor for message processing. JDK's executor framework is not that well suited.
 * choose a small datagram size (size of MTU)
+* try to push PPS at least to 20k (depends on OS, network hardware)
 * use busy spin for receiver thread (configurable)
 * use busy spin for sender thread (that's your app)
 * pin threads to cores
