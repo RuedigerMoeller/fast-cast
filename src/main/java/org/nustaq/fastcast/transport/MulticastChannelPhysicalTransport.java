@@ -69,18 +69,16 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     @Override
     public void send(DatagramPacket pack) throws IOException {
-        sendSocket.send(ByteBuffer.wrap(pack.getData(), pack.getOffset(), pack.getLength()), socketAddress);
-    }
-
-    @Override
-    public void send(byte[] bytes, int off, int len) throws IOException {
-        sendSocket.send(ByteBuffer.wrap(bytes, off, len), socketAddress);
+        send(ByteBuffer.wrap(pack.getData(), pack.getOffset(), pack.getLength()));
     }
 
     @Override
     public void send(ByteBuffer b) throws IOException {
 //        long len = b.remaining();
-        sendSocket.send(b, socketAddress);
+        while(b.hasRemaining()) {
+            sendSocket.send(b, socketAddress);
+        }
+        //sendSocket.send(b, socketAddress);
     }
 
     public InetSocketAddress getAddress() {
@@ -106,7 +104,7 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
             }
         }
         receiveSocket = ceateSocket(blocking);
-        sendSocket = ceateSocket(true);
+        sendSocket = ceateSocket(false);
 
         MembershipKey key = receiveSocket.join(address, iface);
         FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.getPort()+" dgramsize:"+getConf().getDgramsize());

@@ -420,11 +420,6 @@ public class TransportDriver {
         }
 
         @Override
-        public void send(byte[] bytes, int off, int len) throws IOException {
-
-        }
-
-        @Override
         public void send(ByteBuffer b) throws IOException {
 
         }

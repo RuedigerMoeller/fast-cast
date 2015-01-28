@@ -48,26 +48,32 @@ public class AsyncSubStruct {
         final RateMeasure measure = new RateMeasure("receive rate");
         fastCast.onTransport("default").subscribe("stream",
             new FCSubscriber() {
+                int count = 0;
+
                 @Override
                 public void messageReceived(String sender, long sequence, Bytez b, long off, final int len) {
                     measure.count();
-                    final byte copy[] = pool.getBA();
-                    if ( len < copy.length ) // prevent segfault :) !
-                    {
-                        b.getArr(off,copy,0,len);
-                        // do bounce back in different thread, else blocking on send will pressure back to
-                        // sender resulting in whacky behaviour+throughput
-                        bounceBackExec.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                while( ! backPub.offer(null,copy,0,len,true) ) {
-                                    // spin
+                    if ( ++count == 10 || len < 30 /*"END" marker*/) {
+                        count = 0;
+                        final byte copy[] = pool.getBA();
+                        if (len < copy.length) // prevent segfault :) !
+                        {
+                            b.getArr(off, copy, 0, len);
+                            count = 0;
+                            // do bounce back in different thread, else blocking on send will pressure back to
+                            // sender resulting in whacky behaviour+throughput
+                            bounceBackExec.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    while (!backPub.offer(null, copy, 0, len, true)) {
+                                        // spin
+                                    }
+                                    pool.returnBA(copy); // give back to pool
                                 }
-                                pool.returnBA(copy); // give back to pool
-                            }
-                        });
-                    } else {
-                        throw new RuntimeException("was soll das ?");
+                            });
+                        } else {
+                            throw new RuntimeException("was soll das ?");
+                        }
                     }
                 }
 

@@ -123,7 +123,7 @@ public class AsyncLatPublisher {
 
         pub.initFastCast();
         while (true)
-            pub.run( 5000, 1_000_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
+            pub.run( 27_000, 1_000_000 ); // 93_000 = 10k, 27_000 = 30k, 10_500 = 70k, 4_900 = 140k
 
     }
 }

@@ -31,6 +31,7 @@ public class AsyncLatReceiver {
         final RateMeasure measure = new RateMeasure("receive rate");
         fastCast.onTransport("default").subscribe( "stream",
                 new ObjectSubscriber(AsyncLatMessage.class) {
+                    int count = 0;
                     @Override
                     protected void objectReceived(String s, long l, Object o) {
                         if ( "END".equals(o) ) {
@@ -38,7 +39,10 @@ public class AsyncLatReceiver {
                             return;
                         }
                         AsyncLatReceiver.this.objectReceived(s,l,o);
-                        backPub.sendObject(null,o,true);
+                        if ( ++count == 10 ) { // backtalk only 10%
+                            backPub.sendObject(null, o, true);
+                            count = 0;
+                        }
                         measure.count();
                     }
                     @Override
