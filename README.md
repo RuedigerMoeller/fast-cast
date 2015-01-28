@@ -24,7 +24,7 @@ initial release is available on maven.
 <dependency>
     <groupId>de.ruedigermoeller</groupId>
     <artifactId>fast-cast</artifactId>
-    <version>3.06</version>
+    <version>3.08</version>
 </dependency>
 ```
 
