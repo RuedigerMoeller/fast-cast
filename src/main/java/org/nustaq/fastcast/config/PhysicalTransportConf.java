@@ -22,6 +22,7 @@
  */
 package org.nustaq.fastcast.config;
 
+import org.nustaq.fastcast.transport.PhysicalTransport;
 import org.nustaq.fastcast.util.FCLog;
 
 import java.net.InetAddress;
@@ -35,6 +36,9 @@ import java.util.Enumeration;
 public class PhysicalTransportConf {
 
     String name;
+
+    String retransGroupAddr;
+    int retransGroupPort = 9999;
 
     // determines the max size of a datagram sent.
     // use value near [MTU-100] for lowest latency (requires high end hardware), use 4k .. 16k for throughput (don't flush each msg then)
@@ -115,6 +119,24 @@ public class PhysicalTransportConf {
 
     public PhysicalTransportConf interfaceAdr(String ifacAdr) {
         this.interfaceAddr = ifacAdr;
+        return this;
+    }
+
+    public String getRetransGroupAddr() {
+        return retransGroupAddr;
+    }
+
+    public PhysicalTransportConf setRetransGroupAddr(String retransGroupAddr) {
+        this.retransGroupAddr = retransGroupAddr;
+        return this;
+    }
+
+    public int getRetransGroupPort() {
+        return retransGroupPort;
+    }
+
+    public PhysicalTransportConf setRetransGroupPort(int retransGroupPort) {
+        this.retransGroupPort = retransGroupPort;
         return this;
     }
 

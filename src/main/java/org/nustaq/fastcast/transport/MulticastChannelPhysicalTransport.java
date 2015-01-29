@@ -41,12 +41,17 @@ import java.nio.channels.*;
 public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     boolean blocking;
+    DatagramChannel retransSocket;
     DatagramChannel receiveSocket;
     DatagramChannel sendSocket;
     PhysicalTransportConf conf;
     NetworkInterface iface;
+
     InetAddress address;
     InetSocketAddress socketAddress;
+
+    InetAddress retransAddress;
+    InetSocketAddress retransSocketAddress;
 
     public MulticastChannelPhysicalTransport(PhysicalTransportConf conf, boolean blocking) {
         System.setProperty("java.net.preferIPv4Stack","true" );
@@ -103,15 +108,24 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
                 FCLog.log("Could not find a network interface named '" + conf.getInterfaceAddr() + "'");
             }
         }
-        receiveSocket = ceateSocket(blocking);
-        sendSocket = ceateSocket(false);
+        receiveSocket = ceateSocket(blocking, conf.getPort());
+        sendSocket = ceateSocket(false, conf.getPort());
+        if ( conf.getRetransGroupAddr() != null ) {
+            if ( blocking )
+                throw new RuntimeException("separate retransmission socket only available if nonblocking mode is set");
+            retransSocket = ceateSocket(false,conf.getRetransGroupPort());
+        }
 
         MembershipKey key = receiveSocket.join(address, iface);
+        if ( retransSocket != null ) {
+            retransSocket.join(InetAddress.getByName(conf.getRetransGroupAddr()),iface);
+        }
+
         FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.getPort()+" dgramsize:"+getConf().getDgramsize());
 
     }
 
-    private DatagramChannel ceateSocket(boolean block) throws IOException {
+    private DatagramChannel ceateSocket(boolean block, int port) throws IOException {
         DatagramChannel channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
                 .setOption(StandardSocketOptions.IP_MULTICAST_IF, iface)
@@ -119,7 +133,7 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
                 .setOption(StandardSocketOptions.IP_TOS, conf.getTrafficClass())
                 .setOption(StandardSocketOptions.IP_MULTICAST_LOOP, conf.isLoopBack())
                 .setOption(StandardSocketOptions.IP_MULTICAST_TTL, conf.getTtl())
-                .bind(new InetSocketAddress(conf.getPort()));
+                .bind(new InetSocketAddress(port));
         channel.configureBlocking(block);
         return channel;
     }
