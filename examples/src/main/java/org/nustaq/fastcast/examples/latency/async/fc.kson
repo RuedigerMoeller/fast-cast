@@ -14,14 +14,20 @@ ClusterConf {
             dgramsize: 1400
 
             interfaceAddr:  127.0.0.1
+            ttl: 1
 
             multicastAddr:  229.9.9.10
             port:      46789
-            ttl: 1
+#            retransGroupAddr: 229.9.9.11
+#            retransGroupPort: 46790
+
 
             # spin looping
             spinLoopMicros: 10_000_000
             idleParkMicros: 1000
+
+            socketReceiveBufferSize: 4_000_000
+            socketSendBufferSize: 128_000
         }
 
         {
@@ -34,10 +40,15 @@ ClusterConf {
 
             multicastAddr:  230.10.10.11
             port:      57789
+#            retransGroupAddr: 230.10.10.12
+#            retransGroupPort: 57790
 
             # spin looping
             spinLoopMicros: 10_000_000
             idleParkMicros: 1000
+
+            socketReceiveBufferSize: 4_000_000
+            socketSendBufferSize: 128_000
         }
 
         # .. next transport goes here ..
@@ -53,7 +64,7 @@ ClusterConf {
 
                 # try increasing this to 20k .. 50k to reduce latency on high end network cards + kernel bypass (10GBit low lat)
                 # if you get lat in the millis (caused by retransmissions) => reduce to 10k [*must* also adjust pps below for bounce back topic]
-                pps: 10_000 # 50_000 tuned linux
+                pps: 10_000 # 20-50_000 tuned linux, 120_000 to 150_000 open onload
             }
             sub: {
                 receiveBufferPackets: 300_000
@@ -67,7 +78,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 800_000
-                pps: 10_000 # 50_000 tuned linux
+                pps: 10_000 # 20-50_000 tuned linux, 120_000 to 150_000 open onload
             }
             sub: {
                 receiveBufferPackets: 300_000

@@ -383,7 +383,7 @@ public class PacketSendBuffer implements FCPublisher {
                     dropMsg.setSeqNo(en.getFrom());
                     FCLog.get().warn("Sending Drop " + dropMsg + " requestedSeq " + fromSeqNo + " on service " + getTopicEntry().getTopicId() + " currentSeq " + currentSequence + " age: " + (currentSequence - en.getFrom()));
                     batchController.countPacket();
-                    trans.send(new DatagramPacket(dropMsg.getBase().toBytes((int) dropMsg.getOffset(), dropMsg.getByteSize()), 0, dropMsg.getByteSize()));
+                    trans.sendControl(dropMsg.getBase().toBytes((int) dropMsg.getOffset(), dropMsg.getByteSize()), 0, dropMsg.getByteSize());
                 } else {
                     long from = en.getFrom();
                     long to = en.getTo();
@@ -430,7 +430,10 @@ public class PacketSendBuffer implements FCPublisher {
             dataPacket.setRetrans(retrans);
             moveBuff(dataPacket);
             batchController.countPacket();
-            trans.send(tmpSend);
+            if ( retrans )
+                trans.sendControl(tmpSend);
+            else
+                trans.send(tmpSend);
             if ( ! retrans ) {
                 while (batchController.getAction() == BatchingController.Action.BLOCK) {
                     // spin

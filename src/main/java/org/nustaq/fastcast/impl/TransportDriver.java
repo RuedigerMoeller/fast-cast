@@ -337,13 +337,13 @@ public class TransportDriver {
     private void dispatchDataPacket(Packet receivedPacket, int topic) throws IOException {
         PacketReceiveBuffer buffer = receiver[topic].getBuffer(receivedPacket.getSender());
         tmpP = receivedPacket.cast().detachTo(tmpP); // avoid alloc
-        RetransPacket retransPacket = buffer.receivePacket(tmpP);
-        if ( retransPacket != null ) {
+        RetransPacket retransRequest = buffer.receivePacket(tmpP);
+        if ( retransRequest != null ) {
             // packet is valid just in this thread
             if ( PacketSendBuffer.RETRANSDEBUG )
-                FCLog.get().info("send retrans request " + retransPacket + " " + retransPacket.getClzId());
+                FCLog.get().info("send retrans request " + retransRequest + " " + retransRequest.getClzId());
             // FIXME: ALLOC
-            trans.send(new DatagramPacket(retransPacket.getBase().toBytes(retransPacket.getOffset(), retransPacket.getByteSize()), 0, retransPacket.getByteSize()));
+            trans.sendControl(retransRequest.getBase().toBytes(retransRequest.getOffset(), retransRequest.getByteSize()), 0, retransRequest.getByteSize());
         }
     }
 
@@ -410,14 +410,20 @@ public class TransportDriver {
         }
 
         @Override
-        public boolean receive(DatagramPacket pack) throws IOException {
-            return false;
+        public void sendControl(byte[] bytes, int off, int len) throws IOException {
+
         }
 
         @Override
-        public void send(DatagramPacket pack) throws IOException {
+        public void sendControl(ByteBuffer b) throws IOException {
 
         }
+
+        @Override
+        public void send(byte[] bytes, int off, int len) throws IOException {
+
+        }
+
 
         @Override
         public void send(ByteBuffer b) throws IOException {

@@ -41,7 +41,10 @@ import java.nio.channels.*;
 public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     boolean blocking;
-    DatagramChannel retransSocket;
+
+    volatile DatagramChannel retransSocket;
+    volatile ByteBuffer retransPacket;
+
     DatagramChannel receiveSocket;
     DatagramChannel sendSocket;
     PhysicalTransportConf conf;
@@ -59,31 +62,42 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
         this.blocking = blocking;
     }
 
-    public boolean receive(DatagramPacket pack) throws IOException {
-        SocketAddress receive = receiveSocket.receive(ByteBuffer.wrap(pack.getData(), pack.getOffset(), pack.getLength()));
-        if ( receive instanceof InetSocketAddress) {
-            pack.setAddress(((InetSocketAddress) receive).getAddress());
-        }
-        return receive != null;
-    }
-
     public boolean receive(ByteBuffer pack) throws IOException {
+        if ( retransPacket != null ) {
+            pack.put(retransPacket);
+            retransPacket = null;
+            return true;
+        }
         SocketAddress receive = receiveSocket.receive(pack);
         return receive != null;
     }
 
     @Override
-    public void send(DatagramPacket pack) throws IOException {
-        send(ByteBuffer.wrap(pack.getData(), pack.getOffset(), pack.getLength()));
+    public void send(byte[] bytes, int off, int len) throws IOException {
+        send(ByteBuffer.wrap(bytes, off, len));
     }
 
     @Override
     public void send(ByteBuffer b) throws IOException {
-//        long len = b.remaining();
         while(b.hasRemaining()) {
             sendSocket.send(b, socketAddress);
         }
-        //sendSocket.send(b, socketAddress);
+    }
+
+    @Override
+    public void sendControl(byte[] bytes, int off, int len) throws IOException {
+        sendControl(ByteBuffer.wrap(bytes, off, len));
+    }
+
+    @Override
+    public void sendControl(ByteBuffer b) throws IOException {
+        if ( retransSocket == null ) {
+            send(b);
+        } else {
+            while (b.hasRemaining()) {
+                sendSocket.send(b, socketAddress);
+            }
+        }
     }
 
     public InetSocketAddress getAddress() {
@@ -110,19 +124,44 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
         }
         receiveSocket = ceateSocket(blocking, conf.getPort());
         sendSocket = ceateSocket(false, conf.getPort());
+        // retransmission channel runs in blocking mode for now (don't burn a second core).
+        // polling both channels from a single thread might be an option (untested)
         if ( conf.getRetransGroupAddr() != null ) {
-            if ( blocking )
-                throw new RuntimeException("separate retransmission socket only available if nonblocking mode is set");
-            retransSocket = ceateSocket(false,conf.getRetransGroupPort());
+            retransSocket = ceateSocket(true,conf.getRetransGroupPort());
         }
 
         MembershipKey key = receiveSocket.join(address, iface);
         if ( retransSocket != null ) {
-            retransSocket.join(InetAddress.getByName(conf.getRetransGroupAddr()),iface);
+            retransSocket.join(InetAddress.getByName(conf.getRetransGroupAddr()), iface);
+        }
+
+        if ( conf.getRetransGroupAddr() != null ) {
+            new Thread("retrans loop "+conf.getRetransGroupAddr()+":"+conf.getRetransGroupPort()) {
+                public void run() {
+                    retransLoop();
+                }
+            }.start();
         }
 
         FCLog.log("Connecting to interface " + iface.getName()+ " on address " + address + " " + conf.getPort()+" dgramsize:"+getConf().getDgramsize());
+    }
 
+    private void retransLoop() {
+        ByteBuffer buf = ByteBuffer.allocate(conf.getDgramsize());
+        while( retransSocket != null ) {
+            DatagramChannel socket = retransSocket;
+            if ( socket != null ) {
+                try {
+                    socket.receive(buf);
+                    retransPacket = buf;
+                    while( retransPacket != null ) {
+                        // spin until consumed
+                    }
+                } catch (IOException e) {
+                    FCLog.get().warn(e);
+                }
+            }
+        }
     }
 
     private DatagramChannel ceateSocket(boolean block, int port) throws IOException {
@@ -145,6 +184,13 @@ public class MulticastChannelPhysicalTransport implements PhysicalTransport {
 
     @Override
     public void close() {
+        try {
+            if ( retransSocket != null )
+                retransSocket.close();
+            retransSocket = null;
+        } catch (IOException e) {
+            FCLog.get().warn(e);
+        }
         try {
             if ( receiveSocket != null )
                 receiveSocket.close();

@@ -33,8 +33,9 @@ import java.nio.ByteBuffer;
 public interface PhysicalTransport {
 
     public boolean receive(ByteBuffer pack) throws IOException;
-    public boolean receive(DatagramPacket pack) throws IOException;
-    public void send(DatagramPacket pack) throws IOException;
+    public void sendControl(byte[] bytes, int off, int len) throws IOException;
+    public void sendControl(ByteBuffer b) throws IOException;
+    public void send(byte[] bytes, int off, int len) throws IOException;
     public void send(ByteBuffer b) throws IOException;
     public void join() throws IOException;
     public PhysicalTransportConf getConf();
