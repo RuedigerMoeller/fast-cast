@@ -4,7 +4,7 @@
 
 if [ -z "$1" ]; then
         echo
-        echo usage: $0 [network-interface] [sendrate e.g. 1000m]
+        echo usage: $0 [network-interface] [sendrate e.g. 1000]
         echo
         echo e.g. $0 eth0
         echo
