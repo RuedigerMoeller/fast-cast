@@ -36,7 +36,7 @@ Changes done from 2.x to 3.x:
 - requires fast-serialization 2.17 branch build for struct support
 - allocation free under normal operation
 
-Short Documentation
+Documentation
 ===================
 
 **Multicast**
