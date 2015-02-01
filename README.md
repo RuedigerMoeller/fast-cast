@@ -118,13 +118,12 @@ for ultimate low latency:
 * use allocation free encoding/decoding (e.g. structs as shown in https://github.com/RuedigerMoeller/fast-cast/tree/3.0/examples/src/main/java/org/nustaq/fastcast/examples/multiplestructs).
 Additionally be fast enough to get proccessing done inside receiver thread or use a fast+allocation free multithreading framework like disruptor for message processing. JDK's executor framework is not that well suited.
 * choose a small datagram size (size of MTU)
-* try to push PPS at least to 20k (depends on OS, network hardware)
+* try to push PPS at least to 20k (depends on OS, network hardware). 100-150k are possible with rare retransmissions if kernel + network stack is tuned accordingly (10GBit network).
 * use busy spin for receiver thread (configurable)
 * use busy spin for sender thread (that's your app)
-* pin threads to cores
+* pin threads to cores/cpu sockets
 * always set 'flush' flag to true when calling offer
-* push topic pps setting to the maximum possible on your platform (differs a lot depending on OS/network hardware). range is 10k to ~50k or higher.
-* use small packet sizes on the nic used for low lat mutlicast. Large MTU's are bad latency wise, they only help in throughput. (e.g. localhost pseudo nic often defaults to 16-64k) 
+* use small packet sizes on the nic used for low lat mutlicast. Large MTU's are bad latency wise, they only help in throughput. (e.g. localhost pseudo nic often defaults to 16-64k). Smallest possible datagram size of fast cast is  ~65ß..700 currently [determined by max size of retransmission request structure]
 
 Note that the biggest challenge is to get your OS configured for low latency. E.g. stock CentOS 7 has like 400 micros RTT even on local host (64k mtu!), stock ubuntu 14.04 like 20 microseconds. A well configured machine can have like 10-11 micros RTT latency on localhost, high end network hardware can have even better RTT times in case.
 
