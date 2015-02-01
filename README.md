@@ -92,7 +92,7 @@ Ensure your PPS * packet size does not exceed your network bandwidth. If latency
 
 **API**
 
-see org.nustaq.fastcast.api (.util) package + examples project directory.
+see org.nustaq.fastcast.api (.util) package + examples project directory. Note that I occasionally use those examples for private test setups, so you might need to tweak config files/setup to your hardware/nic. Especially if your not operating on 16 core machines using kernel bypassed low lat nic's =).
 
 **Terminology**
 
