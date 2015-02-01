@@ -39,6 +39,8 @@ public class MPSubscriber {
                     if ( type == AMessage.class ) {
                         AMessage am = msg.cast();
                         // am is valid until another pointer is used. use "am = am.detach" in order to get a non-cached pointer
+                        // note msg data is valid only inside this method (reused). You need to copy data in case processing should 
+                        // be done in a different thread (usually do basic filtering in-thread, then do processing on a dedicated thread)
                     } else if ( type == OtherMessage.class ) {
                         OtherMessage om = msg.cast();
                         // ..
