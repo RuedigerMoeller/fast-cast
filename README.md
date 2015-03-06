@@ -44,11 +44,11 @@ Documentation
 Fastcast uses ip4 multicast. This means a publisher sends a packet once, which is then received by all subscribers. This can be advantageous e.g. for high avaiability or broadcasting of common state changes across a cluster of processes. Multicast networking scales better compared to connection based tcp clusters, as messages don't have to be sent multiple times on distinct connections (e.g. for HA, broadcast). Additionally there is no latency caused by TCP connection creation and TCP backtalking receiver=>sender (e.g. ACK, flow control). 
 
 Multicast addresses start at 224.0.0.0, however its recommended to use addresses > 225.0.0.0. Do not rely on address, its also important which port is chosen (avoid "crosstalking"). Ideally choose a distinct addr and distinct port for each 'transport' (see below 'terminology') used. 
-With increasingily defensive configuration defaults, getting multicast to run on a network can be pretty time consuming. The following things are usually problematic:
+With more and more defensive OS configuration defaults, getting multicast to run on a network can be pretty time consuming. The following things are usually problematic:
 * rp_filter of linux kernel (reverse filtering fails because multicast packet can have weird sender address). E.g. RH7
 * firewall defaults
 * disabled at network adapter level
-* traffic shaping switches defaults: limited bandwidth for multicast traffic
+* traffic shaping (switch): limited bandwidth for multicast traffic
 * complex network setups with slow network segments attached might backpressure multicast traffic accross the whole network. E.g. an attached 100MBit or wireless lan segment might cause multicast traffic in the 1GBit lan to slow down to wireless network speed.
 * IGMP behaviour, buggy IGMP implementations (first message not correctly routed, ..).
 
