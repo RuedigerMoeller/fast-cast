@@ -112,6 +112,10 @@ If the offer on the FCPublisher is called to send messages, the sending happens 
 
 The most common error is to block the receiver thread by decoding and processing the message *and* send to other topics inside the receiver thread. Once send is blocked, the receiver threads get blocked and packet loss + retransmission occurs. So take care when doing cascaded network calls (B receives from A => sends to C in message receiver thread)
 
+** Logging **
+
+By default logs are redirected to sysout. Set your own implementation of FCLog class via FCLog.setInstance(). The only method to override in order to redirect log output is 'out(..)'. Consider using an async log implementation for HP messaging in production.
+
 **Low Latency**
 
 for ultimate low latency:
