@@ -10,7 +10,7 @@ Note: 2.x Old remote method layer has been abandonned (will be covered by future
 - Throughput up to **7 million 70 bytes msg/second** (Intel i7 or newer XEONS, 10Gb network or localhost).
 - **reliable low latency with extraordinary few outliers**. Testscenario: Ping-Pong RTT latency. XEON 3Ghz, CentOS 6.5 RT Linux: RTT latency mean:12 micros, 99.9% - 24 micros, 99.99% - 111 micros, 99.9999% - 126 micros. 
 - transparent fragmentation and defragmentation of **large messages** (max 50% of publisher history buffer and < subscribers's receive buffer).
-- **add hoc unicast** (publisher can address all subscribers or a single subscriber on a per message level).
+- **ad hoc unicast** (publisher can address all subscribers or a single subscriber on a per message level).
 - supports **fully reliable** as well as unreliable streams (unordered-reliable streams coming soon)
 - **blocking IO** (saves CPU) and **lock free poll** mode (low latency, CPU/cores burned)
 - all buffers are kept **off heap** to avoid GC pressure.
