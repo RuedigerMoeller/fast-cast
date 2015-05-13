@@ -33,7 +33,6 @@ Changes done from 2.x to 3.x:
 - refurbished+refactored core NAK UDP streaming implementation.
 - simplified API
 - 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). 
-- requires fast-serialization 2.17 branch build for struct support
 - allocation free under normal operation
 
 Documentation
