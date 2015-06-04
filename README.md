@@ -35,6 +35,84 @@ Changes done from 2.x to 3.x:
 - 3.0 has been optimized for low latency (2.x is a bastard latency wise ..). 
 - allocation free under normal operation
 
+Code Example
+===================
+
+Fast Serialization based Object multicast (=broadcast) publisher:
+
+```java
+public static void main(String arg[]) {
+        FastCast.getFastCast().setNodeId("PUB"); // 5 chars MAX !!
+        configureFastCast();
+        FCPublisher pub = FastCast.getFastCast().onTransport("default").publish(
+            new PublisherConf(1)            // unique-per-transport topic id
+                .numPacketHistory(40_000)   // nuber of packets kept for retransmission requests
+                .pps(5000)                  // packets per second rate limit. So max traffic for topic = 5000*2500 = 12.5 MB/second
+        );
+        // use a helper for fast-serialized messages
+        ObjectPublisher opub = new ObjectPublisher(pub);
+        RateMeasure measure = new RateMeasure("msg/s");
+        while( true ) {
+            measure.count();
+            opub.sendObject(
+                null,  // all listeners should receive (by specifying a nodeId, a specific subscriber can be targeted)
+                "Hello "+System.currentTimeMillis(), // serializable object
+                false  // allow for 'batching' several messages into one (will create slight latency)
+            );
+        }
+    }
+```
+
+a Subscriber receiving objects broadcasted by Publisher. Throughput does not decrease with number of subscribers as
+each message is sent once regardless off the number of subscribing processes,
+
+```java
+    public static void main( String arg[] ) {
+        FastCast.getFastCast().setNodeId("SUBS"); // 5 chars MAX !!
+        ProgrammaticConfiguredPublisher.configureFastCast();
+        FastCast.getFastCast().onTransport("default").subscribe(
+            new SubscriberConf(1) // listen to topic 1
+                .receiveBufferPackets(20000), // how many packets to buffer in case of a loss+retransmission
+            new ObjectSubscriber() {
+                long lastMsg = System.currentTimeMillis();
+                int msgReceived = 0;
+
+                @Override
+                protected void objectReceived(String sender, long sequence, Object msg) {
+                    msgReceived++;
+                    if ( System.currentTimeMillis()-lastMsg > 1000 ) {
+                        System.out.println("received from "+sender+" number of msg "+msgReceived);
+                        System.out.println("current: "+msg);
+                        lastMsg = System.currentTimeMillis();
+                        msgReceived = 0;
+                    }
+                }
+                @Override
+                public boolean dropped() {
+                    System.out.println("Fatal: could not keep up with send rate. exiting");
+                    System.exit(0);
+                    return false; // do not attempt resync
+                }
+            }
+       );
+    }
+```
+programmatic configuration
+```java
+ public static void configureFastCast() {
+        // note this configuration is far below possible limits regarding throughput and rate
+        FastCast fc = FastCast.getFastCast();
+        fc.addTransport(
+            new PhysicalTransportConf("default")
+                .interfaceAdr("127.0.0.1")  // define the interface
+                .port(42042)                // port is more important than address as some OS only test for ports ('crosstalking')
+                .mulitcastAdr("229.9.9.9")  // ip4 multicast address
+                .setDgramsize(2500)         // datagram size. Small sizes => lower latency, better retransmission behaviour, large sizes => better throughput
+                .socketReceiveBufferSize(4_000_000) // as large as possible .. however avoid hitting system limits in example
+                .socketSendBufferSize(2_000_000)
+        );
+    }
+```
 Documentation
 ===================
 
