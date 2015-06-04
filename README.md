@@ -100,7 +100,6 @@ each message is sent once regardless off the number of subscribing processes,
 programmatic configuration
 ```java
  public static void configureFastCast() {
-        // note this configuration is far below possible limits regarding throughput and rate
         FastCast fc = FastCast.getFastCast();
         fc.addTransport(
             new PhysicalTransportConf("default")
