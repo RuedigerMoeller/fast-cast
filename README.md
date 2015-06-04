@@ -108,8 +108,6 @@ programmatic configuration
                 .port(42042)                // port is more important than address as some OS only test for ports ('crosstalking')
                 .mulitcastAdr("229.9.9.9")  // ip4 multicast address
                 .setDgramsize(2500)         // datagram size. Small sizes => lower latency, better retransmission behaviour, large sizes => better throughput
-                .socketReceiveBufferSize(4_000_000) // as large as possible .. however avoid hitting system limits in example
-                .socketSendBufferSize(2_000_000)
         );
     }
 ```
