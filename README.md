@@ -123,7 +123,7 @@ With more and more defensive OS configuration defaults, getting multicast to run
 * firewall defaults
 * disabled at network adapter level
 * traffic shaping (switch): limited bandwidth for multicast traffic
-* complex network setups with slow network segments attached might backpressure multicast traffic accross the whole network. E.g. an attached 100MBit or wireless lan segment might cause multicast traffic in the 1GBit lan to slow down to wireless network speed.
+* complex network setups with slow network segments attached might backpressure multicast traffic across the whole network. E.g. an attached 100MBit or wireless lan segment might cause multicast traffic in the 1GBit lan to slow down to wireless network speed.
 * IGMP behaviour, buggy IGMP implementations (first message not correctly routed, ..).
 
 ethtool, tcpdump, and netstat are your diagnostic helpers ..
