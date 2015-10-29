@@ -8,7 +8,7 @@ ClusterConf {
             name:      ping
 
             dgramsize: 1500
-            interfaceAddr:  enp7s0f1
+            interfaceAddr:  lo
             multicastAddr:  229.9.9.10
             port:      45556
 
@@ -22,7 +22,7 @@ ClusterConf {
             name:            pong
 
             dgramsize:       1500
-            interfaceAddr:   enp7s0f1
+            interfaceAddr:   lo
             multicastAddr:   229.9.9.11
             port:            45557
 
