@@ -5,8 +5,6 @@ import org.nustaq.fastcast.api.FCSubscriber;
 import org.nustaq.fastcast.api.FastCast;
 import org.nustaq.fastcast.api.util.ObjectPublisher;
 import org.nustaq.fastcast.api.util.ObjectSubscriber;
-import org.nustaq.offheap.bytez.Bytez;
-import org.nustaq.offheap.structs.unsafeimpl.FSTStructFactory;
 
 /**
  * Created by moelrue on 02.11.2015.
