@@ -26,7 +26,6 @@ ClusterConf {
             pub: {
                 numPacketHistory: 30_000
                 pps: 5_000
-                ppsWindow: 10
                 heartbeatInterval: 1000
             }
 
