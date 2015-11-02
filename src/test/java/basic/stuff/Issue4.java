@@ -69,15 +69,18 @@ public class Issue4 {
     }
 
     private void run() {
-        new Thread( () -> {
-            initFC();
-            while( true ) {
-                for (int i = 0; i < 1_000_000; i++) {
-                    publisher.sendObject(null,i, false);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                initFC();
+                while( true ) {
+                    for (int i = 0; i < 1_000_000; i++) {
+                        publisher.sendObject(null,i, false);
+                    }
+                    publisher.sendObject(null,"million", false);
                 }
-                publisher.sendObject(null,"million", false);
             }
-        } ).start();
+        }).start();
     }
 
 
