@@ -16,10 +16,10 @@ public class Issue4 {
     FastCast fc;
     ObjectPublisher publisher;
 
-    public static FastCast setupFC(String nodeId, String config) {
+    public FastCast setupFC(String nodeId, String config) {
         System.setProperty("java.net.preferIPv4Stack", "true");
         try {
-            FastCast fc = FastCast.getFastCast();
+            FastCast fc = new FastCast(); //FastCast.getFastCast();
             fc.setNodeId(nodeId);
             fc.loadConfig("./src/test/java/basic/"+config);
             return fc;
@@ -31,14 +31,14 @@ public class Issue4 {
 
     public void initFC() {
         if ( fc == null ) {
-            fc = setupFC("test", "stuff/sendreceive.kson");
+            fc = setupFC("t"+(int)(1000*Math.random()), "stuff/sendreceive.kson");
             FCSubscriber sub = new ObjectSubscriber() {
                 int count = 0;
 
                 @Override
                 protected void objectReceived(String sender, long sequence, Object msg) {
                     if ( msg instanceof String ) {
-                        System.out.println("received: "+count);
+                        System.out.println(fc.getNodeId()+" received: "+count);
                         count = 0;
                     } else {
                         count++;
@@ -69,19 +69,23 @@ public class Issue4 {
     }
 
     private void run() {
-        initFC();
-        while( true ) {
-            for (int i = 0; i < 1_000_000; i++) {
-                publisher.sendObject(null,i, true);
+        new Thread( () -> {
+            initFC();
+            while( true ) {
+                for (int i = 0; i < 1_000_000; i++) {
+                    publisher.sendObject(null,i, false);
+                }
+                publisher.sendObject(null,"million", false);
             }
-            publisher.sendObject(null,"million", false);
-        }
+        } ).start();
     }
 
 
     public static void main(String[] args) {
         Issue4 i4 = new Issue4();
         i4.run();
+        Issue4 i4other = new Issue4(); // uncomment this for multi-process test
+        i4other.run();
     }
 
 }
