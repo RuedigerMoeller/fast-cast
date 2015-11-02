@@ -31,8 +31,8 @@ ClusterConf {
 
             sub: {
                 receiveBufferPackets: 10_000
-                # senderHBTimeout: 5000
-                senderHBTimeout: 500000 # avoid crashes during debug
+                senderHBTimeout: 5000
+                # senderHBTimeout: 500000 # avoid crashes during debug
             }
         }
 
