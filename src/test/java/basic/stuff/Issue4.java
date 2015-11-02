@@ -29,7 +29,12 @@ public class Issue4 {
 
     public void initFC() {
         if ( fc == null ) {
+
             fc = setupFC("t"+(int)(1000*Math.random()), "stuff/sendreceive.kson");
+
+            FCPublisher rawPublisher = fc.onTransport("default").publish(fc.getPublisherConf("sendreceive"));
+            publisher = new ObjectPublisher(rawPublisher);
+
             FCSubscriber sub = new ObjectSubscriber() {
                 int count = 0;
 
@@ -61,8 +66,6 @@ public class Issue4 {
                 }
             };
             fc.onTransport("default").subscribe(fc.getSubscriberConf("sendreceive"), sub);
-            FCPublisher rawPublisher = fc.onTransport("default").publish(fc.getPublisherConf("sendreceive"));
-            publisher = new ObjectPublisher(rawPublisher);
         }
     }
 
@@ -85,8 +88,8 @@ public class Issue4 {
     public static void main(String[] args) {
         Issue4 i4 = new Issue4();
         i4.run();
-        Issue4 i4other = new Issue4(); // uncomment this for multi-process test
-        i4other.run();
+//        Issue4 i4other = new Issue4(); // uncomment this for multi-process test
+//        i4other.run();
     }
 
 }

@@ -1,3 +1,16 @@
+# Warning:
+# settings here might be way to agressive for some network stacks
+# especially local host performance and behaviour varies wildly depending on OS, OS versione etc.
+# also note that some new security interceptors (e.g. reverse packet filtering) might have
+# severe drawbacks on multicast. E.g. stock centos 7 localhost can perform very poor both throughput and
+# latency wise.
+#
+# default strat is to start with low pps (like 1000, 2000) and low dgramsize (e.g. 1200).
+# to increase throughput then increase pps (=packet per second) stepwise and/or dgramsize.
+# throughput/bytes = dgramsize * pps.
+# depending on os/network stack, either increasing pps or dgramsize yield to better and more stable results.
+# To get real throughput/lowlat use a kernel bypass driver and don't test on localhost.
+
 ClusterConf {
 
     transports: {
@@ -5,6 +18,7 @@ ClusterConf {
             name:      default
 
             dgramsize: 4000
+
             interfaceAddr:   127.0.0.1
             multicastAddr:  229.9.9.9
             port:      45555
@@ -42,7 +56,7 @@ ClusterConf {
 
             pub: {
                 numPacketHistory: 50_000
-                pps: 10_000
+                pps: 5_000
                 heartbeatInterval: 1000
             }
 

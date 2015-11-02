@@ -372,7 +372,7 @@ public class TransportDriver {
         Topic topicEntry = topics.get(subsConf.getTopicId());
         if ( topicEntry == null )
             topicEntry = new Topic(null,null);
-        if ( topicEntry.getPublisherConf() != null ) {
+        if ( topicEntry.getSubscriberConf() != null ) {
             throw new RuntimeException("already a sender registered at "+subsConf.getTopicId());
         }
         topicEntry.setSubscriberConf(subsConf);

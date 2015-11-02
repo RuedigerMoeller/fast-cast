@@ -4,8 +4,8 @@ ClusterConf {
         {
             name:      default
 
-            dgramsize: 4000
-            interfaceAddr:   127.0.0.1
+            dgramsize: 1200
+            interfaceAddr:  127.0.0.1
             multicastAddr:  229.9.9.9
             port:      45555
 
@@ -31,7 +31,7 @@ ClusterConf {
 
             sub: {
                 receiveBufferPackets: 10_000
-                senderHBTimeout: 5000
+                senderHBTimeout: 30000
                 # senderHBTimeout: 500000 # avoid crashes during debug
             }
         }

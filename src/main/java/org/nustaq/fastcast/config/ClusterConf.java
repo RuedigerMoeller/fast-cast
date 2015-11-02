@@ -67,7 +67,7 @@ public class ClusterConf {
         return null;
     }
 
-    public static ClusterConf readFrom( String filePath ) throws Exception {
+    public static synchronized ClusterConf readFrom( String filePath ) throws Exception {
         return (ClusterConf) new Kson()
                .map(PublisherConf.class, SubscriberConf.class, TopicConf.class, ClusterConf.class)
                .readObject(new File(filePath));
