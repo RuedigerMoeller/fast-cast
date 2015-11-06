@@ -115,6 +115,11 @@ public class SubscriberConf {
     public long getSenderHBTimeout() {
         return senderHBTimeout;
     }
+    
+    public SubscriberConf setSenderHBTimeout(long senderHBTimeout) {
+        this.senderHBTimeout = senderHBTimeout;
+        return this;
+    }
 
     public boolean isUnreliable() {
         return unreliable;
