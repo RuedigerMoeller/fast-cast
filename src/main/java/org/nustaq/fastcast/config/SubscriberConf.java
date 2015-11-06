@@ -116,7 +116,7 @@ public class SubscriberConf {
         return senderHBTimeout;
     }
     
-    public SubscriberConf setSenderHBTimeout() {
+    public SubscriberConf setSenderHBTimeout(long senderHBTimeout) {
         this.senderHBTimeout = senderHBTimeout;
         return this;
     }
